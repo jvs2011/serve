@@ -3,7 +3,7 @@ import { addDays, toISO, fromISO, todayISO } from '../lib/dates'
 import { autoFill } from '../lib/schedule'
 
 /** Versão do formato dos dados. Mude para forçar recriação dos dados de exemplo. */
-export const DATA_VERSION = 5
+export const DATA_VERSION = 6
 
 /*
  * Ministérios da Lagoinha Franca.
@@ -35,7 +35,15 @@ const ministrySeeds: MinistrySeed[] = [
     description: 'Homens e mulheres com o coração voltado ao serviço ao próximo e à organização do culto.',
     roles: [
       { name: 'Portaria', count: 2, people: 6 }, { name: 'Acolhimento', count: 2, people: 6 },
-      { name: 'Auditório', count: 2, people: 6 }, { name: 'Estacionamento', count: 1, people: 3 },
+      { name: 'Auditório', count: 2, people: 6 },
+    ],
+  },
+  {
+    id: 'centurioes', name: 'Centuriões', color: '#8B5E3C', icon: 'shield',
+    description: 'Cuida da segurança da parte externa do templo durante os cultos.',
+    roles: [
+      { name: 'Portão', count: 2, people: 6 }, { name: 'Estacionamento', count: 2, people: 6 },
+      { name: 'Ronda externa', count: 1, people: 3 },
     ],
   },
   {
@@ -206,7 +214,7 @@ export function createSeed(): AppData {
   }
 
   // Agenda semanal de exemplo (ajuste com os horários reais da igreja)
-  const midweek = ['louvor', 'follow', 'diaconato', 'intercessao', 'consolidacao']
+  const midweek = ['louvor', 'follow', 'diaconato', 'centurioes', 'intercessao', 'consolidacao']
   const sunday = [...midweek, 'kids']
   for (let i = -14; i <= 49; i++) {
     const d = addDays(today, i)

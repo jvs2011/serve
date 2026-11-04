@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from 'react'
 import {
   Baby, BookOpen, Briefcase, ChevronLeft, Flame, Footprints, HandHelping, Heart, HeartHandshake, House,
-  Link2, Megaphone, Music, Rocket, Sparkles, UserPlus, Users, X,
+  Link2, Megaphone, Music, Rocket, Shield, Sparkles, UserPlus, Users, X,
 } from 'lucide-react'
 import type { AssignmentStatus, Ministry } from '../data/types'
 
@@ -23,6 +23,7 @@ export function MinistryIcon({ ministry, size = 18 }: { ministry: Ministry; size
     case 'briefcase': return <Briefcase {...props} />
     case 'handheart': return <HeartHandshake {...props} />
     case 'book': return <BookOpen {...props} />
+    case 'shield': return <Shield {...props} />
     default: return <Users {...props} />
   }
 }

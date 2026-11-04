@@ -40,7 +40,7 @@ Na tela de entrada há três perfis de demonstração: **Voluntária** (Ana), **
 ```
 src/
   data/types.ts      modelo de dados (ministérios, membros, eventos, escalas, trocas, avisos)
-  data/seed.ts       dados de demonstração: os 15 ministérios da Lagoinha Franca (funções sugeridas),
+  data/seed.ts       dados de demonstração: os 16 ministérios da Lagoinha Franca (funções sugeridas),
                      ~150 voluntários fictícios e agenda de exemplo
   data/store.tsx     estado + todas as ações (hoje em localStorage)
   lib/schedule.ts    regras de escala: disponibilidade, ranking de candidatos, escala automática, pontos
