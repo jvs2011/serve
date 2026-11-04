@@ -1,0 +1,14 @@
+{
+  "name": "Serve · Lagoinha Franca",
+  "short_name": "Serve",
+  "description": "Escalas de voluntários dos ministérios da Lagoinha Franca",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0E0E10",
+  "theme_color": "#0E0E10",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

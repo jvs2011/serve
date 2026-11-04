@@ -1,0 +1,120 @@
+import type { AppData, Assignment, ChurchEvent, Member } from '../data/types'
+import { daysBetween, todayISO } from './dates'
+
+export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4)
+
+export interface Availability {
+  unavailable: boolean
+  /** Já está escalado neste mesmo evento (em qualquer ministério) */
+  conflict: Assignment | null
+  /** Já serve em outro evento no mesmo dia */
+  sameDay: boolean
+  monthCount: number
+  overLimit: boolean
+}
+
+export function availabilityFor(data: AppData, member: Member, event: ChurchEvent): Availability {
+  const unavailable = (data.unavailability[member.id] ?? []).includes(event.date)
+  const eventsById = new Map(data.events.map((e) => [e.id, e]))
+  const mine = data.assignments.filter((a) => a.memberId === member.id && a.status !== 'declined')
+  const conflict = mine.find((a) => a.eventId === event.id) ?? null
+  const sameDay = mine.some((a) => a.eventId !== event.id && eventsById.get(a.eventId)?.date === event.date)
+  const month = event.date.slice(0, 7)
+  const monthCount = mine.filter((a) => eventsById.get(a.eventId)?.date.slice(0, 7) === month).length
+  return { unavailable, conflict, sameDay, monthCount, overLimit: monthCount >= member.maxPerMonth }
+}
+
+/** Vagas abertas (função ainda sem gente suficiente) de um ministério num evento */
+export function openSlots(data: AppData, eventId: string, ministryId: string): { role: string; missing: number }[] {
+  const ministry = data.ministries.find((m) => m.id === ministryId)
+  if (!ministry) return []
+  return ministry.roles
+    .map((r) => {
+      const filled = data.assignments.filter(
+        (a) => a.eventId === eventId && a.ministryId === ministryId && a.role === r.name && a.status !== 'declined',
+      ).length
+      return { role: r.name, missing: Math.max(0, r.count - filled) }
+    })
+    .filter((s) => s.missing > 0)
+}
+
+/** Candidatos para uma função, do mais indicado para o menos indicado */
+export function rankCandidates(data: AppData, event: ChurchEvent, ministryId: string, role: string) {
+  const recentFrom = event.date
+  return data.members
+    .filter((m) => m.ministries.some((mm) => mm.ministryId === ministryId && mm.roles.includes(role)))
+    .map((member) => {
+      const av = availabilityFor(data, member, event)
+      // quantas vezes serviu nos 45 dias anteriores ao evento (rodízio justo)
+      const recent = data.assignments.filter((a) => {
+        if (a.memberId !== member.id || a.status === 'declined') return false
+        const ev = data.events.find((e) => e.id === a.eventId)
+        if (!ev) return false
+        const d = daysBetween(ev.date, recentFrom)
+        return d >= 0 && d <= 45
+      }).length
+      const blocked = av.unavailable || !!av.conflict
+      const score = (blocked ? 1000 : 0) + (av.overLimit ? 100 : 0) + (av.sameDay ? 5 : 0) + recent * 3 + av.monthCount * 2
+      return { member, av, score, blocked }
+    })
+    .sort((a, b) => a.score - b.score || a.member.name.localeCompare(b.member.name))
+}
+
+/**
+ * Escala automática: preenche as vagas abertas de um ministério num evento
+ * respeitando indisponibilidade, conflito com outras escalas, limite mensal e rodízio.
+ */
+export function autoFill(data: AppData, eventId: string, ministryId: string, status: Assignment['status'] = 'pending'): Assignment[] {
+  const event = data.events.find((e) => e.id === eventId)
+  if (!event) return []
+  const created: Assignment[] = []
+  const working: AppData = { ...data, assignments: [...data.assignments] }
+  for (const slot of openSlots(working, eventId, ministryId)) {
+    for (let i = 0; i < slot.missing; i++) {
+      const pick = rankCandidates(working, event, ministryId, slot.role).find((c) => !c.blocked && !c.av.overLimit)
+      if (!pick) break
+      const a: Assignment = { id: uid(), eventId, ministryId, role: slot.role, memberId: pick.member.id, status }
+      working.assignments.push(a)
+      created.push(a)
+    }
+  }
+  return created
+}
+
+/** Pontos de gamificação: check-in 10, feedback 2, cobrir troca 5, confirmar 1 */
+export function pointsFor(data: AppData, memberId: string): number {
+  let pts = 0
+  for (const a of data.assignments) {
+    if (a.memberId !== memberId) continue
+    if (a.status === 'confirmed') pts += 1
+    if (a.checkedIn) pts += 10
+    if (a.feedback) pts += 2
+  }
+  pts += data.swaps.filter((s) => s.status === 'accepted' && s.acceptedById === memberId).length * 5
+  return pts
+}
+
+export function levelFor(points: number): { name: string; next: number; base: number } {
+  const levels = [
+    { name: 'Semente', base: 0 },
+    { name: 'Broto', base: 30 },
+    { name: 'Árvore', base: 80 },
+    { name: 'Frutífera', base: 160 },
+    { name: 'Floresta', base: 300 },
+  ]
+  let i = 0
+  while (i + 1 < levels.length && points >= levels[i + 1].base) i++
+  return { name: levels[i].name, base: levels[i].base, next: levels[i + 1]?.base ?? levels[i].base }
+}
+
+export const isPast = (ev: ChurchEvent) => ev.date < todayISO()
+export const isToday = (ev: ChurchEvent) => ev.date === todayISO()
+
+export function canManage(member: Member, ministryId: string, data: AppData): boolean {
+  if (member.access === 'admin') return true
+  return data.ministries.find((m) => m.id === ministryId)?.leaderIds.includes(member.id) ?? false
+}
+
+export function sortEvents(a: ChurchEvent, b: ChurchEvent) {
+  return a.date.localeCompare(b.date) || a.time.localeCompare(b.time)
+}
