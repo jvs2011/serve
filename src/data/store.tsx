@@ -11,12 +11,29 @@ import { autoFill, uid } from '../lib/schedule'
 const KEY = 'serve:data'
 const USER_KEY = 'serve:user'
 
+/**
+ * Modo demonstração: qualquer alteração fica salva por apenas 10 minutos
+ * (contados a partir da primeira alteração); depois os dados voltam ao padrão.
+ * Desligue (DEMO_MODE = false) quando o app passar a usar dados reais.
+ */
+export const DEMO_MODE = true
+export const DEMO_TTL_MS = 10 * 60 * 1000
+
+export function demoExpiresAt(data: AppData): number | null {
+  return DEMO_MODE && data.modifiedAt ? data.modifiedAt + DEMO_TTL_MS : null
+}
+
+function isExpired(data: AppData) {
+  const exp = demoExpiresAt(data)
+  return exp !== null && Date.now() >= exp
+}
+
 function load(): AppData {
   try {
     const raw = localStorage.getItem(KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as AppData
-      if (parsed.version === DATA_VERSION) return parsed
+      if (parsed.version === DATA_VERSION && !isExpired(parsed)) return parsed
     }
   } catch { /* sem storage disponível */ }
   return createSeed()
@@ -163,8 +180,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const mutate = useCallback((fn: (d: AppData) => void) => {
     // mutação síncrona sobre uma cópia; permite que as ações retornem valores
-    const next = structuredClone(dataRef.current)
+    const base = isExpired(dataRef.current) ? createSeed() : dataRef.current
+    const next = structuredClone(base)
     fn(next)
+    if (DEMO_MODE && !next.modifiedAt) next.modifiedAt = Date.now()
     dataRef.current = next
     setData(next)
   }, [])
@@ -181,6 +200,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setToast({ id, text })
     setTimeout(() => setToast((t) => (t?.id === id ? null : t)), 2600)
   }, [])
+
+  // Demonstração: volta aos dados padrão quando o prazo de 10 minutos termina.
+  // Também confere ao voltar para o app, pois o celular pausa os timers em segundo plano.
+  const expiresAt = demoExpiresAt(data)
+  useEffect(() => {
+    if (expiresAt === null) return
+    const restore = () => {
+      if (Date.now() < expiresAt) return
+      replace(createSeed())
+      notify('Demonstração restaurada aos dados padrão')
+    }
+    const t = setTimeout(restore, Math.max(0, expiresAt - Date.now()))
+    const onVisible = () => document.visibilityState === 'visible' && restore()
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => {
+      clearTimeout(t)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
+  }, [expiresAt, replace, notify])
 
   const actions = useMemo(() => makeActions(mutate, () => userRef.current, setUser, replace), [mutate, setUser, replace])
   const me = data.members.find((m) => m.id === userId) ?? null

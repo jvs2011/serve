@@ -42,6 +42,7 @@ export function Login() {
         </button>
 
         <div className="divider"><span>ou explore a demonstração</span></div>
+        <p className="muted small demo-hint">Fique à vontade para testar: as alterações são desfeitas 10 minutos depois.</p>
 
         <div className="demo-list">
           {demoProfiles.map((p) => {

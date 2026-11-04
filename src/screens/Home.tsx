@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { BarChart3, Bell, CalendarCheck, ChevronRight, Clock, Megaphone, Star } from 'lucide-react'
-import { useMe, useStore } from '../data/store'
+import { BarChart3, Bell, CalendarCheck, ChevronRight, Clock, Megaphone, RotateCcw, Star } from 'lucide-react'
+import { demoExpiresAt, useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
 import { greeting, relativeDay, timeAgo, todayISO, addDays, toISO } from '../lib/dates'
 import { firstName, join, managedMinistries, memberById, myMinistries, myUpcoming, swapsICanCover } from '../lib/selectors'
@@ -14,6 +14,8 @@ export function Home() {
   const me = useMe()
   const { push, setTab } = useNav()
   const upcoming = myUpcoming(data, me.id)
+  const exp = demoExpiresAt(data)
+  const demoUntil = exp ? new Date(exp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : null
   const next = upcoming[0]
   const otherPending = upcoming.slice(1).filter((x) => x.a.status === 'pending')
   const rest = upcoming.slice(1).filter((x) => x.a.status !== 'pending').slice(0, 4)
@@ -55,6 +57,13 @@ export function Home() {
         <h1>{greeting()}, {firstName(me.name)} 👋</h1>
         <p>{upcoming.length ? `Você tem ${upcoming.length} ${upcoming.length === 1 ? 'escala' : 'escalas'} pela frente.` : 'Nenhuma escala por enquanto.'}</p>
       </div>
+
+      {demoUntil && (
+        <div className="demo-note">
+          <RotateCcw size={14} />
+          <span>Demonstração: suas alterações serão desfeitas às <b>{demoUntil}</b></span>
+        </div>
+      )}
 
       {next ? (
         <div className="hero-card" onClick={() => push({ name: 'event', id: next.ev.id })}>

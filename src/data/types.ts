@@ -81,6 +81,8 @@ export interface Notice {
 
 export interface AppData {
   version: number
+  /** Momento (ms) da primeira alteração feita sobre os dados padrão da demonstração */
+  modifiedAt?: number
   ministries: Ministry[]
   members: Member[]
   events: ChurchEvent[]
