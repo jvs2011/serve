@@ -3,105 +3,166 @@ import { addDays, toISO, fromISO, todayISO } from '../lib/dates'
 import { autoFill } from '../lib/schedule'
 
 /** Versão do formato dos dados. Mude para forçar recriação dos dados de exemplo. */
-export const DATA_VERSION = 4
+export const DATA_VERSION = 5
 
-export const ministries: Ministry[] = [
+/*
+ * Ministérios da Lagoinha Franca.
+ * As funções (roles) e vagas por evento são uma sugestão inicial — ajuste com cada líder.
+ * `people` é só para gerar voluntários de exemplo suficientes para o rodízio.
+ */
+type MinistrySeed = Omit<Ministry, 'roles' | 'leaderIds'> & { roles: { name: string; count: number; people: number }[] }
+
+const ministrySeeds: MinistrySeed[] = [
   {
     id: 'louvor', name: 'Louvor', color: '#E57A47', icon: 'music',
-    description: 'Ministração musical nos cultos e eventos.',
-    leaderIds: ['m-mariana'],
+    description: 'Conduz a congregação na adoração a Deus por meio da música e da arte, com ensaios, treinamentos e eventos especiais.',
     roles: [
-      { name: 'Ministro', count: 1 }, { name: 'Vocal', count: 2 }, { name: 'Violão', count: 1 },
-      { name: 'Teclado', count: 1 }, { name: 'Guitarra', count: 1 }, { name: 'Baixo', count: 1 }, { name: 'Bateria', count: 1 },
+      { name: 'Ministro', count: 1, people: 3 }, { name: 'Vocal', count: 2, people: 6 }, { name: 'Violão', count: 1, people: 3 },
+      { name: 'Teclado', count: 1, people: 3 }, { name: 'Guitarra', count: 1, people: 3 }, { name: 'Baixo', count: 1, people: 3 },
+      { name: 'Bateria', count: 1, people: 3 }, { name: 'Mesa de som', count: 1, people: 3 },
     ],
   },
   {
-    id: 'midia', name: 'Mídia', color: '#7C6CF2', icon: 'camera',
-    description: 'Fotos, stories, projeção e transmissão ao vivo.',
-    leaderIds: ['m-leticia'],
-    roles: [{ name: 'Fotografia', count: 1 }, { name: 'Stories', count: 1 }, { name: 'Projeção', count: 1 }, { name: 'Transmissão', count: 1 }],
+    id: 'follow', name: 'Follow', color: '#7C6CF2', icon: 'megaphone',
+    description: 'Ministério de Comunicação: conecta a igreja com a comunidade local e global por meio das mídias digitais.',
+    roles: [
+      { name: 'Fotografia', count: 1, people: 3 }, { name: 'Vídeo', count: 1, people: 3 }, { name: 'Stories', count: 1, people: 3 },
+      { name: 'Projeção', count: 1, people: 3 }, { name: 'Transmissão', count: 1, people: 3 },
+    ],
   },
   {
-    id: 'tecnica', name: 'Som & Luz', color: '#2FA8E0', icon: 'sliders',
-    description: 'Mesa de som, iluminação e suporte técnico.',
-    leaderIds: ['m-eduardo'],
-    roles: [{ name: 'Mesa de som', count: 1 }, { name: 'Iluminação', count: 1 }],
+    id: 'diaconato', name: 'Diaconato', color: '#2F7FC1', icon: 'hand',
+    description: 'Homens e mulheres com o coração voltado ao serviço ao próximo e à organização do culto.',
+    roles: [
+      { name: 'Portaria', count: 2, people: 6 }, { name: 'Acolhimento', count: 2, people: 6 },
+      { name: 'Auditório', count: 2, people: 6 }, { name: 'Estacionamento', count: 1, people: 3 },
+    ],
   },
   {
-    id: 'recepcao', name: 'Recepção', color: '#22B07D', icon: 'door',
-    description: 'Acolher cada pessoa que chega na Lagoinha Franca.',
-    leaderIds: ['m-patricia'],
-    roles: [{ name: 'Porta principal', count: 2 }, { name: 'Acolhimento', count: 2 }, { name: 'Estacionamento', count: 1 }],
+    id: 'kids', name: 'KIDS', color: '#D98E04', icon: 'baby',
+    description: 'Ministério de crianças: um ambiente seguro e acolhedor para as crianças crescerem na fé.',
+    roles: [
+      { name: 'Professor', count: 2, people: 4 }, { name: 'Auxiliar', count: 2, people: 4 },
+      { name: 'Berçário', count: 1, people: 2 }, { name: 'Check-in Kids', count: 1, people: 2 },
+    ],
   },
   {
-    id: 'kids', name: 'Lagoinha Kids', color: '#F2B53A', icon: 'baby',
-    description: 'Cuidado e ensino das crianças durante os cultos.',
-    leaderIds: ['m-aline'],
-    roles: [{ name: 'Professor', count: 2 }, { name: 'Auxiliar', count: 2 }, { name: 'Check-in Kids', count: 1 }],
+    id: 'intercessao', name: 'Intercessão', color: '#B0476C', icon: 'heart',
+    description: 'Busca a presença de Deus em oração, intercedendo pela igreja, pela cidade, pelo país e pelo mundo.',
+    roles: [{ name: 'Intercessor', count: 2, people: 6 }],
   },
   {
-    id: 'intercessao', name: 'Intercessão', color: '#E2558B', icon: 'heart',
-    description: 'Oração antes e durante os cultos.',
-    leaderIds: ['m-helena'],
-    roles: [{ name: 'Intercessor', count: 2 }],
+    id: 'consolidacao', name: 'Consolidação', color: '#8A5CD6', icon: 'userplus',
+    description: 'Acompanha os novos convertidos, ajudando-os a crescer na fé e no conhecimento da Palavra.',
+    roles: [{ name: 'Consolidador', count: 2, people: 6 }],
+  },
+  {
+    id: 'dna', name: 'DNA', color: '#C2418F', icon: 'footprints',
+    description: 'Ministério de dança: expressa a fé cristã por meio da arte da dança nas celebrações e eventos.',
+    roles: [{ name: 'Dança', count: 4, people: 6 }],
+  },
+  {
+    id: 'legacy', name: 'Legacy', color: '#E0533D', icon: 'flame',
+    description: 'Ministério de Jovens: prepara os jovens para uma vida de discipulado e serviço a Deus.',
+    roles: [{ name: 'Recepção', count: 2, people: 4 }, { name: 'Organização', count: 2, people: 4 }, { name: 'Mídia', count: 1, people: 2 }],
+  },
+  {
+    id: 'rocket', name: 'Rocket', color: '#F08A24', icon: 'rocket',
+    description: 'Ministério de adolescentes: amizade, diversão e aprendizado sobre os valores cristãos.',
+    roles: [{ name: 'Líder de grupo', count: 2, people: 4 }, { name: 'Apoio', count: 2, people: 4 }],
+  },
+  {
+    id: 'link', name: 'Link', color: '#18A999', icon: 'link',
+    description: 'Ministério de pré-adolescentes: valores cristãos de forma lúdica e interativa.',
+    roles: [{ name: 'Professor', count: 2, people: 4 }, { name: 'Auxiliar', count: 2, people: 4 }],
+  },
+  {
+    id: 'shine', name: 'Shine', color: '#D94F8A', icon: 'sparkles',
+    description: 'Ministério de mulheres: comunhão e crescimento espiritual para mulheres de todas as idades.',
+    roles: [{ name: 'Recepção', count: 2, people: 3 }, { name: 'Apoio', count: 2, people: 3 }],
+  },
+  {
+    id: 'geracoes', name: 'Gerações', color: '#3E9B5B', icon: 'house',
+    description: 'Ministério da família: fortalece os laços familiares em atividades para todas as idades.',
+    roles: [{ name: 'Recepção', count: 2, people: 3 }, { name: 'Apoio', count: 2, people: 3 }],
+  },
+  {
+    id: 'crie', name: 'CRIE', color: '#4A5A70', icon: 'briefcase',
+    description: 'Ministério de cristãos empreendedores: rede de network, troca de experiências e novas ideias.',
+    roles: [{ name: 'Recepção', count: 1, people: 2 }, { name: 'Organização', count: 2, people: 3 }],
+  },
+  {
+    id: 'wecare', name: 'We Care', color: '#2BA36B', icon: 'handheart',
+    description: 'Ministério de ação social: amor ao próximo em ações concretas que impactam a comunidade.',
+    roles: [{ name: 'Triagem', count: 1, people: 2 }, { name: 'Voluntário de ação', count: 4, people: 6 }],
+  },
+  {
+    id: 'carisma', name: 'Carisma', color: '#5468D4', icon: 'book',
+    description: 'Classes Start, Deep e Go: estudo bíblico para aprofundamento e crescimento espiritual.',
+    roles: [{ name: 'Professor', count: 1, people: 3 }, { name: 'Apoio', count: 1, people: 2 }],
   },
 ]
 
-type MemberSeed = [id: string, name: string, access: Member['access'], max: number, ministries: [string, string[]][]]
+// Nomes fictícios para os voluntários de exemplo
+const FIRST = ['Gabriel', 'Júlia', 'Pedro', 'Larissa', 'Rafael', 'Camila', 'Thiago', 'Beatriz', 'Bruno', 'Letícia', 'Felipe', 'Isabela', 'Matheus', 'Carolina', 'Vinícius', 'Fernanda', 'Gustavo', 'Patrícia', 'Rodrigo', 'Juliana', 'Eduardo', 'Renata', 'Daniel', 'Aline', 'Leonardo', 'Débora', 'Ricardo', 'Priscila', 'Marcos', 'Tatiane', 'Paulo', 'Natália', 'Roberto', 'Vanessa', 'André', 'Helena', 'Caio', 'Márcia', 'Lucas', 'Cláudia', 'Samuel', 'Sandra', 'Davi', 'Raquel', 'Henrique', 'Sabrina', 'João', 'Lívia', 'Igor', 'Bianca', 'Otávio', 'Elaine', 'Diego', 'Rebeca', 'Arthur', 'Talita', 'Murilo', 'Ester', 'Fábio', 'Lorena']
+const LAST = ['Souza', 'Martins', 'Henrique', 'Mendes', 'Lima', 'Duarte', 'Alves', 'Nunes', 'Carvalho', 'Ramos', 'Rocha', 'Freitas', 'Oliveira', 'Vieira', 'Barros', 'Lopes', 'Pires', 'Gomes', 'Teixeira', 'Castro', 'Santos', 'Faria', 'Moreira', 'Moura', 'Cardoso', 'Cunha', 'Azevedo', 'Araújo', 'Pereira', 'Rezende', 'Dias', 'Borges', 'Silva', 'Campos', 'Batista', 'Monteiro', 'Melo', 'Prado', 'Queiroz', 'Tavares']
 
-const memberSeeds: MemberSeed[] = [
-  ['m-lucas', 'Lucas Andrade', 'admin', 4, [['tecnica', ['Iluminação']]]],
-  ['m-mariana', 'Mariana Costa', 'leader', 6, [['louvor', ['Ministro', 'Vocal']]]],
-  ['m-ana', 'Ana Ribeiro', 'volunteer', 4, [['louvor', ['Vocal']], ['recepcao', ['Acolhimento', 'Porta principal']]]],
-  ['m-gabriel', 'Gabriel Souza', 'volunteer', 6, [['louvor', ['Ministro', 'Violão']]]],
-  ['m-julia', 'Júlia Martins', 'volunteer', 5, [['louvor', ['Vocal']]]],
-  ['m-pedro', 'Pedro Henrique', 'volunteer', 6, [['louvor', ['Teclado']]]],
-  ['m-rafael', 'Rafael Lima', 'volunteer', 6, [['louvor', ['Guitarra']], ['tecnica', ['Mesa de som']]]],
-  ['m-thiago', 'Thiago Alves', 'volunteer', 6, [['louvor', ['Baixo']]]],
-  ['m-bruno', 'Bruno Carvalho', 'volunteer', 6, [['louvor', ['Bateria']]]],
-  ['m-larissa', 'Larissa Mendes', 'volunteer', 5, [['louvor', ['Vocal', 'Ministro']]]],
-  ['m-felipe', 'Felipe Rocha', 'volunteer', 6, [['louvor', ['Bateria', 'Violão']]]],
-  ['m-camila', 'Camila Duarte', 'volunteer', 6, [['louvor', ['Teclado', 'Vocal']]]],
-  ['m-matheus', 'Matheus Oliveira', 'volunteer', 6, [['louvor', ['Guitarra', 'Baixo']]]],
-  ['m-isabela', 'Isabela Freitas', 'volunteer', 5, [['louvor', ['Vocal']], ['kids', ['Auxiliar']]]],
-  ['m-leticia', 'Letícia Ramos', 'leader', 6, [['midia', ['Stories', 'Fotografia']]]],
-  ['m-vinicius', 'Vinícius Barros', 'volunteer', 6, [['midia', ['Fotografia']]]],
-  ['m-beatriz', 'Beatriz Nunes', 'volunteer', 6, [['midia', ['Stories']]]],
-  ['m-gustavo', 'Gustavo Pires', 'volunteer', 6, [['midia', ['Projeção', 'Transmissão']]]],
-  ['m-rodrigo', 'Rodrigo Teixeira', 'volunteer', 6, [['midia', ['Transmissão']]]],
-  ['m-carolina', 'Carolina Vieira', 'volunteer', 6, [['midia', ['Projeção']]]],
-  ['m-eduardo', 'Eduardo Santos', 'leader', 6, [['tecnica', ['Mesa de som']]]],
-  ['m-daniel', 'Daniel Moreira', 'volunteer', 6, [['tecnica', ['Mesa de som', 'Iluminação']]]],
-  ['m-leonardo', 'Leonardo Cardoso', 'volunteer', 6, [['tecnica', ['Iluminação']]]],
-  ['m-patricia', 'Patrícia Gomes', 'leader', 6, [['recepcao', ['Acolhimento']]]],
-  ['m-fernanda', 'Fernanda Lopes', 'volunteer', 6, [['recepcao', ['Porta principal']]]],
-  ['m-ricardo', 'Ricardo Azevedo', 'volunteer', 6, [['recepcao', ['Estacionamento', 'Porta principal']]]],
-  ['m-sandra', 'Sandra Melo', 'volunteer', 6, [['recepcao', ['Acolhimento']], ['intercessao', ['Intercessor']]]],
-  ['m-marcos', 'Marcos Pereira', 'volunteer', 6, [['recepcao', ['Estacionamento']]]],
-  ['m-juliana', 'Juliana Castro', 'volunteer', 6, [['recepcao', ['Porta principal', 'Acolhimento']]]],
-  ['m-paulo', 'Paulo Henrique Dias', 'volunteer', 6, [['recepcao', ['Estacionamento']]]],
-  ['m-renata', 'Renata Faria', 'volunteer', 6, [['recepcao', ['Porta principal']]]],
-  ['m-aline', 'Aline Moura', 'leader', 6, [['kids', ['Professor']]]],
-  ['m-debora', 'Débora Cunha', 'volunteer', 6, [['kids', ['Professor']]]],
-  ['m-priscila', 'Priscila Araújo', 'volunteer', 6, [['kids', ['Auxiliar']]]],
-  ['m-tatiane', 'Tatiane Rezende', 'volunteer', 6, [['kids', ['Auxiliar', 'Check-in Kids']]]],
-  ['m-natalia', 'Natália Borges', 'volunteer', 6, [['kids', ['Professor', 'Auxiliar']]]],
-  ['m-vanessa', 'Vanessa Campos', 'volunteer', 6, [['kids', ['Check-in Kids', 'Auxiliar']]]],
-  ['m-helena', 'Helena Batista', 'leader', 8, [['intercessao', ['Intercessor']]]],
-  ['m-marcia', 'Márcia Andrade', 'volunteer', 8, [['intercessao', ['Intercessor']]]],
-  ['m-roberto', 'Roberto Silva', 'volunteer', 6, [['intercessao', ['Intercessor']]]],
-  ['m-claudia', 'Cláudia Monteiro', 'volunteer', 6, [['intercessao', ['Intercessor']]]],
-]
+function buildPeople() {
+  const members: Member[] = [
+    { id: 'm-lucas', name: 'Lucas Andrade', access: 'admin', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: ['Transmissão'] }] },
+    { id: 'm-mariana', name: 'Mariana Costa', access: 'leader', maxPerMonth: 6, phone: '', ministries: [{ ministryId: 'louvor', roles: ['Ministro', 'Vocal'] }] },
+    { id: 'm-ana', name: 'Ana Ribeiro', access: 'volunteer', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'louvor', roles: ['Vocal'] }, { ministryId: 'diaconato', roles: ['Acolhimento'] }] },
+  ]
+  const used = new Set(members.map((m) => m.name))
+  let n = 0
+  // FIRST alterna nomes masculinos (índice par) e femininos (ímpar)
+  const nextName = (female = false) => {
+    for (;;) {
+      const i = n++
+      if (female && i % FIRST.length % 2 === 0) continue
+      const name = `${FIRST[i % FIRST.length]} ${LAST[(i * 7 + Math.floor(i / FIRST.length)) % LAST.length]}`
+      if (!used.has(name)) { used.add(name); return name }
+    }
+  }
+  const leaders: Record<string, string[]> = { louvor: ['m-mariana'] }
+  let idx = 0
+  for (const ms of ministrySeeds) {
+    for (const role of ms.roles) {
+      // a Mariana e a Ana já ocupam vagas no Louvor
+      let people = role.people
+      if (ms.id === 'louvor' && role.name === 'Ministro') people -= 1
+      if (ms.id === 'louvor' && role.name === 'Vocal') people -= 2
+      for (let i = 0; i < people; i++) {
+        const name = nextName(ms.id === 'shine')
+        const m: Member = {
+          id: `m-${++idx}`, name, maxPerMonth: idx % 5 === 0 ? 3 : 6, phone: '',
+          access: 'volunteer', ministries: [{ ministryId: ms.id, roles: [role.name] }],
+        }
+        if (!leaders[ms.id]) { leaders[ms.id] = [m.id]; m.access = 'leader' }
+        members.push(m)
+      }
+    }
+  }
+  // alguns voluntários servem em dois ministérios (para o alerta de conflito aparecer)
+  const cross: [string, string, string][] = [['follow', 'legacy', 'Mídia'], ['diaconato', 'geracoes', 'Recepção'], ['louvor', 'legacy', 'Recepção'], ['kids', 'link', 'Auxiliar']]
+  for (const [from, to, role] of cross) {
+    members.filter((m) => m.ministries[0]?.ministryId === from && m.access === 'volunteer').slice(0, 2)
+      .forEach((m) => m.ministries.push({ ministryId: to, roles: [role] }))
+  }
+  members.forEach((m, i) => {
+    m.phone = `(16) 9${String(8100 + i * 37).padStart(4, '0')}-${String(1000 + i * 211).slice(-4)}`
+  })
+  const ministries: Ministry[] = ministrySeeds.map((ms) => ({
+    ...ms, leaderIds: leaders[ms.id] ?? [], roles: ms.roles.map(({ name, count }) => ({ name, count })),
+  }))
+  return { members, ministries }
+}
 
-export const members: Member[] = memberSeeds.map(([id, name, access, maxPerMonth, ms], i) => ({
-  id, name, access, maxPerMonth,
-  phone: `(16) 9${String(9100 + i * 37).padStart(4, '0')}-${String(1000 + i * 211).slice(-4)}`,
-  ministries: ms.map(([ministryId, roles]) => ({ ministryId, roles })),
-}))
+export const { members, ministries } = buildPeople()
 
 /** Membros sugeridos na tela de entrada (modo demonstração) */
 export const demoProfiles = [
-  { id: 'm-ana', label: 'Voluntária', hint: 'Louvor e Recepção' },
+  { id: 'm-ana', label: 'Voluntária', hint: 'Louvor e Diaconato' },
   { id: 'm-mariana', label: 'Líder', hint: 'Ministério de Louvor' },
   { id: 'm-lucas', label: 'Coordenação', hint: 'Acesso a todos os ministérios' },
 ]
@@ -128,55 +189,78 @@ function rng(seed: number) {
   }
 }
 
+/** Próxima data (a partir de `from`) que cai no dia da semana `dow` (0 = domingo) */
+function nextDow(from: Date, dow: number) {
+  const d = new Date(from)
+  while (d.getDay() !== dow) d.setDate(d.getDate() + 1)
+  return d
+}
+
 export function createSeed(): AppData {
   const rand = rng(42)
   const today = fromISO(todayISO())
   const events: ChurchEvent[] = []
-  const all = ministries.map((m) => m.id)
-  const midweek = ['louvor', 'midia', 'tecnica', 'recepcao', 'intercessao']
-  let li = 0
+  const ev = (title: string, d: Date, time: string, ministryIds: string[]) => {
+    const iso = toISO(d)
+    events.push({ id: `e-${iso}-${time.replace(':', '')}-${ministryIds[0]}`, title, date: iso, time, ministryIds, setlist: [] })
+  }
+
+  // Agenda semanal de exemplo (ajuste com os horários reais da igreja)
+  const midweek = ['louvor', 'follow', 'diaconato', 'intercessao', 'consolidacao']
+  const sunday = [...midweek, 'kids']
   for (let i = -14; i <= 49; i++) {
     const d = addDays(today, i)
-    const iso = toISO(d)
-    const dow = d.getDay()
-    if (dow === 3) events.push({ id: `e-${iso}-20`, title: 'Culto de Quarta', date: iso, time: '20:00', ministryIds: midweek, setlist: [] })
-    if (dow === 0) {
-      events.push({ id: `e-${iso}-10`, title: 'Culto da Família', date: iso, time: '10:00', ministryIds: all, setlist: [] })
-      events.push({ id: `e-${iso}-18`, title: 'Culto de Celebração', date: iso, time: '18:00', ministryIds: all, setlist: [] })
+    switch (d.getDay()) {
+      case 0:
+        ev('Culto da Família', d, '10:00', sunday)
+        ev('Culto de Celebração', d, '18:00', [...sunday, 'dna'])
+        break
+      case 2: ev('Carisma', d, '20:00', ['carisma']); break
+      case 3: ev('Culto de Quarta', d, '20:00', midweek); break
+      case 6:
+        ev('Link', d, '15:00', ['link'])
+        ev('Rocket', d, '17:00', ['rocket'])
+        ev('Culto Legacy', d, '19:30', ['legacy', 'follow'])
+        break
     }
   }
-  // repertório nos próximos cultos
-  for (const ev of events.filter((e) => e.date >= todayISO()).slice(0, 4)) {
-    ev.setlist = setlists[li++ % setlists.length].map((s) => ({ ...s, id: `${s.id}-${ev.id}` }))
+  // Eventos mensais de exemplo
+  ev('Ação Social We Care', nextDow(addDays(today, 3), 6), '09:00', ['wecare'])
+  ev('Encontro Shine', nextDow(addDays(today, 7), 5), '20:00', ['shine'])
+  ev('Encontro CRIE', nextDow(addDays(today, 10), 4), '20:00', ['crie'])
+  ev('Encontro Gerações', nextDow(addDays(today, 16), 6), '16:00', ['geracoes'])
+  ev('Encontro Shine', nextDow(addDays(today, -20), 5), '20:00', ['shine'])
+
+  // repertório nos próximos cultos com Louvor
+  let li = 0
+  for (const e of events.filter((e) => e.date >= todayISO() && e.ministryIds.includes('louvor')).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 4)) {
+    e.setlist = setlists[li++ % setlists.length].map((s) => ({ ...s, id: `${s.id}-${e.id}` }))
   }
 
   const data: AppData = {
     version: DATA_VERSION,
     ministries,
     members,
-    events,
+    events: [],
     assignments: [],
     unavailability: {},
     swaps: [],
     notices: [],
   }
+  data.events = events.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
 
   // algumas indisponibilidades futuras
+  const future = data.events.filter((e) => e.date > todayISO())
   for (const m of members) {
-    if (rand() < 0.35) {
-      const future = events.filter((e) => e.date > todayISO())
-      const ev = future[Math.floor(rand() * future.length)]
-      data.unavailability[m.id] = [ev.date]
-    }
+    if (rand() < 0.3) data.unavailability[m.id] = [future[Math.floor(rand() * future.length)].date]
   }
 
   // escalas geradas automaticamente: passado (até hoje) + próximas 2 semanas
   const horizon = toISO(addDays(today, 14))
-  for (const ev of events.filter((e) => e.date <= horizon)) {
-    for (const mid of ev.ministryIds) {
-      const past = ev.date < todayISO()
-      const created = autoFill(data, ev.id, mid, past ? 'confirmed' : 'pending')
-      for (const a of created) {
+  for (const e of data.events.filter((e) => e.date <= horizon)) {
+    for (const mid of e.ministryIds) {
+      const past = e.date < todayISO()
+      for (const a of autoFill(data, e.id, mid, past ? 'confirmed' : 'pending')) {
         if (past) {
           a.checkedIn = rand() < 0.85
           if (a.checkedIn && rand() < 0.4) a.feedback = { rating: rand() < 0.7 ? 5 : 4, comment: '' }
@@ -188,54 +272,62 @@ export function createSeed(): AppData {
     }
   }
 
+  const evById = new Map(data.events.map((e) => [e.id, e]))
+
   // Ana (perfil de demonstração): confirmada em quase tudo, com uma escala pendente
-  // logo à frente para mostrar a confirmação (e check-in, se servir hoje)
   const anaNext = data.assignments
     .filter((a) => a.memberId === 'm-ana')
-    .map((a) => ({ a, ev: events.find((e) => e.id === a.eventId)! }))
-    .filter((x) => x.ev.date >= todayISO())
-    .sort((x, y) => x.ev.date.localeCompare(y.ev.date))
+    .map((a) => ({ a, e: evById.get(a.eventId)! }))
+    .filter((x) => x.e.date >= todayISO())
+    .sort((x, y) => x.e.date.localeCompare(y.e.date))
   anaNext.forEach((x) => (x.a.status = 'confirmed'))
-  const firstLater = anaNext.find((x) => x.ev.date > todayISO())
+  const firstLater = anaNext.find((x) => x.e.date > todayISO())
   if (firstLater) firstLater.a.status = 'pending'
 
-  // pedidos de troca abertos
+  // pedidos de troca abertos (de colegas com a mesma função da Ana, para ela poder assumir)
   const now = new Date()
-  const openSwapFor = (memberId: string, reason: string, hoursAgo: number) => {
-    const a = data.assignments
-      .filter((x) => x.memberId === memberId && x.status !== 'declined')
-      .find((x) => (events.find((e) => e.id === x.eventId)?.date ?? '') > todayISO())
+  const openSwap = (ministryId: string, role: string, reason: string, hoursAgo: number) => {
+    const a = data.assignments.find((x) =>
+      x.ministryId === ministryId && x.role === role && x.memberId !== 'm-ana' && x.memberId !== 'm-mariana' &&
+      x.status !== 'declined' && (evById.get(x.eventId)?.date ?? '') > todayISO() &&
+      !data.swaps.some((s) => s.fromMemberId === x.memberId))
     if (a) {
       data.swaps.push({
-        id: `sw-${memberId}`, assignmentId: a.id, fromMemberId: memberId, reason,
+        id: `sw-${a.id}`, assignmentId: a.id, fromMemberId: a.memberId, reason,
         createdAt: new Date(now.getTime() - hoursAgo * 3600_000).toISOString(), status: 'open',
       })
     }
   }
-  openSwapFor('m-julia', 'Vou viajar com a família nesse fim de semana 🙏', 5)
-  openSwapFor('m-fernanda', 'Plantão no trabalho, não consigo chegar a tempo.', 26)
-  openSwapFor('m-thiago', 'Prova na faculdade no dia seguinte.', 50)
+  openSwap('louvor', 'Vocal', 'Vou viajar com a família nesse fim de semana 🙏', 5)
+  openSwap('diaconato', 'Acolhimento', 'Plantão no trabalho, não consigo chegar a tempo.', 26)
+  openSwap('louvor', 'Bateria', 'Prova na faculdade no dia seguinte.', 50)
 
+  const leaderOf = (id: string) => ministries.find((m) => m.id === id)?.leaderIds[0] ?? 'm-lucas'
   data.notices = [
     {
       id: 'n1', ministryId: null, authorId: 'm-lucas', title: 'Bem-vindos ao Serve! 🧡',
-      body: 'A partir de agora todas as escalas dos ministérios da Lagoinha Franca ficam aqui. Confirme sua presença e marque suas indisponibilidades com antecedência.',
+      body: 'A partir de agora as escalas dos ministérios da Lagoinha Franca ficam aqui. Confirme sua presença e marque suas indisponibilidades com antecedência.',
       createdAt: new Date(now.getTime() - 3 * 3600_000).toISOString(),
     },
     {
       id: 'n2', ministryId: 'louvor', authorId: 'm-mariana', title: 'Ensaio geral no sábado',
-      body: 'Sábado às 15h no templo. Repertório já está no app, estudem os tons!',
+      body: 'Sábado às 14h no templo. O repertório já está no app, estudem os tons!',
       createdAt: new Date(now.getTime() - 20 * 3600_000).toISOString(),
     },
     {
-      id: 'n3', ministryId: 'kids', authorId: 'm-aline', title: 'Material da aula de domingo',
-      body: 'A lição deste mês é sobre Davi. Material na sala Kids, armário 2.',
+      id: 'n3', ministryId: 'diaconato', authorId: leaderOf('diaconato'), title: 'Chegada 40 minutos antes',
+      body: 'Equipe do Diaconato: chegada 40 min antes do culto para a oração e alinhamento. Usem o crachá.',
+      createdAt: new Date(now.getTime() - 30 * 3600_000).toISOString(),
+    },
+    {
+      id: 'n4', ministryId: 'kids', authorId: leaderOf('kids'), title: 'Material da aula de domingo',
+      body: 'A lição deste mês é sobre Davi. Material na sala KIDS, armário 2.',
       createdAt: new Date(now.getTime() - 48 * 3600_000).toISOString(),
     },
     {
-      id: 'n4', ministryId: 'recepcao', authorId: 'm-patricia', title: 'Novo uniforme',
-      body: 'Usem a camiseta laranja da Recepção a partir deste domingo. Chegada 40 min antes do culto.',
-      createdAt: new Date(now.getTime() - 72 * 3600_000).toISOString(),
+      id: 'n5', ministryId: 'follow', authorId: leaderOf('follow'), title: 'Cobertura do Culto Legacy',
+      body: 'Sábado temos Culto Legacy: precisamos de fotos e stories. Confiram se estão escalados.',
+      createdAt: new Date(now.getTime() - 60 * 3600_000).toISOString(),
     },
   ]
 

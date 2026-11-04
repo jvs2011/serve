@@ -1,16 +1,28 @@
 import { useEffect, type ReactNode } from 'react'
-import { Baby, Camera, ChevronLeft, DoorOpen, Heart, Music, SlidersHorizontal, Users, X } from 'lucide-react'
+import {
+  Baby, BookOpen, Briefcase, ChevronLeft, Flame, Footprints, HandHelping, Heart, HeartHandshake, House,
+  Link2, Megaphone, Music, Rocket, Sparkles, UserPlus, Users, X,
+} from 'lucide-react'
 import type { AssignmentStatus, Ministry } from '../data/types'
 
 export function MinistryIcon({ ministry, size = 18 }: { ministry: Ministry; size?: number }) {
   const props = { size, strokeWidth: 2.2 }
   switch (ministry.icon) {
     case 'music': return <Music {...props} />
-    case 'camera': return <Camera {...props} />
-    case 'sliders': return <SlidersHorizontal {...props} />
-    case 'door': return <DoorOpen {...props} />
+    case 'megaphone': return <Megaphone {...props} />
+    case 'hand': return <HandHelping {...props} />
     case 'baby': return <Baby {...props} />
     case 'heart': return <Heart {...props} />
+    case 'userplus': return <UserPlus {...props} />
+    case 'footprints': return <Footprints {...props} />
+    case 'flame': return <Flame {...props} />
+    case 'rocket': return <Rocket {...props} />
+    case 'link': return <Link2 {...props} />
+    case 'sparkles': return <Sparkles {...props} />
+    case 'house': return <House {...props} />
+    case 'briefcase': return <Briefcase {...props} />
+    case 'handheart': return <HeartHandshake {...props} />
+    case 'book': return <BookOpen {...props} />
     default: return <Users {...props} />
   }
 }
