@@ -113,7 +113,7 @@ export function Home() {
                   <DateBlock iso={x.ev.date} />
                   <div className="grow">
                     <strong>{x.ev.title}</strong>
-                    <span className="muted">{x.ev.time} · {x.ministry.name} · {x.a.role}</span>
+                    <span className="muted">{timeRange(x.ev)} · {x.ministry.name} · {x.a.role}</span>
                   </div>
                 </div>
                 <AssignmentActions item={x} compact />
@@ -159,7 +159,7 @@ export function Home() {
                 <DateBlock iso={x.ev.date} />
                 <div className="grow">
                   <strong>{x.ev.title}</strong>
-                  <span className="muted">{x.ev.time} · {x.ministry.name} · {x.a.role}</span>
+                  <span className="muted">{timeRange(x.ev)} · {x.ministry.name} · {x.a.role}</span>
                 </div>
                 <StatusPill status={x.a.status} />
               </button>

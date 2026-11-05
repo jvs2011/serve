@@ -83,9 +83,10 @@ export function Agenda() {
                       <div>
                         <strong>{ev.title}</strong>
                         <span className="muted">{timeRange(ev)}{ev.place && ` · ${ev.place}`}</span>
+                        {ev.activity && ev.ministryIds.length > 0 && <span className="muted small">{ev.activity}</span>}
                         {ev.responsible && <span className="muted small">Responsável: {ev.responsible}</span>}
                       </div>
-                      {myA && <span className="pill pill-me">Você · {myA.role}</span>}
+                      {myA ? <span className="pill pill-me">Você · {myA.role}</span> : ev.special && <span className="pill pill-special">Especial</span>}
                     </div>
                     {total > 0 ? (
                       <>

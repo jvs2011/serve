@@ -94,7 +94,11 @@ export function monthMatrix(year: number, month: number): (string | null)[][] {
   return rows
 }
 
-/** "19:30–21:00" ou só "20:00" */
-export function timeRange(ev: { time: string; endTime?: string }): string {
+/** "19:30–21:00", "20:00", "Dia todo", "Horário a definir" ou "20/11 a 22/11" */
+export function timeRange(ev: { date?: string; time: string; endTime?: string; endDate?: string; allDay?: boolean }): string {
+  const ddmm = (iso: string) => iso.slice(8, 10) + '/' + iso.slice(5, 7)
+  if (ev.endDate && ev.date) return `${ddmm(ev.date)} a ${ddmm(ev.endDate)}`
+  if (ev.allDay) return 'Dia todo'
+  if (!ev.time) return 'Horário a definir'
   return ev.endTime ? `${ev.time}–${ev.endTime}` : ev.time
 }

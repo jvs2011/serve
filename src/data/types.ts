@@ -42,8 +42,11 @@ export interface ChurchEvent {
   id: string
   title: string
   date: string // YYYY-MM-DD
-  time: string // HH:mm
+  time: string // HH:mm ('' = horário a definir)
   endTime?: string // HH:mm
+  endDate?: string // YYYY-MM-DD, para eventos de vários dias
+  allDay?: boolean
+  special?: boolean // evento especial (fora da agenda fixa)
   place?: string // ex.: "Templo", "Garagem"
   activity?: string // ex.: "Curso", "GC", "Ensaio"
   responsible?: string // ex.: "Pr. Alexandre"

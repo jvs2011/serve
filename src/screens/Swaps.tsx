@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Repeat } from 'lucide-react'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
-import { relativeDay, timeAgo } from '../lib/dates'
+import { relativeDay, timeAgo, timeRange } from '../lib/dates'
 import { firstName, memberById, swapsICanCover } from '../lib/selectors'
 import { availabilityFor } from '../lib/schedule'
 import { Avatar, Empty, MinistryBadge, Sheet, TopBar } from '../components/ui'
@@ -48,7 +48,7 @@ export function Swaps() {
                     <MinistryBadge ministry={ministry} size={32} />
                     <div className="grow">
                       <strong>{ev.title}</strong>
-                      <span className="muted small">{relativeDay(ev.date)} · {ev.time} · {ministry.name} · {a.role}</span>
+                      <span className="muted small">{relativeDay(ev.date)} · {timeRange(ev)} · {ministry.name} · {a.role}</span>
                     </div>
                   </button>
                   {blocked ? (
@@ -77,7 +77,7 @@ export function Swaps() {
                   <MinistryBadge ministry={ministry} size={32} />
                   <div className="grow">
                     <strong>{ev.title}</strong>
-                    <span className="muted small">{relativeDay(ev.date)} · {ev.time} · {a.role}</span>
+                    <span className="muted small">{relativeDay(ev.date)} · {timeRange(ev)} · {a.role}</span>
                   </div>
                   {s.status === 'open' ? <span className="pill pill-pending">Aguardando</span> : <span className="pill pill-confirmed">Resolvido</span>}
                 </button>
@@ -95,7 +95,7 @@ export function Swaps() {
         {confirming && (
           <>
             <p>
-              Você vai servir no <b>{confirming.ev.title}</b> ({relativeDay(confirming.ev.date).toLowerCase()}, {confirming.ev.time}) como <b>{confirming.a.role}</b> no lugar de {firstName(memberById(data, confirming.s.fromMemberId)?.name ?? '')}.
+              Você vai servir no <b>{confirming.ev.title}</b> ({relativeDay(confirming.ev.date).toLowerCase()}, {timeRange(confirming.ev)}) como <b>{confirming.a.role}</b> no lugar de {firstName(memberById(data, confirming.s.fromMemberId)?.name ?? '')}.
             </p>
             <button className="btn btn-primary btn-block" onClick={() => {
               actions.acceptSwap(confirming.s.id)

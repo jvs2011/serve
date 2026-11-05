@@ -177,6 +177,7 @@ button.card:active, .assign-row:active { transform: scale(.99); }
 .pill-confirmed { background: var(--ok-soft); color: var(--ok); }
 .pill-declined { background: var(--bad-soft); color: var(--bad); }
 .pill-checkin { background: var(--info-soft); color: var(--info); }
+.pill-special { background: var(--info-soft); color: var(--info); }
 .pill-me { background: var(--accent-soft); color: var(--accent-strong); }
 .min-badge { display: inline-grid; place-items: center; border-radius: 30%; flex-shrink: 0; }
 .min-badge.general { width: 28px; height: 28px; background: var(--surface-2); color: var(--ink-2); }
