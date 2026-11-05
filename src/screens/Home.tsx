@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { BarChart3, Bell, CalendarCheck, ChevronRight, Clock, Megaphone, RotateCcw, Star } from 'lucide-react'
 import { demoExpiresAt, useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
-import { greeting, relativeDay, timeAgo, todayISO, addDays, toISO } from '../lib/dates'
+import { greeting, relativeDay, timeAgo, timeRange, todayISO, addDays, toISO } from '../lib/dates'
 import { firstName, join, managedMinistries, memberById, myMinistries, myUpcoming, swapsICanCover } from '../lib/selectors'
 import { openSlots } from '../lib/schedule'
 import { AssignmentActions } from '../components/AssignmentActions'
@@ -75,7 +75,7 @@ export function Home() {
             <DateBlock iso={next.ev.date} dark />
             <div>
               <h2>{next.ev.title}</h2>
-              <p><Clock size={14} /> {next.ev.time} · {next.ministry.name} · <b>{next.a.role}</b></p>
+              <p><Clock size={14} /> {timeRange(next.ev)}{next.ev.place && ` · ${next.ev.place}`} · {next.ministry.name} · <b>{next.a.role}</b></p>
             </div>
           </div>
           <div onClick={(e) => e.stopPropagation()}>

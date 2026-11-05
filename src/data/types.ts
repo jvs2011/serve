@@ -43,7 +43,11 @@ export interface ChurchEvent {
   title: string
   date: string // YYYY-MM-DD
   time: string // HH:mm
-  ministryIds: string[] // ministérios que servem neste evento
+  endTime?: string // HH:mm
+  place?: string // ex.: "Templo", "Garagem"
+  activity?: string // ex.: "Curso", "GC", "Ensaio"
+  responsible?: string // ex.: "Pr. Alexandre"
+  ministryIds: string[] // ministérios que servem neste evento (pode ser vazio)
   setlist: Song[] // repertório (Louvor)
 }
 

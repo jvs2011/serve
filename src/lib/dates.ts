@@ -93,3 +93,8 @@ export function monthMatrix(year: number, month: number): (string | null)[][] {
   for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7))
   return rows
 }
+
+/** "19:30–21:00" ou só "20:00" */
+export function timeRange(ev: { time: string; endTime?: string }): string {
+  return ev.endTime ? `${ev.time}–${ev.endTime}` : ev.time
+}

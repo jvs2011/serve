@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { CalendarX2, Plus } from 'lucide-react'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
-import { longDate, relativeDay, todayISO } from '../lib/dates'
+import { longDate, relativeDay, timeRange, todayISO } from '../lib/dates'
 import { myUpcoming } from '../lib/selectors'
 import { sortEvents } from '../lib/schedule'
 import { DateBlock, Empty, MinistryBadge, Sheet, StatusPill, TopBar } from '../components/ui'
@@ -60,7 +60,7 @@ export function Agenda() {
               <button key={x.a.id} className="card assign-row" onClick={() => push({ name: 'event', id: x.ev.id })}>
                 <DateBlock iso={x.ev.date} />
                 <div className="grow">
-                  <span className="kicker">{relativeDay(x.ev.date)} · {x.ev.time}</span>
+                  <span className="kicker">{relativeDay(x.ev.date)} · {timeRange(x.ev)}</span>
                   <strong>{x.ev.title}</strong>
                   <span className="muted">{x.ministry.name} · {x.a.role}</span>
                 </div>
@@ -82,20 +82,27 @@ export function Agenda() {
                     <div className="event-card-top">
                       <div>
                         <strong>{ev.title}</strong>
-                        <span className="muted">{ev.time}</span>
+                        <span className="muted">{timeRange(ev)}{ev.place && ` · ${ev.place}`}</span>
+                        {ev.responsible && <span className="muted small">Responsável: {ev.responsible}</span>}
                       </div>
                       {myA && <span className="pill pill-me">Você · {myA.role}</span>}
                     </div>
-                    <div className="mini-badges">
-                      {ev.ministryIds.map((id) => {
-                        const m = data.ministries.find((x) => x.id === id)
-                        return m ? <MinistryBadge key={id} ministry={m} size={26} /> : null
-                      })}
-                    </div>
-                    <div className="progress-row">
-                      <div className="progress"><div style={{ width: `${total ? (filled / total) * 100 : 0}%` }} /></div>
-                      <span className="small muted">{filled}/{total} vagas</span>
-                    </div>
+                    {total > 0 ? (
+                      <>
+                        <div className="mini-badges">
+                          {ev.ministryIds.map((id) => {
+                            const m = data.ministries.find((x) => x.id === id)
+                            return m ? <MinistryBadge key={id} ministry={m} size={26} /> : null
+                          })}
+                        </div>
+                        <div className="progress-row">
+                          <div className="progress"><div style={{ width: `${(filled / total) * 100}%` }} /></div>
+                          <span className="small muted">{filled}/{total} vagas</span>
+                        </div>
+                      </>
+                    ) : (
+                      <span className="small muted">{ev.activity ? `${ev.activity} · ` : ''}sem escala de voluntários</span>
+                    )}
                   </button>
                 )
               })}

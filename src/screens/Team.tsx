@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ChevronRight, Megaphone, Sparkles, Trophy } from 'lucide-react'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
-import { addDays, relativeDay, timeAgo, toISO, todayISO } from '../lib/dates'
+import { addDays, relativeDay, timeAgo, timeRange, toISO, todayISO } from '../lib/dates'
 import { memberById, ministryMembers, myMinistries } from '../lib/selectors'
 import { canManage, levelFor, pointsFor, sortEvents } from '../lib/schedule'
 import { Avatar, Empty, MinistryBadge, Section, Sheet, TopBar } from '../components/ui'
@@ -96,7 +96,7 @@ export function MinistryDetail({ id }: { id: string }) {
                   <div className="event-card-top">
                     <div>
                       <strong>{ev.title}</strong>
-                      <span className="muted">{relativeDay(ev.date)} · {ev.time}</span>
+                      <span className="muted">{relativeDay(ev.date)} · {timeRange(ev)}{ev.place && ` · ${ev.place}`}</span>
                     </div>
                     <span className={`pill ${filled === total ? 'pill-confirmed' : 'pill-pending'}`}>{filled}/{total}</span>
                   </div>

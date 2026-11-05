@@ -289,6 +289,7 @@ input:focus, textarea:focus { border-color: var(--accent); }
 .event-hero .topbar { padding-bottom: 4px; }
 .event-hero h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin-top: 4px; }
 .event-hero p { color: rgba(255,255,255,.7); margin: 4px 0 16px; }
+.event-hero .event-meta { margin-top: -12px; font-size: 14px; color: rgba(255,255,255,.85); }
 .event-hero p::first-letter, .day-title::first-letter { text-transform: uppercase; }
 .my-assignment { display: grid; gap: 14px; margin-bottom: 16px; border: 1.5px solid var(--accent); }
 .team { margin-bottom: 12px; display: grid; gap: 4px; }

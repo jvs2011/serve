@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { AlertTriangle, ExternalLink, Music2, Plus, Sparkles, Trash2, UserPlus, X } from 'lucide-react'
+import { AlertTriangle, ExternalLink, Music2, Plus, Sparkles, Trash2, UserPlus, Users, X } from 'lucide-react'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
-import { longDate, relativeDay } from '../lib/dates'
+import { longDate, relativeDay, timeRange } from '../lib/dates'
 import { firstName, join, memberById } from '../lib/selectors'
 import { canManage, isPast, openSlots, rankCandidates } from '../lib/schedule'
 import { AssignmentActions } from '../components/AssignmentActions'
@@ -31,13 +31,18 @@ export function EventDetail({ id }: { id: string }) {
     <div className="screen">
       <div className="event-hero">
         <TopBar title="" onBack={back} />
-        <span className="kicker light">{relativeDay(ev.date)} · {ev.time}</span>
+        <span className="kicker light">{relativeDay(ev.date)} · {timeRange(ev)}</span>
         <h1>{ev.title}</h1>
-        <p>{longDate(ev.date)} · Lagoinha Franca</p>
-        <div className="progress-row light">
-          <div className="progress"><div style={{ width: `${total ? (filled / total) * 100 : 0}%` }} /></div>
-          <span className="small">{filled}/{total} vagas preenchidas</span>
-        </div>
+        <p>{longDate(ev.date)} · {ev.place ?? 'Lagoinha Franca'}</p>
+        {(ev.responsible || ev.activity) && (
+          <p className="event-meta">{[ev.activity, ev.responsible && `Responsável: ${ev.responsible}`].filter(Boolean).join(' · ')}</p>
+        )}
+        {total > 0 && (
+          <div className="progress-row light">
+            <div className="progress"><div style={{ width: `${(filled / total) * 100}%` }} /></div>
+            <span className="small">{filled}/{total} vagas preenchidas</span>
+          </div>
+        )}
       </div>
 
       {mine.map((x) => (
@@ -61,7 +66,9 @@ export function EventDetail({ id }: { id: string }) {
         </div>
       )}
 
-      {tab === 'team' || !hasLouvor ? (
+      {ministries.length === 0 ? (
+        <div className="card"><Empty icon={<Users />} title="Sem escala de voluntários" text="Este encontro não tem equipes escaladas pelo Serve." /></div>
+      ) : tab === 'team' || !hasLouvor ? (
         ministries.map((m) => <MinistryTeam key={m.id} ev={ev} ministry={m} />)
       ) : (
         <Setlist ev={ev} />

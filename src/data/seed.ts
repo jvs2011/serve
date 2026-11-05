@@ -3,7 +3,7 @@ import { addDays, toISO, fromISO, todayISO } from '../lib/dates'
 import { autoFill } from '../lib/schedule'
 
 /** Versão do formato dos dados. Mude para forçar recriação dos dados de exemplo. */
-export const DATA_VERSION = 6
+export const DATA_VERSION = 7
 
 /*
  * Ministérios da Lagoinha Franca.
@@ -208,36 +208,63 @@ export function createSeed(): AppData {
   const rand = rng(42)
   const today = fromISO(todayISO())
   const events: ChurchEvent[] = []
-  const ev = (title: string, d: Date, time: string, ministryIds: string[]) => {
+  const slug = (s: string) => s.normalize('NFD').replace(/[^\w]+/g, '-').toLowerCase()
+  const ev = (d: Date, title: string, time: string, ministryIds: string[], extra: Partial<ChurchEvent> = {}) => {
     const iso = toISO(d)
-    events.push({ id: `e-${iso}-${time.replace(':', '')}-${ministryIds[0]}`, title, date: iso, time, ministryIds, setlist: [] })
+    events.push({ id: `e-${iso}-${time.replace(':', '')}-${slug(title)}`, title, date: iso, time, ministryIds, setlist: [], ...extra })
   }
 
-  // Agenda semanal de exemplo (ajuste com os horários reais da igreja)
-  const midweek = ['louvor', 'follow', 'diaconato', 'centurioes', 'intercessao', 'consolidacao']
-  const sunday = [...midweek, 'kids']
+  /*
+   * Agenda fixa da Lagoinha Franca
+   * Cultos no templo: domingos 09:30 e 18:30, quartas 20:00 (o tema muda conforme a semana do mês).
+   * Uso contínuo dos espaços: cursos, GCs, ensaios e cultos dos ministérios.
+   */
+  const templo = ['louvor', 'follow', 'diaconato', 'centurioes', 'intercessao', 'consolidacao']
+  const domingo = [...templo, 'kids']
+  const T = { place: 'Templo' }
+  // ano de referência para a sexta quinzenal do Louvor (semanas alternadas)
+  const fridayAnchor = nextDow(new Date(2026, 0, 1), 5).getTime()
   for (let i = -14; i <= 49; i++) {
     const d = addDays(today, i)
+    const nth = Math.ceil(d.getDate() / 7) // 1ª, 2ª… ocorrência do dia da semana no mês
     switch (d.getDay()) {
-      case 0:
-        ev('Culto da Família', d, '10:00', sunday)
-        ev('Culto de Celebração', d, '18:00', [...sunday, 'dna'])
+      case 0: // Domingo
+        ev(d, nth === 2 ? 'Culto de Ceia' : 'Culto de Celebração', '09:30', domingo, T)
+        ev(d, nth === 1 ? 'Culto de Ceia' : 'Culto de Celebração', '18:30', [...domingo, 'dna'], T)
         break
-      case 2: ev('Carisma', d, '20:00', ['carisma']); break
-      case 3: ev('Culto de Quarta', d, '20:00', midweek); break
-      case 6:
-        ev('Link', d, '15:00', ['link'])
-        ev('Rocket', d, '17:00', ['rocket'])
-        ev('Culto Legacy', d, '19:30', ['legacy', 'follow'])
+      case 1: // Segunda
+        ev(d, 'Carisma', '20:00', ['carisma'], { endTime: '21:30', place: 'Templo e sala "Carisma"', activity: 'Curso' })
+        ev(d, 'Restaurar Homem', '20:00', [], { endTime: '21:30', place: 'Sala "Na Mesa"', activity: 'Curso' })
+        break
+      case 2: // Terça
+        ev(d, 'Link', '19:30', ['link'], { endTime: '21:00', place: 'Garagem', activity: 'GC' })
+        break
+      case 3: { // Quarta
+        ev(d, 'Restaurar Mulher', '18:30', [], { endTime: '20:00', place: 'Sala "Na Mesa"', activity: 'Curso' })
+        const shineMonth = [3, 6, 8].includes(d.getMonth()) // abril, julho e setembro
+        if (nth === 1) ev(d, 'Culto Fé – Louvor e Clamor', '20:00', templo, T)
+        else if (nth === 2) ev(d, 'Culto Fé', '20:00', templo, T)
+        else if (nth === 3) ev(d, 'Culto Fé – Gerações', '20:00', [...templo, 'geracoes'], { ...T, responsible: 'Equipe Bem Casados' })
+        else if (nth === 4) ev(d, 'Culto Fé – Carisma', '20:00', [...templo, 'carisma'], { ...T, responsible: 'Pr. Alexandre' })
+        else if (shineMonth) ev(d, 'Culto Shine', '20:00', [...templo, 'shine'], { ...T, responsible: 'Ministério Shine' })
+        else ev(d, 'Culto Fé', '20:00', templo, T)
+        break
+      }
+      case 4: // Quinta
+        ev(d, 'Shine', '19:30', ['shine'], { endTime: '21:30', place: 'Sala "Na Mesa"', activity: 'Curso Experiência do Lar' })
+        break
+      case 5: // Sexta (quinzenal)
+        if (Math.round((d.getTime() - fridayAnchor) / 86_400_000 / 7) % 2 === 0) {
+          ev(d, 'Sala de Adoração', '20:00', ['louvor'], { endTime: '21:30', place: 'Garagem', activity: 'Louvor' })
+        }
+        break
+      case 6: // Sábado
+        ev(d, 'Ensaio DNA', '08:30', ['dna'], { endTime: '11:00', place: 'Templo', activity: 'Ensaio' })
+        ev(d, 'Culto Rocket', '19:00', ['rocket'], { endTime: '20:00', place: 'Templo', activity: 'Culto' })
+        ev(d, 'Culto Legacy', '19:30', ['legacy'], { endTime: '21:30', place: 'Prédio Kids', activity: 'Culto' })
         break
     }
   }
-  // Eventos mensais de exemplo
-  ev('Ação Social We Care', nextDow(addDays(today, 3), 6), '09:00', ['wecare'])
-  ev('Encontro Shine', nextDow(addDays(today, 7), 5), '20:00', ['shine'])
-  ev('Encontro CRIE', nextDow(addDays(today, 10), 4), '20:00', ['crie'])
-  ev('Encontro Gerações', nextDow(addDays(today, 16), 6), '16:00', ['geracoes'])
-  ev('Encontro Shine', nextDow(addDays(today, -20), 5), '20:00', ['shine'])
 
   // repertório nos próximos cultos com Louvor
   let li = 0
@@ -318,8 +345,8 @@ export function createSeed(): AppData {
       createdAt: new Date(now.getTime() - 3 * 3600_000).toISOString(),
     },
     {
-      id: 'n2', ministryId: 'louvor', authorId: 'm-mariana', title: 'Ensaio geral no sábado',
-      body: 'Sábado às 14h no templo. O repertório já está no app, estudem os tons!',
+      id: 'n2', ministryId: 'louvor', authorId: 'm-mariana', title: 'Repertório de domingo no app',
+      body: 'O repertório dos próximos cultos já está no app, estudem os tons! Sexta tem Sala de Adoração na Garagem às 20h.',
       createdAt: new Date(now.getTime() - 20 * 3600_000).toISOString(),
     },
     {
@@ -333,8 +360,8 @@ export function createSeed(): AppData {
       createdAt: new Date(now.getTime() - 48 * 3600_000).toISOString(),
     },
     {
-      id: 'n5', ministryId: 'follow', authorId: leaderOf('follow'), title: 'Cobertura do Culto Legacy',
-      body: 'Sábado temos Culto Legacy: precisamos de fotos e stories. Confiram se estão escalados.',
+      id: 'n5', ministryId: 'follow', authorId: leaderOf('follow'), title: 'Cobertura dos cultos de domingo',
+      body: 'Domingo tem Culto de Ceia: precisamos de fotos e stories nos dois horários. Confiram se estão escalados.',
       createdAt: new Date(now.getTime() - 60 * 3600_000).toISOString(),
     },
   ]
