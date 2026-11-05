@@ -268,16 +268,16 @@ export function createSeed(): AppData {
 
   /*
    * Eventos especiais (calendário de novembro e dezembro de 2026).
-   * Sem horário informado = "Horário a definir"; sem ministérios = sem escala de voluntários.
+   * Sem ministérios = sem escala de voluntários.
    */
   const at = (iso: string) => fromISO(iso)
   const S = { special: true }
   ev(at('2026-11-14'), 'Reunião Follow', '15:00', [], { ...S, place: 'Templo', activity: 'Reunião', responsible: 'Follow' })
   ev(at('2026-11-20'), 'Shine Day', '', ['shine'], { ...S, allDay: true, place: 'Chácara', activity: 'Feriado' })
   ev(at('2026-11-20'), 'Acampamento Link', '', ['link'], { ...S, endDate: '2026-11-22', activity: 'Acampamento (sexta a domingo)' })
-  ev(at('2026-11-21'), 'Formatura 2º semestre Bem Casados', '', ['kids'], { ...S, responsible: 'Equipe Bem Casados', activity: 'Com apoio do KIDS' })
-  ev(at('2026-11-25'), 'MAX GC', '', [], S)
-  ev(at('2026-12-18'), 'Reunião Líderes Ministérios', '', [], { ...S, activity: 'Reunião' })
+  ev(at('2026-11-21'), 'Formatura 2º semestre Bem Casados', '20:00', ['kids'], { ...S, responsible: 'Equipe Bem Casados', activity: 'Com apoio do KIDS' })
+  ev(at('2026-11-25'), 'MAX GC', '20:00', [], S)
+  ev(at('2026-12-18'), 'Reunião Líderes Ministérios', '20:00', [], { ...S, activity: 'Reunião' })
   // eventos especiais dentro dos cultos fixos
   for (const e of events) {
     if (e.date === '2026-12-13' && e.time === '09:30') Object.assign(e, { title: `${e.title} – Batismo`, special: true, activity: 'Batismo' })
