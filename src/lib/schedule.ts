@@ -1,5 +1,5 @@
-import type { AppData, Assignment, ChurchEvent, Member } from '../data/types'
-import { daysBetween, todayISO } from './dates'
+import type { AppData, Assignment, ChurchEvent, Member } from '../data/types.js'
+import { daysBetween, todayISO } from './dates.js'
 
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4)
 

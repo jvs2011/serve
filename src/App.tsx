@@ -12,6 +12,7 @@ import { EventDetail } from './screens/EventDetail'
 import { Availability } from './screens/Availability'
 import { History } from './screens/History'
 import { Dashboard } from './screens/Dashboard'
+import { People, PersonForm } from './screens/People'
 import { Logo } from './components/Logo'
 
 export default function App() {
@@ -29,10 +30,25 @@ export default function App() {
 }
 
 function Shell() {
-  const { me, toast } = useStore()
+  const { me, toast, mode, loading, loadError, reload, actions } = useStore()
+  let body
+  if (mode === 'live' && loading) {
+    body = (
+      <div className="loading-screen">
+        <Logo size={36} />
+        {loadError ? (
+          <>
+            <p className="muted">{loadError}</p>
+            <button className="btn btn-primary" onClick={reload}>Tentar de novo</button>
+            <button className="link" onClick={actions.logout}>Sair</button>
+          </>
+        ) : <div className="spinner" aria-label="Carregando" />}
+      </div>
+    )
+  } else body = me ? <NavProvider><Main /></NavProvider> : <Login />
   return (
     <>
-      {me ? <NavProvider><Main /></NavProvider> : <Login />}
+      {body}
       {toast && <div key={toast.id} className="toast" role="status">{toast.text}</div>}
     </>
   )
@@ -49,6 +65,8 @@ function Main() {
       case 'availability': screen = <Availability />; break
       case 'history': screen = <History />; break
       case 'dashboard': screen = <Dashboard />; break
+      case 'people': screen = <People />; break
+      case 'person': screen = <PersonForm key={top.id ?? 'new'} id={top.id} />; break
     }
   } else {
     screen = { home: <Home />, agenda: <Agenda />, swaps: <Swaps />, team: <Team />, profile: <Profile /> }[tab]

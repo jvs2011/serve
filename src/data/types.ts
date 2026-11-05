@@ -90,6 +90,8 @@ export interface AppData {
   version: number
   /** Momento (ms) da primeira alteração feita sobre os dados padrão da demonstração */
   modifiedAt?: number
+  /** Dados reais: até que data a agenda fixa já foi gerada (YYYY-MM-DD) */
+  generatedUntil?: string
   ministries: Ministry[]
   members: Member[]
   events: ChurchEvent[]

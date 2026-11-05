@@ -1,6 +1,6 @@
-import type { AppData, ChurchEvent, Member, Ministry, Song } from './types'
-import { addDays, toISO, fromISO, todayISO } from '../lib/dates'
-import { autoFill } from '../lib/schedule'
+import type { AppData, ChurchEvent, Member, Ministry, Song } from './types.js'
+import { addDays, toISO, fromISO, todayISO } from '../lib/dates.js'
+import { autoFill } from '../lib/schedule.js'
 
 /** Versão do formato dos dados. Mude para forçar recriação dos dados de exemplo. */
 export const DATA_VERSION = 8
@@ -204,9 +204,12 @@ function nextDow(from: Date, dow: number) {
   return d
 }
 
-export function createSeed(): AppData {
-  const rand = rng(42)
-  const today = fromISO(todayISO())
+/**
+ * Agenda da igreja entre duas datas (YYYY-MM-DD, inclusivas): cultos fixos, uso contínuo
+ * dos espaços e eventos especiais. Os ids são estáveis (data + horário + título), então
+ * gerar de novo o mesmo período não duplica eventos.
+ */
+export function buildAgenda(fromDate: string, toDate: string): ChurchEvent[] {
   const events: ChurchEvent[] = []
   const slug = (s: string) => s.normalize('NFD').replace(/[^\w]+/g, '-').toLowerCase()
   const ev = (d: Date, title: string, time: string, ministryIds: string[], extra: Partial<ChurchEvent> = {}) => {
@@ -224,8 +227,7 @@ export function createSeed(): AppData {
   const T = { place: 'Templo' }
   // ano de referência para a sexta quinzenal do Louvor (semanas alternadas)
   const fridayAnchor = nextDow(new Date(2026, 0, 1), 5).getTime()
-  for (let i = -14; i <= 49; i++) {
-    const d = addDays(today, i)
+  for (let d = fromISO(fromDate); toISO(d) <= toDate; d = addDays(d, 1)) {
     const nth = Math.ceil(d.getDate() / 7) // 1ª, 2ª… ocorrência do dia da semana no mês
     switch (d.getDay()) {
       case 0: // Domingo
@@ -284,6 +286,21 @@ export function createSeed(): AppData {
     if (e.date === '2026-12-20' && (e.time === '09:30' || e.time === '18:30')) Object.assign(e, { title: 'Culto de Ações de Graças', special: true })
   }
 
+  return events
+    .filter((e) => e.date >= fromDate && e.date <= toDate)
+    .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+}
+
+/** Ministérios da igreja, sem líderes (para começar os dados reais) */
+export function ministryList(): Ministry[] {
+  return ministrySeeds.map((ms) => ({ ...ms, leaderIds: [], roles: ms.roles.map(({ name, count }) => ({ name, count })) }))
+}
+
+export function createSeed(): AppData {
+  const rand = rng(42)
+  const today = fromISO(todayISO())
+  const events = buildAgenda(toISO(addDays(today, -14)), toISO(addDays(today, 49)))
+
   // repertório nos próximos cultos com Louvor
   let li = 0
   for (const e of events.filter((e) => e.date >= todayISO() && e.ministryIds.includes('louvor')).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 4)) {
@@ -300,7 +317,7 @@ export function createSeed(): AppData {
     swaps: [],
     notices: [],
   }
-  data.events = events.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+  data.events = events
 
   // algumas indisponibilidades futuras
   const future = data.events.filter((e) => e.date > todayISO())

@@ -10,11 +10,11 @@ import { Avatar, DateBlock, Empty, MinistryBadge, Section, StatusPill } from '..
 import { Logo } from '../components/Logo'
 
 export function Home() {
-  const { data, actions, notify } = useStore()
+  const { data, actions, notify, mode } = useStore()
   const me = useMe()
   const { push, setTab } = useNav()
   const upcoming = myUpcoming(data, me.id)
-  const exp = demoExpiresAt(data)
+  const exp = mode === 'demo' ? demoExpiresAt(data) : null
   const demoUntil = exp ? new Date(exp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : null
   const next = upcoming[0]
   const otherPending = upcoming.slice(1).filter((x) => x.a.status === 'pending')

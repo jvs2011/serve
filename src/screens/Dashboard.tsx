@@ -113,7 +113,7 @@ export function Dashboard() {
                   <strong>{p.name}</strong>
                   <span className="muted small">{last ? `Serviu pela última vez há ${daysBetween(last, today)} dias` : 'Ainda não serviu'} · sem escala futura</span>
                 </div>
-                <a className="link small" href={`https://wa.me/55${p.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">Chamar</a>
+                {p.phone && <a className="link small" href={`https://wa.me/55${p.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">Chamar</a>}
               </div>
             ))
           )}

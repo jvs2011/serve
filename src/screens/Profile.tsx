@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { BarChart3, CalendarOff, ChevronRight, History, LogOut, Minus, Plus, RotateCcw, Smartphone } from 'lucide-react'
+import { BarChart3, CalendarOff, ChevronRight, History, LogOut, Minus, Plus, RotateCcw, Smartphone, Users } from 'lucide-react'
+import { formatPhone } from '../lib/people'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
 import { levelFor, pointsFor } from '../lib/schedule'
@@ -10,7 +11,7 @@ import { Avatar, MinistryBadge, Sheet, TopBar } from '../components/ui'
 const ACCESS_LABEL = { admin: 'Coordenação geral', leader: 'Líder de ministério', volunteer: 'Voluntário' }
 
 export function Profile() {
-  const { data, actions, notify } = useStore()
+  const { data, actions, notify, mode } = useStore()
   const me = useMe()
   const { push } = useNav()
   const [installOpen, setInstallOpen] = useState(false)
@@ -27,7 +28,7 @@ export function Profile() {
       <div className="profile-head">
         <Avatar name={me.name} size={72} />
         <h2>{me.name}</h2>
-        <span className="muted">{ACCESS_LABEL[me.access]} · {me.phone}</span>
+        <span className="muted">{ACCESS_LABEL[me.access]}{me.phone && ` · ${formatPhone(me.phone)}`}{mode === 'demo' && ' · demonstração'}</span>
         <div className="chips center">
           {me.ministries.map((mm) => {
             const m = data.ministries.find((x) => x.id === mm.ministryId)
@@ -60,6 +61,13 @@ export function Profile() {
         <button className="menu-item" onClick={() => push({ name: 'history' })}>
           <History size={20} /><span className="grow">Histórico de serviço</span><ChevronRight size={18} className="muted" />
         </button>
+        {me.access === 'admin' && (
+          <button className="menu-item" onClick={() => push({ name: 'people' })}>
+            <Users size={20} /><span className="grow">Pessoas</span>
+            <span className="muted small">{data.members.length}</span>
+            <ChevronRight size={18} className="muted" />
+          </button>
+        )}
         {isLeader && (
           <button className="menu-item" onClick={() => push({ name: 'dashboard' })}>
             <BarChart3 size={20} /><span className="grow">Painel do líder</span><ChevronRight size={18} className="muted" />
@@ -82,11 +90,13 @@ export function Profile() {
         <button className="menu-item" onClick={() => setInstallOpen(true)}>
           <Smartphone size={20} /><span className="grow">Instalar na tela inicial</span><ChevronRight size={18} className="muted" />
         </button>
-        <button className="menu-item" onClick={() => { actions.resetDemo(); notify('Dados de demonstração restaurados') }}>
-          <RotateCcw size={20} /><span className="grow">Restaurar dados de demonstração</span>
-        </button>
+        {mode === 'demo' && (
+          <button className="menu-item" onClick={() => { actions.resetDemo(); notify('Dados de demonstração restaurados') }}>
+            <RotateCcw size={20} /><span className="grow">Restaurar dados de demonstração</span>
+          </button>
+        )}
         <button className="menu-item danger" onClick={actions.logout}>
-          <LogOut size={20} /><span className="grow">Sair</span>
+          <LogOut size={20} /><span className="grow">{mode === 'demo' ? 'Sair da demonstração' : 'Sair'}</span>
         </button>
       </div>
 

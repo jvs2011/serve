@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronRight, Megaphone, Sparkles, Trophy } from 'lucide-react'
+import { ChevronRight, Megaphone, Sparkles, Trophy, Users } from 'lucide-react'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
 import { addDays, relativeDay, timeAgo, timeRange, toISO, todayISO } from '../lib/dates'
@@ -29,7 +29,13 @@ export function Team() {
 
   return (
     <div className="screen">
-      <TopBar title="Ministérios" subtitle="Lagoinha Franca" />
+      <TopBar
+        title="Ministérios"
+        subtitle="Lagoinha Franca"
+        right={me.access === 'admin' && (
+          <button className="btn btn-soft btn-sm" onClick={() => push({ name: 'people' })}><Users size={15} /> Pessoas</button>
+        )}
+      />
       <Section title="Meus ministérios"><div className="list">{mine.map(card)}</div></Section>
       {others.length > 0 && <Section title="Outros ministérios"><div className="list">{others.map(card)}</div></Section>}
     </div>
@@ -134,7 +140,7 @@ export function MinistryDetail({ id }: { id: string }) {
                       <strong>{m.name}{ministry.leaderIds.includes(m.id) && <em className="best">líder</em>}</strong>
                       <span className="muted small">{roles.join(' · ')}</span>
                     </div>
-                    {manage && <a className="link small" href={`https://wa.me/55${m.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">WhatsApp</a>}
+                    {manage && m.phone && <a className="link small" href={`https://wa.me/55${m.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">WhatsApp</a>}
                   </div>
                 )
               })}

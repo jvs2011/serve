@@ -8,6 +8,8 @@ export type Route =
   | { name: 'availability' }
   | { name: 'dashboard' }
   | { name: 'history' }
+  | { name: 'people' }
+  | { name: 'person'; id?: string }
 
 interface Nav {
   tab: Tab
