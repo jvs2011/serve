@@ -257,7 +257,7 @@ export async function route(name: string, method: string, body: any, auth: strin
         const meId = await sessionMember(store, auth)
         if (!meId) return fail(401, 'Sua sessão expirou. Entre novamente.')
         if (name === 'push-test') {
-          const sent = await sendPush(store, [meId], { title: 'Serve 🔔', body: 'Tudo certo! Você vai receber os avisos das suas escalas aqui.', tag: 'teste' })
+          const sent = await sendPush(store, [meId], { title: 'Notificações ativadas 🔔', body: 'Tudo certo! Você vai receber aqui os avisos das suas escalas.', tag: 'teste' })
           return sent ? ok({ sent }) : fail(404, 'Nenhum aparelho com notificações ativas foi encontrado. Ative de novo e tente outra vez.')
         }
         if (name === 'push-unsubscribe') {
