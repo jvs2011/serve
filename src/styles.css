@@ -647,3 +647,33 @@ body:has(.signup) { background: transparent; }
 .slot-row .grow { display: grid; gap: 1px; }
 .slot-row .pill { min-width: 98px; justify-content: center; }
 .slots { margin-bottom: 4px; }
+
+/* ============ Artes (demandas com prazo) ============ */
+select { width: 100%; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 12px; padding: 12px 14px; font-size: 16px; outline: none; appearance: none; -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 20px) 52%, calc(100% - 14px) 52%; background-size: 6px 6px; background-repeat: no-repeat; padding-right: 36px; }
+select:focus { border-color: var(--accent); }
+.due { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+.due-ok { background: var(--surface-2); color: var(--ink-2); }
+.due-soon { background: var(--warn-soft); color: var(--warn); }
+.due-late { background: var(--bad-soft); color: var(--bad); }
+.task-card { display: grid; gap: 10px; }
+.task-card.mine { border-color: var(--accent); }
+.task-card.done { opacity: .8; }
+.task-top { display: flex; align-items: flex-start; gap: 10px; }
+.task-top strong { line-height: 1.3; }
+.task-details { font-size: 14px; color: var(--ink-2); white-space: pre-wrap; background: var(--surface-2); border-radius: 12px; padding: 10px 12px; }
+.task-who { display: flex; align-items: center; gap: 8px; }
+.task-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.task-actions .btn-sm:first-child { margin-right: auto; }
+.task-link { justify-self: start; }
+.confirm-inline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid var(--line); }
+.confirm-inline .small { margin-right: auto; }
+.done-toggle { display: block; margin: 16px auto 10px; }
+.arts-home { display: grid; gap: 4px; margin-top: 12px; padding-bottom: 8px; }
+.arts-home-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.arts-home-icon { width: 34px; height: 34px; border-radius: 10px; background: #7C6CF222; color: #7C6CF2; display: grid; place-items: center; }
+.arts-home-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 0; border-top: 1px solid var(--line); text-align: left; }
+.arts-home-row .grow { display: grid; gap: 4px; justify-items: start; }
+.arts-home-title { font-weight: 600; font-size: 14px; }
+.mb { margin-bottom: 12px; }

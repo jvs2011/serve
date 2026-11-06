@@ -102,3 +102,14 @@ export function timeRange(ev: { date?: string; time: string; endTime?: string; e
   if (!ev.time) return 'Horário a definir'
   return ev.endTime ? `${ev.time}–${ev.endTime}` : ev.time
 }
+
+/** Prazo de entrega: "Atrasada (era 12/11)", "Entrega hoje", "Entrega amanhã", "Até sex, 14/11 · em 3 dias" */
+export function dueLabel(iso: string): { text: string; level: 'late' | 'soon' | 'ok' } {
+  const diff = daysBetween(todayISO(), iso)
+  const d = fromISO(iso)
+  const ddmm = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+  if (diff < 0) return { text: `Atrasada · era ${ddmm}`, level: 'late' }
+  if (diff === 0) return { text: 'Entrega hoje', level: 'soon' }
+  if (diff === 1) return { text: 'Entrega amanhã', level: 'soon' }
+  return { text: `Até ${WEEKDAYS_SHORT[d.getDay()].toLowerCase()}, ${ddmm} · em ${diff} dias`, level: diff <= 3 ? 'soon' : 'ok' }
+}

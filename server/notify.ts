@@ -102,7 +102,50 @@ export function notificationsFor(before: AppData, after: AppData, actorId: strin
     })
   }
 
+  // 6) demandas (artes): nova ou com outro responsável → responsável; entregue → líderes
+  const prevTasks = new Map((before.tasks ?? []).map((t) => [t.id, t]))
+  for (const t of after.tasks ?? []) {
+    const p = prevTasks.get(t.id)
+    const m = min(t.ministryId)
+    if ((!p || p.assigneeId !== t.assigneeId) && t.status === 'open' && t.assigneeId !== actorId) {
+      out.push({
+        to: [t.assigneeId],
+        payload: { title: `Nova arte para você 🎨`, body: `${t.title}\n${dueText(t.dueDate, today)}. Toque para ver os detalhes.`, tag: `arte-${t.id}` },
+      })
+    }
+    if (p && p.status !== 'done' && t.status === 'done') {
+      out.push({
+        to: (m?.leaderIds ?? []).filter((id) => id !== actorId),
+        payload: { title: 'Arte entregue ✅', body: `${member(t.assigneeId)?.name ?? 'Alguém'} entregou: ${t.title}`, tag: `arte-${t.id}` },
+      })
+    }
+  }
+
   return out.filter((o) => o.to.length > 0)
+}
+
+function dueText(due: string, today: string): string {
+  const [y, m, d] = due.split('-').map(Number)
+  const diff = Math.round((new Date(y, m - 1, d).getTime() - new Date(today + 'T00:00:00').getTime()) / 86_400_000)
+  const ddmm = `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}`
+  return diff <= 0 ? `Entrega hoje (${ddmm})` : diff === 1 ? `Entrega amanhã (${ddmm})` : `Entrega até ${WD[new Date(y, m - 1, d).getDay()]}, ${ddmm}`
+}
+
+/** Lembrete na véspera do prazo das demandas em aberto */
+export function taskRemindersFor(data: AppData, tomorrow: string): Outgoing[] {
+  const by = new Map<string, string[]>()
+  for (const t of data.tasks ?? []) {
+    if (t.status !== 'open' || t.dueDate !== tomorrow) continue
+    by.set(t.assigneeId, [...(by.get(t.assigneeId) ?? []), t.title])
+  }
+  return [...by].map(([memberId, titles]) => ({
+    to: [memberId],
+    payload: {
+      title: titles.length === 1 ? 'Arte para amanhã 🎨' : `${titles.length} artes para amanhã 🎨`,
+      body: titles.join('\n') + '\nQuando terminar, marque como entregue no app.',
+      tag: `arte-lembrete-${tomorrow}`,
+    },
+  }))
 }
 
 /** Lembretes da véspera: uma notificação por pessoa com as escalas de amanhã */

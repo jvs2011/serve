@@ -93,6 +93,22 @@ export interface Notice {
   createdAt: string
 }
 
+/** Demanda de um ministério com responsável e prazo (ex.: artes do Follow) */
+export interface Task {
+  id: string
+  ministryId: string
+  title: string // ex.: "Arte · Culto de Ceia (15/11)"
+  eventId?: string // evento relacionado, se houver
+  details: string // formato, texto, referências…
+  assigneeId: string
+  dueDate: string // YYYY-MM-DD
+  status: 'open' | 'done'
+  link?: string // link da arte entregue (Drive, Canva…)
+  createdBy: string
+  createdAt: string
+  doneAt?: string
+}
+
 export interface AppData {
   version: number
   /** Momento (ms) da primeira alteração feita sobre os dados padrão da demonstração */
@@ -111,4 +127,5 @@ export interface AppData {
   unavailability: Record<string, string[]> // memberId -> datas YYYY-MM-DD
   swaps: SwapRequest[]
   notices: Notice[]
+  tasks?: Task[]
 }

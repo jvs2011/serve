@@ -11,7 +11,7 @@ import { decoyInitials, initialsOf, isValidPhone, normalizePhone, seededRandom }
 import { canManage } from '../src/lib/schedule.js'
 import { getStore, storageSecret, type Store } from './storage.js'
 import { addSub, isValidSub, removeSub, sendPush, vapidKeys } from './push.js'
-import { notificationsFor, remindersFor, type Outgoing } from './notify.js'
+import { notificationsFor, remindersFor, taskRemindersFor, type Outgoing } from './notify.js'
 
 const LIVE_VERSION = 1
 const SESSION_TTL = 180 * 24 * 3600 // 180 dias
@@ -84,6 +84,8 @@ function prepare(d: AppData): boolean {
     d.swaps = d.swaps.filter((s) => !gone.has(s.assignmentId))
     changed = true
   }
+  const oldDone = (d.tasks ?? []).filter((t) => t.status === 'done' && t.dueDate < cutoff)
+  if (oldDone.length) { d.tasks = d.tasks!.filter((t) => !oldDone.includes(t)); changed = true }
   return changed
 }
 
@@ -106,8 +108,10 @@ function viewFor(d: AppData, meId: string): AppData {
   const me = d.members.find((m) => m.id === meId)
   if (!me) return d
   const led = new Set(d.ministries.filter((m) => canManage(me, m.id, d)).map((m) => m.id))
+  const inMinistry = new Set(me.ministries.map((mm) => mm.ministryId))
   return {
     ...d,
+    tasks: (d.tasks ?? []).filter((t) => me.access === 'admin' || t.assigneeId === me.id || led.has(t.ministryId) || inMinistry.has(t.ministryId)),
     members: d.members.map((m) =>
       me.access === 'admin' || m.id === me.id || m.ministries.some((mm) => led.has(mm.ministryId)) ? m : { ...m, phone: '' },
     ),
@@ -280,7 +284,7 @@ export async function route(name: string, method: string, body: any, auth: strin
         const tomorrow = toISO(addDays(fromISO(brToday()), 1))
         if (!(await store.setNX(`serve:reminded:${tomorrow}`, '1', 3 * 24 * 3600))) return ok({ skipped: true, tomorrow })
         const { data } = await withData(store)
-        const list = remindersFor(data, tomorrow)
+        const list = [...remindersFor(data, tomorrow), ...taskRemindersFor(data, tomorrow)]
         await deliver(store, list)
         return ok({ tomorrow, people: list.length })
       }

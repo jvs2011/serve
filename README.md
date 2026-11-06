@@ -35,6 +35,14 @@ Na tela de entrada há três perfis de demonstração: **Voluntária** (Ana), **
 - Ranking de dedicação, equipe com atalho para WhatsApp, avisos e repertório
 - Criar eventos (coordenação)
 
+**Artes (Follow)**
+- Líder do Follow (ou admin) pede uma arte na aba **Artes** do ministério: escolhe um dos próximos
+  cultos/eventos da agenda (título e prazo se preenchem) ou "Outro evento ou arte", detalhes,
+  responsável (quem é de "Edição de artes" aparece primeiro) e data de entrega
+- O responsável vê a arte e o prazo (em X dias / amanhã / hoje / atrasada) na aba e na tela Início,
+  e marca como entregue com o link (Drive, Canva…)
+- Notificações: nova arte → responsável; entregue → líderes; véspera do prazo → responsável
+
 ## Estrutura
 
 ```

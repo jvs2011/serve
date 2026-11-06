@@ -3,7 +3,7 @@ import { addDays, toISO, fromISO, todayISO } from '../lib/dates.js'
 import { autoFill } from '../lib/schedule.js'
 
 /** Versão do formato dos dados. Mude para forçar recriação dos dados de exemplo. */
-export const DATA_VERSION = 11
+export const DATA_VERSION = 12
 
 /*
  * Ministérios da Lagoinha Franca.
@@ -419,6 +419,27 @@ export function createSeed(): AppData {
       createdAt: new Date(now.getTime() - 60 * 3600_000).toISOString(),
     },
   ]
+
+  // artes do Follow (exemplos): uma para o Lucas, uma atrasada e uma entregue
+  const artists = members.filter((m) => m.ministries.some((mm) => mm.ministryId === 'follow' && mm.roles.includes('Edição de artes')))
+  const upcoming = data.events.filter((e) => e.date > todayISO() && e.ministryIds.includes('follow'))
+  const dd = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
+  const e1 = upcoming[0], e2 = upcoming.find((e) => e.date > (e1?.date ?? '')) ?? upcoming[1]
+  data.tasks = []
+  if (e1) data.tasks.push({
+    id: 't1', ministryId: 'follow', title: `Arte · ${e1.title} (${dd(e1.date)})`, eventId: e1.id,
+    details: 'Feed e stories. Usar a foto do último batismo e o texto "Venha celebrar com a gente".',
+    assigneeId: 'm-lucas', dueDate: toISO(addDays(today, 2)), status: 'open', createdBy: 'm-lucas', createdAt: new Date(now.getTime() - 86_400_000).toISOString(),
+  })
+  if (e2 && artists[0]) data.tasks.push({
+    id: 't2', ministryId: 'follow', title: `Arte · ${e2.title} (${dd(e2.date)})`, eventId: e2.id, details: 'Versão para o telão (16:9).',
+    assigneeId: artists[0].id, dueDate: toISO(addDays(today, -1)), status: 'open', createdBy: 'm-lucas', createdAt: new Date(now.getTime() - 3 * 86_400_000).toISOString(),
+  })
+  if (artists[1]) data.tasks.push({
+    id: 't3', ministryId: 'follow', title: 'Arte · Reunião Follow', details: '', assigneeId: artists[1].id,
+    dueDate: toISO(addDays(today, -3)), status: 'done', link: 'https://www.canva.com/', createdBy: 'm-lucas',
+    createdAt: new Date(now.getTime() - 6 * 86_400_000).toISOString(), doneAt: new Date(now.getTime() - 4 * 86_400_000).toISOString(),
+  })
 
   return data
 }

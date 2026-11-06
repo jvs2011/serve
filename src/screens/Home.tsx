@@ -10,6 +10,7 @@ import { Avatar, DateBlock, Empty, MinistryBadge, Section, StatusPill } from '..
 import { Logo } from '../components/Logo'
 import { NotificationsPrompt } from '../components/Notifications'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { HomeArtsCard } from './Arts'
 
 export function Home() {
   const { data, actions, notify, mode } = useStore()
@@ -94,6 +95,8 @@ export function Home() {
           <Empty icon={<CalendarCheck />} title="Tudo tranquilo por aqui" text="Quando você for escalado, a escala aparece aqui para confirmar." />
         </div>
       )}
+
+      <HomeArtsCard />
 
       {toRate && <FeedbackCard key={toRate.a.id} title={toRate.ev.title} onSend={(r, c) => { actions.feedback(toRate.a.id, r, c); notify('Obrigado pelo feedback! +2 pontos') }} />}
 

@@ -57,7 +57,7 @@ function Main() {
   if (top) {
     switch (top.name) {
       case 'event': screen = <EventDetail key={top.id} id={top.id} />; break
-      case 'ministry': screen = <MinistryDetail key={top.id} id={top.id} />; break
+      case 'ministry': screen = <MinistryDetail key={top.id} id={top.id} initialTab={top.tab} />; break
       case 'availability': screen = <Availability />; break
       case 'history': screen = <History />; break
       case 'dashboard': screen = <Dashboard />; break

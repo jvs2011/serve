@@ -7,6 +7,7 @@ import { memberById, ministryMembers, myMinistries } from '../lib/selectors'
 import { canManage, levelFor, pointsFor, sortEvents } from '../lib/schedule'
 import { Avatar, Empty, MinistryBadge, Section, Sheet, TopBar } from '../components/ui'
 import type { Ministry } from '../data/types'
+import { ARTS_MINISTRIES, ArtsTab } from './Arts'
 import { fillOf } from './Agenda'
 
 export function Team() {
@@ -42,11 +43,11 @@ export function Team() {
   )
 }
 
-export function MinistryDetail({ id }: { id: string }) {
+export function MinistryDetail({ id, initialTab }: { id: string; initialTab?: 'schedule' | 'team' | 'notices' | 'arts' }) {
   const { data, actions, notify } = useStore()
   const me = useMe()
   const { back, push } = useNav()
-  const [tab, setTab] = useState<'schedule' | 'team' | 'notices'>('schedule')
+  const [tab, setTab] = useState<'schedule' | 'team' | 'notices' | 'arts'>(initialTab ?? 'schedule')
   const [noticeOpen, setNoticeOpen] = useState(false)
   const [notice, setNotice] = useState({ title: '', body: '' })
   const ministry = data.ministries.find((m) => m.id === id)
@@ -80,7 +81,12 @@ export function MinistryDetail({ id }: { id: string }) {
         <button className={tab === 'schedule' ? 'on' : ''} onClick={() => setTab('schedule')}>Escalas</button>
         <button className={tab === 'team' ? 'on' : ''} onClick={() => setTab('team')}>Equipe</button>
         <button className={tab === 'notices' ? 'on' : ''} onClick={() => setTab('notices')}>Avisos</button>
+        {ARTS_MINISTRIES.includes(ministry.id) && (
+          <button className={tab === 'arts' ? 'on' : ''} onClick={() => setTab('arts')}>Artes</button>
+        )}
       </div>
+
+      {tab === 'arts' && <ArtsTab ministry={ministry} />}
 
       {tab === 'schedule' && (
         <>

@@ -15,6 +15,16 @@ export interface MemberInput {
   ministries: { ministryId: string; roles: string[]; leader: boolean }[]
 }
 
+export interface TaskInput {
+  id?: string
+  ministryId: string
+  title: string
+  eventId?: string
+  details: string
+  assigneeId: string
+  dueDate: string
+}
+
 export type Action =
   | { type: 'respond'; assignmentId: string; status: AssignmentStatus }
   | { type: 'checkIn'; assignmentId: string }
@@ -35,6 +45,9 @@ export type Action =
   | { type: 'saveMember'; member: MemberInput }
   | { type: 'removeMember'; memberId: string }
   | { type: 'setOpen'; open: boolean }
+  | { type: 'saveTask'; task: TaskInput }
+  | { type: 'removeTask'; taskId: string }
+  | { type: 'setTaskDone'; taskId: string; done: boolean; link?: string }
 
 export interface ActionResult {
   created?: number
@@ -172,6 +185,41 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
     case 'saveMember':
       if (!isAdmin) throw deny()
       return { memberId: saveMember(d, action.member, me.id) }
+    case 'saveTask': {
+      const t = action.task
+      manage(t.ministryId)
+      const title = t.title.trim().slice(0, 120)
+      if (!title) throw new ActionError('Diga qual arte precisa.')
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(t.dueDate)) throw new ActionError('Escolha até quando precisa da arte.')
+      const assignee = d.members.find((m) => m.id === t.assigneeId)
+      if (!assignee) throw new ActionError('Escolha quem vai ficar responsável.')
+      d.tasks ??= []
+      const existing = t.id ? d.tasks.find((x) => x.id === t.id) : undefined
+      if (t.id && !existing) throw notFound()
+      if (existing && existing.ministryId !== t.ministryId) throw deny()
+      const data = {
+        title, eventId: t.eventId && d.events.some((e) => e.id === t.eventId) ? t.eventId : undefined,
+        details: t.details.trim().slice(0, 1500), assigneeId: assignee.id, dueDate: t.dueDate,
+      }
+      if (existing) Object.assign(existing, data)
+      else d.tasks.unshift({ id: uid(), ministryId: t.ministryId, status: 'open', createdBy: me.id, createdAt: new Date().toISOString(), ...data })
+      return {}
+    }
+    case 'removeTask': {
+      const task = d.tasks?.find((x) => x.id === action.taskId) ?? (() => { throw notFound() })()
+      manage(task.ministryId)
+      d.tasks = d.tasks!.filter((x) => x.id !== task.id)
+      return {}
+    }
+    case 'setTaskDone': {
+      const task = d.tasks?.find((x) => x.id === action.taskId) ?? (() => { throw notFound() })()
+      if (task.assigneeId !== me.id && !canManage(me, task.ministryId, d)) throw deny()
+      task.status = action.done ? 'done' : 'open'
+      task.doneAt = action.done ? new Date().toISOString() : undefined
+      const link = action.link?.trim()
+      task.link = action.done && link ? (/^https?:\/\//.test(link) ? link : `https://${link}`).slice(0, 500) : action.done ? task.link : undefined
+      return {}
+    }
     case 'setOpen':
       if (!isAdmin) throw deny()
       d.settings = { ...d.settings, open: action.open }
