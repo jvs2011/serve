@@ -79,3 +79,32 @@ export function tidyName(raw: string): string {
     .map((w, i) => (i > 0 && CONNECTORS.has(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)))
     .join(' ')
 }
+
+/**
+ * Máscara de celular enquanto digita: "16991851234" → "(16) 99185-1234".
+ * Celular (3º dígito 9) usa 5+4; fixo usa 4+4. Aceita colar com +55.
+ */
+export function maskPhone(raw: string): string {
+  let d = raw.replace(/\D/g, '')
+  if (d.length > 11 && d.startsWith('55')) d = d.slice(2)
+  d = d.slice(0, 11)
+  if (!d) return ''
+  if (d.length <= 2) return `(${d}`
+  const ddd = d.slice(0, 2)
+  const rest = d.slice(2)
+  const head = rest[0] === '9' ? 5 : 4
+  if (rest.length <= head) return `(${ddd}) ${rest}`
+  return `(${ddd}) ${rest.slice(0, head)}-${rest.slice(head)}`
+}
+
+/**
+ * Para usar no onChange: aplica a máscara e trata o apagar —
+ * se a pessoa apagou só um "(", ")", espaço ou "-", apaga também o dígito anterior.
+ */
+export function nextPhoneValue(prev: string, typed: string): string {
+  const digits = (s: string) => s.replace(/\D/g, '')
+  if (typed.length < prev.length && digits(typed) === digits(prev)) {
+    return maskPhone(digits(typed).slice(0, -1))
+  }
+  return maskPhone(typed)
+}

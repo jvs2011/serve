@@ -4,7 +4,7 @@ import { useStore } from '../data/store'
 import { createSeed, demoProfiles } from '../data/seed'
 import { Avatar } from '../components/ui'
 import { Logo } from '../components/Logo'
-import { isValidPhone, spaced } from '../lib/people'
+import { isValidPhone, nextPhoneValue, spaced } from '../lib/people'
 
 const demoMembers = createSeed().members
 
@@ -74,7 +74,8 @@ export function Login() {
                 autoComplete="tel"
                 placeholder="(16) 99999-9999"
                 value={phone}
-                onChange={(e) => { setPhone(e.target.value); setError('') }}
+                type="tel"
+                onChange={(e) => { setPhone((p) => nextPhoneValue(p, e.target.value)); setError('') }}
                 onKeyDown={(e) => e.key === 'Enter' && askInitials()}
               />
             </label>

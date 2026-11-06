@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Check, ChevronRight, Search, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
-import { formatPhone, initialsOf, isValidPhone, spaced } from '../lib/people'
+import { formatPhone, initialsOf, isValidPhone, nextPhoneValue, spaced } from '../lib/people'
 import { Avatar, Empty, MinistryBadge, TopBar } from '../components/ui'
 import type { MemberInput } from '../data/actions'
 
@@ -131,7 +131,7 @@ export function PersonForm({ id }: { id?: string }) {
         </label>
         <label className="field">
           <span>Celular com DDD</span>
-          <input id="person-phone" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} onBlur={() => isValidPhone(phone) && setPhone(formatPhone(phone))} placeholder="(16) 99999-9999" />
+          <input id="person-phone" type="tel" inputMode="tel" value={phone} onChange={(e) => setPhone((p) => nextPhoneValue(p, e.target.value))} placeholder="(16) 99999-9999" />
         </label>
         {initials.length >= 2 && (
           <div className="initials-preview">

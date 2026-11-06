@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Check, CheckCircle2 } from 'lucide-react'
 import { Logo } from '../components/Logo'
 import { scrollToTop } from '../lib/scroll'
-import { formatPhone, isValidPhone, tidyName } from '../lib/people'
+import { isValidPhone, nextPhoneValue, tidyName } from '../lib/people'
 
 interface Info { id: string; name: string; description: string; color: string; teams: string[] }
 
@@ -113,9 +113,9 @@ export function Signup({ ministryId }: { ministryId: string }) {
             </label>
             <label className="field">
               <span>Celular (WhatsApp)</span>
-              <input id="su-phone" name="phone" inputMode="tel" autoComplete="tel" value={phone}
-                onChange={(e) => { setPhone(e.target.value); setError('') }}
-                onBlur={() => isValidPhone(phone) && setPhone(formatPhone(phone))} placeholder="(16) 99999-9999" />
+              <input id="su-phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" value={phone}
+                onChange={(e) => { setPhone((p) => nextPhoneValue(p, e.target.value)); setError('') }}
+                placeholder="(16) 99999-9999" />
             </label>
 
             <fieldset className="signup-teams">
