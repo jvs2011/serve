@@ -622,3 +622,8 @@ body:has(.signup) { background: transparent; }
   transform: translateY(-1px) rotate(-45deg);
 }
 .signup-consent input:focus-visible { outline: 2px solid var(--m); outline-offset: 2px; }
+
+/* Botão sol/lua ao lado da foto (Início) */
+.home-head-actions { display: flex; align-items: center; gap: 6px; }
+.theme-toggle { color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); }
+.theme-toggle:active { transform: scale(.94); }

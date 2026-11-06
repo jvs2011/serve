@@ -2,6 +2,10 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // tema escolhido no botão sol/lua (sem escolha, segue o celular)
+      try { var t = localStorage.getItem('serve:theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t) } catch (e) {}
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
     <meta name="theme-color" content="#0E0E10" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

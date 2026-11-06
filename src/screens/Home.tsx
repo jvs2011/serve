@@ -9,6 +9,7 @@ import { AssignmentActions } from '../components/AssignmentActions'
 import { Avatar, DateBlock, Empty, MinistryBadge, Section, StatusPill } from '../components/ui'
 import { Logo } from '../components/Logo'
 import { NotificationsPrompt } from '../components/Notifications'
+import { ThemeToggle } from '../components/ThemeToggle'
 
 export function Home() {
   const { data, actions, notify, mode } = useStore()
@@ -49,9 +50,12 @@ export function Home() {
     <div className="screen">
       <header className="home-head">
         <Logo size={26} />
-        <button className="icon-btn" onClick={() => setTab('profile')} aria-label="Perfil">
-          <Avatar name={me.name} size={38} />
-        </button>
+        <div className="home-head-actions">
+          <ThemeToggle />
+          <button className="icon-btn" onClick={() => setTab('profile')} aria-label="Perfil">
+            <Avatar name={me.name} size={38} />
+          </button>
+        </div>
       </header>
 
       <div className="hello">
