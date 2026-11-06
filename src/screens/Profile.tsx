@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { BarChart3, CalendarOff, ChevronRight, History, LogOut, RotateCcw, Smartphone, Users } from 'lucide-react'
+import { BarChart3, CalendarOff, ChevronRight, History, KeyRound, LogOut, RotateCcw, Smartphone, Users } from 'lucide-react'
+import { ChangePinForm } from './PinScreens'
 import { formatPhone } from '../lib/people'
 import { NotificationSettings } from '../components/Notifications'
 import { useMe, useStore } from '../data/store'
@@ -16,6 +17,7 @@ export function Profile() {
   const me = useMe()
   const { push } = useNav()
   const [installOpen, setInstallOpen] = useState(false)
+  const [pinOpen, setPinOpen] = useState(false)
   const pts = pointsFor(data, me.id)
   const level = levelFor(pts)
   const pct = level.next > level.base ? Math.min(100, ((pts - level.base) / (level.next - level.base)) * 100) : 100
@@ -88,6 +90,11 @@ export function Profile() {
       </div>
 
       <div className="card menu">
+        {mode === 'live' && (
+          <button className="menu-item" onClick={() => setPinOpen(true)}>
+            <KeyRound size={20} /><span className="grow">Alterar PIN</span><ChevronRight size={18} className="muted" />
+          </button>
+        )}
         <button className="menu-item" onClick={() => setInstallOpen(true)}>
           <Smartphone size={20} /><span className="grow">Instalar na tela inicial</span><ChevronRight size={18} className="muted" />
         </button>
@@ -102,6 +109,10 @@ export function Profile() {
       </div>
 
       <p className="footer-note">Serve · Lagoinha Franca</p>
+
+      <Sheet open={pinOpen} onClose={() => setPinOpen(false)} title="Alterar PIN">
+        {pinOpen && <ChangePinForm onDone={() => setPinOpen(false)} />}
+      </Sheet>
 
       <Sheet open={installOpen} onClose={() => setInstallOpen(false)} title="Instalar o Serve">
         <p><b>iPhone (Safari):</b> toque em Compartilhar <span className="kbd">⬆︎</span> e depois em <b>Adicionar à Tela de Início</b>.</p>

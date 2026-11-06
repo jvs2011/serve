@@ -70,6 +70,8 @@ async function api<T>(path: string, init: { method?: string; body?: unknown; tok
   return json as T
 }
 
+export type LoginStart = { mode: 'pin' } | { mode: 'create'; setupId: string }
+
 export class ApiError extends Error {
   constructor(message: string, readonly status: number, readonly data: Record<string, unknown> = {}) { super(message) }
 }
@@ -78,6 +80,8 @@ interface Toast { id: number; text: string }
 
 interface Store {
   mode: 'demo' | 'live' | null
+  /** logado nos dados reais, mas ainda sem PIN (precisa criar antes de usar) */
+  needsPin: boolean
   /** token da sessão real (para notificações) */
   token: string | null
   data: AppData
@@ -99,8 +103,11 @@ function makeActions(
     enterDemo: (id: string) => void
     logout: () => void
     resetDemo: () => void
-    requestLogin: (phone: string) => Promise<{ challengeId: string; options: string[] }>
-    verifyLogin: (challengeId: string, answer: string) => Promise<void>
+    requestLogin: (phone: string) => Promise<LoginStart>
+    pinCreate: (setupId: string, pin: string) => Promise<void>
+    pinLogin: (phone: string, pin: string) => Promise<void>
+    pinSet: (pin: string) => Promise<void>
+    pinChange: (current: string, pin: string) => Promise<void>
   },
 ) {
   return {
@@ -125,6 +132,7 @@ function makeActions(
     moveSong: (eventId: string, songId: string, dir: -1 | 1) => { dispatch({ type: 'moveSong', eventId, songId, dir }) },
     addEvent: (title: string, date: string, time: string, ministryIds: string[]) => { dispatch({ type: 'addEvent', title, date, time, ministryIds }) },
     setOpen: (open: boolean) => dispatchAsync({ type: 'setOpen', open }),
+    resetPin: (memberId: string) => dispatchAsync({ type: 'resetPin', memberId }),
     saveTask: (task: TaskInput) => dispatchAsync({ type: 'saveTask', task }),
     createTeamSession: (sessionId: string, date: string, time: string, place?: string, note?: string) =>
       dispatchAsync({ type: 'createTeamSession', sessionId, date, time, place, note }),
@@ -144,6 +152,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [liveData, setLiveData] = useState<AppData | null>(null)
   const [liveMeId, setLiveMeId] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [needsPin, setNeedsPin] = useState(false)
   const [toast, setToast] = useState<Toast | null>(null)
   const demoRef = useRef(demoData)
   const liveRef = useRef(liveData)
@@ -191,9 +200,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const s = sessionRef.current
     if (s?.mode !== 'live') return
     try {
-      const r = await api<{ data: AppData; meId: string }>('data', { token: s.token })
+      const r = await api<{ data: AppData; meId: string; needsPin?: boolean }>('data', { token: s.token })
       setLiveData(r.data)
       setLiveMeId(r.meId)
+      setNeedsPin(!!r.needsPin)
       setLoadError(null)
     } catch (e) {
       if (e instanceof ApiError && (e.status === 401 || e.status === 403)) { setSession(null); notify(e.message) }
@@ -280,11 +290,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setSession(null)
     },
     resetDemo: () => replaceDemo(createSeed()),
-    requestLogin: (phone) => api<{ challengeId: string; options: string[] }>('login', { body: { phone } }),
-    verifyLogin: async (challengeId, answer) => {
-      const r = await api<{ token: string }>('verify', { body: { challengeId, answer } })
+    requestLogin: (phone) => api<LoginStart>('login', { body: { phone } }),
+    pinCreate: async (setupId, pin) => {
+      const r = await api<{ token: string }>('pin-create', { body: { setupId, pin } })
       setSession({ mode: 'live', token: r.token })
       resyncPush(r.token).catch(() => {})
+    },
+    pinLogin: async (phone, pin) => {
+      const r = await api<{ token: string }>('pin', { body: { phone, pin } })
+      setSession({ mode: 'live', token: r.token })
+      resyncPush(r.token).catch(() => {})
+    },
+    pinSet: async (pin) => {
+      const s = sessionRef.current
+      if (s?.mode !== 'live') return
+      await api('pin-set', { body: { pin }, token: s.token })
+      setNeedsPin(false)
+    },
+    pinChange: async (current, pin) => {
+      const s = sessionRef.current
+      if (s?.mode !== 'live') return
+      await api('pin-change', { body: { current, pin }, token: s.token })
     },
   }), [dispatch, dispatchAsync, setSession, replaceDemo])
 
@@ -299,7 +325,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [mode, me, liveData, setSession])
 
   return (
-    <Ctx.Provider value={{ mode, token: session?.mode === 'live' ? session.token : null, data, me, loading, loadError, toast, notify, reload: fetchLive, actions }}>
+    <Ctx.Provider value={{ mode, needsPin: mode === 'live' && needsPin, token: session?.mode === 'live' ? session.token : null, data, me, loading, loadError, toast, notify, reload: fetchLive, actions }}>
       {children}
     </Ctx.Provider>
   )

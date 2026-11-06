@@ -4,7 +4,8 @@ import { ApiError, useStore } from '../data/store'
 import { createSeed, demoProfiles } from '../data/seed'
 import { Avatar } from '../components/ui'
 import { Logo } from '../components/Logo'
-import { isValidPhone, nextPhoneValue, spaced } from '../lib/people'
+import { PinInput } from '../components/PinInput'
+import { isValidPhone, nextPhoneValue } from '../lib/people'
 
 const demoMembers = createSeed().members
 
@@ -12,8 +13,11 @@ export function Login() {
   const { actions } = useStore()
   const [available, setAvailable] = useState<boolean | null>(null)
   const [phone, setPhone] = useState('')
-  const [step, setStep] = useState<'phone' | 'initials'>('phone')
-  const [challenge, setChallenge] = useState<{ challengeId: string; options: string[] } | null>(null)
+  // celular → (já tem PIN) digita o PIN | (primeiro acesso) cria o PIN → repete o PIN
+  const [step, setStep] = useState<'phone' | 'pin' | 'create' | 'confirm'>('phone')
+  const [setupId, setSetupId] = useState<string | null>(null)
+  const [pin, setPin] = useState('')
+  const [newPin, setNewPin] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [closedFor, setClosedFor] = useState<string | null>(null) // cadastrado, mas o app ainda não foi liberado
@@ -25,35 +29,59 @@ export function Login() {
       .catch(() => setAvailable(false))
   }, [])
 
-  const askInitials = async () => {
+  const restart = (msg = '') => { setStep('phone'); setSetupId(null); setPin(''); setNewPin(''); setError(msg) }
+  const handle = (e: unknown) => {
+    if (e instanceof ApiError && e.data.closed) { restart(); setClosedFor(String(e.data.firstName ?? '')); return }
+    return e instanceof Error ? e.message : 'Não foi possível continuar.'
+  }
+
+  const start = async () => {
     if (!isValidPhone(phone)) return setError('Digite o celular com DDD, por exemplo (16) 99999-1234.')
     setBusy(true)
     setError('')
     try {
-      setChallenge(await actions.requestLogin(phone))
-      setStep('initials')
+      const r = await actions.requestLogin(phone)
+      if (r.mode === 'pin') setStep('pin')
+      else { setSetupId(r.setupId); setStep('create') }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Não foi possível continuar.')
+      setError(handle(e) ?? '')
     } finally {
       setBusy(false)
     }
   }
 
-  const choose = async (answer: string) => {
-    if (!challenge) return
+  const enter = async (value: string) => {
     setBusy(true)
     setError('')
     try {
-      await actions.verifyLogin(challenge.challengeId, answer)
+      await actions.pinLogin(phone, value)
     } catch (e) {
-      setStep('phone')
-      setChallenge(null)
-      if (e instanceof ApiError && e.data.closed) setClosedFor(String(e.data.firstName ?? ''))
-      else setError(e instanceof Error ? e.message : 'Não foi possível entrar.')
+      setPin('')
+      const msg = handle(e)
+      if (msg !== undefined) setError(msg)
     } finally {
       setBusy(false)
     }
   }
+
+  const confirmCreate = async (value: string) => {
+    if (!setupId) return
+    if (value !== newPin) { setPin(''); setNewPin(''); setStep('create'); setError('Os PINs não são iguais. Crie de novo.'); return }
+    setBusy(true)
+    setError('')
+    try {
+      await actions.pinCreate(setupId, value)
+    } catch (e) {
+      const msg = handle(e)
+      if (msg !== undefined) { setPin(''); setNewPin(''); setStep('create'); setError(msg) }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const back = (
+    <button className="icon-btn" onClick={() => restart()} aria-label="Trocar número"><ArrowLeft size={20} /></button>
+  )
 
   return (
     <div className="login">
@@ -86,29 +114,46 @@ export function Login() {
                 value={phone}
                 type="tel"
                 onChange={(e) => { setPhone((p) => nextPhoneValue(p, e.target.value)); setError('') }}
-                onKeyDown={(e) => e.key === 'Enter' && askInitials()}
+                onKeyDown={(e) => e.key === 'Enter' && start()}
               />
             </label>
             {error && <p className="error">{error}</p>}
-            <button className="btn btn-primary btn-block" onClick={askInitials} disabled={busy || available === null || phone.replace(/\D/g, '').length < 10}>
+            <button className="btn btn-primary btn-block" onClick={start} disabled={busy || available === null || phone.replace(/\D/g, '').length < 10}>
               {busy ? 'Aguarde…' : <>Continuar <ArrowRight size={18} /></>}
             </button>
+          </>
+        ) : step === 'pin' ? (
+          <>
+            <div className="initials-head">
+              {back}
+              <div>
+                <strong>Digite seu PIN</strong>
+                <span className="muted small block">{phone}</span>
+              </div>
+            </div>
+            <PinInput value={pin} onChange={(v) => { setPin(v); setError('') }} onComplete={enter} disabled={busy} />
+            {error && <p className="error center">{error}</p>}
+            <p className="muted small center pin-help">Esqueceu o PIN? Peça para a liderança redefinir.</p>
           </>
         ) : (
           <>
             <div className="initials-head">
-              <button className="icon-btn" onClick={() => { setStep('phone'); setError('') }} aria-label="Trocar número"><ArrowLeft size={20} /></button>
+              {back}
               <div>
-                <strong>Toque nas iniciais do seu nome</strong>
-                <span className="muted small block">Exemplo: João Victor da Silva → J V S</span>
+                <strong>{step === 'create' ? 'Primeiro acesso: crie seu PIN' : 'Repita o PIN'}</strong>
+                <span className="muted small block">{step === 'create' ? '4 números. Você vai usar sempre para entrar no app.' : 'Para confirmar.'}</span>
               </div>
             </div>
-            <div className="initials-grid">
-              {challenge?.options.map((o) => (
-                <button key={o} className="initials-option" disabled={busy} onClick={() => choose(o)}>{spaced(o)}</button>
-              ))}
-            </div>
-            {error && <p className="error">{error}</p>}
+            <PinInput
+              key={step}
+              id={step === 'create' ? 'pin-new' : 'pin-confirm'}
+              value={pin}
+              onChange={(v) => { setPin(v); setError('') }}
+              onComplete={(v) => { if (step === 'create') { setNewPin(v); setPin(''); setStep('confirm') } else confirmCreate(v) }}
+              disabled={busy}
+            />
+            {error && <p className="error center">{error}</p>}
+            <p className="muted small center pin-help">Evite sequências como 1234 ou números repetidos.</p>
           </>
         )}
 

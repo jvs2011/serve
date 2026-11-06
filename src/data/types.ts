@@ -28,6 +28,10 @@ export interface Member {
   ministries: MemberMinistry[]
   /** Preferência do voluntário: quantas vezes no máximo quer servir por mês */
   maxPerMonth: number
+  /** PIN de 4 dígitos (só no servidor, com hash; nunca vai para o app) */
+  pinHash?: string
+  /** Visão do app: a pessoa já criou o PIN? */
+  hasPin?: boolean
   /** 'form' = a própria pessoa se cadastrou pelo formulário público */
   source?: 'form'
   /** Cultos fixos da semana em que a pessoa não pode servir (chave "diaDaSemana-HH:MM", ex.: "0-09:30") */

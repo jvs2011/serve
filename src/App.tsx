@@ -14,6 +14,7 @@ import { Availability } from './screens/Availability'
 import { History } from './screens/History'
 import { Dashboard } from './screens/Dashboard'
 import { People, PersonForm } from './screens/People'
+import { CreatePinGate } from './screens/PinScreens'
 import { Logo } from './components/Logo'
 
 export default function App() {
@@ -27,7 +28,7 @@ export default function App() {
 }
 
 function Shell() {
-  const { me, toast, mode, loading, loadError, reload, actions } = useStore()
+  const { me, toast, mode, loading, loadError, reload, actions, needsPin } = useStore()
   let body
   if (mode === 'live' && loading) {
     body = (
@@ -42,7 +43,8 @@ function Shell() {
         ) : <div className="spinner" aria-label="Carregando" />}
       </div>
     )
-  } else body = me ? <NavProvider scope={`${mode}:${me.id}`}><Main /></NavProvider> : <Login />
+  } else if (me && needsPin) body = <CreatePinGate />
+  else body = me ? <NavProvider scope={`${mode}:${me.id}`}><Main /></NavProvider> : <Login />
   return (
     <>
       {body}

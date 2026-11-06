@@ -701,3 +701,28 @@ select:focus { border-color: var(--accent); }
 .coord-note { display: flex; align-items: center; gap: 8px; background: var(--info-soft); color: var(--info); border-radius: 12px; padding: 10px 12px; font-size: 13px; font-weight: 500; margin-bottom: 12px; }
 .coord-note svg { flex-shrink: 0; }
 .tabbar button { font-size: clamp(9.5px, 2.8vw, 11px); }
+
+/* Barra de vagas: confirmados (cheio), pendentes (claro), abertas (vazio) */
+.fill { display: grid; gap: 6px; }
+.fill-bar { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: var(--surface-2); gap: 2px; }
+.fill-bar > div { height: 100%; border-radius: 99px; transition: width .3s; }
+.fill-confirmed { background: var(--accent); }
+.fill-pending { background: var(--accent); opacity: .35; }
+.fill-text { font-size: 12px; color: var(--muted); font-weight: 500; }
+.fill.light .fill-bar { background: rgba(255,255,255,.15); }
+.fill.light .fill-text { color: rgba(255,255,255,.8); }
+.fill.light .fill-pending { opacity: .45; }
+
+/* PIN de 4 dígitos */
+.pin-input { position: relative; display: flex; justify-content: center; gap: 14px; margin: 8px 0 14px; cursor: text; }
+.pin-input input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; border: 0; padding: 0; font-size: 16px; }
+.pin-box { width: 56px; height: 64px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--surface); display: grid; place-items: center; transition: border-color .15s; }
+.pin-box.current { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.pin-box.filled::after { content: ''; width: 14px; height: 14px; border-radius: 50%; background: var(--ink); }
+.center { text-align: center; }
+.pin-help { margin-top: 2px; }
+
+.pin-gate { min-height: var(--vh); display: grid; justify-items: center; align-content: center; gap: 10px; padding: 24px; text-align: center; }
+.pin-gate h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; margin-top: 6px; }
+.pin-gate .closed-icon { margin-top: 24px; }
+.pin-status { display: flex; align-items: center; gap: 8px; background: var(--surface-2); border-radius: 12px; padding: 10px 12px; font-size: 13px; color: var(--ink-2); }

@@ -9,7 +9,7 @@ import { Avatar, Empty, MinistryBadge, Section, Sheet, TopBar } from '../compone
 import type { Ministry } from '../data/types'
 import { ARTS_MINISTRIES, ArtsTab } from './Arts'
 import { SessionCards } from './Sessions'
-import { fillOf } from './Agenda'
+import { FillBar, fillOf } from './Agenda'
 
 export function Team() {
   const { data } = useStore()
@@ -104,7 +104,7 @@ export function MinistryDetail({ id, initialTab, asTab }: { id: string; initialT
           )}
           <div className="list">
             {events.slice(0, 12).map((ev) => {
-              const { total, filled } = fillOf(data, ev, [ministry.id])
+              const { total, confirmed, open } = fillOf(data, ev, [ministry.id])
               return (
                 <button key={ev.id} className="card event-card" onClick={() => push({ name: 'event', id: ev.id })}>
                   <div className="event-card-top">
@@ -112,9 +112,9 @@ export function MinistryDetail({ id, initialTab, asTab }: { id: string; initialT
                       <strong>{ev.title}</strong>
                       <span className="muted">{relativeDay(ev.date)} · {timeRange(ev)}{ev.place && ` · ${ev.place}`}</span>
                     </div>
-                    <span className={`pill ${filled === total ? 'pill-confirmed' : 'pill-pending'}`}>{filled}/{total}</span>
+                    <span className={`pill ${confirmed === total ? 'pill-confirmed' : open > 0 ? 'pill-declined' : 'pill-pending'}`}>{confirmed === total ? 'Completa' : open > 0 ? `${open} ${open === 1 ? 'vaga' : 'vagas'}` : 'Aguardando'}</span>
                   </div>
-                  <div className="progress"><div style={{ width: `${total ? (filled / total) * 100 : 0}%`, background: ministry.color }} /></div>
+                  <FillBar data={data} ev={ev} ministryIds={[ministry.id]} color={ministry.color} />
                 </button>
               )
             })}

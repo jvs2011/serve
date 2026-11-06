@@ -66,8 +66,10 @@ api/                 funções da Vercel (/api/login, /api/verify, /api/data, /a
 O app tem dois modos:
 
 - **Dados reais**: guardados no servidor (funções da Vercel em `api/` + banco Upstash Redis).
-  As pessoas entram com o **celular** e depois escolhem as **iniciais do próprio nome** entre 6 opções
-  (ex.: João Victor da Silva → J V S). Depois de 5 erros, o número fica bloqueado por 15 minutos.
+  As pessoas entram com **celular + PIN de 4 números**. No primeiro acesso, a pessoa cria o PIN
+  (sequências óbvias como 1234 ou 1111 não são aceitas). Errar o PIN 10 vezes bloqueia o número até
+  o dia seguinte. Esqueceu o PIN? O administrador redefine em Pessoas e a pessoa cria outro.
+  O PIN fica só no servidor, com hash (scrypt); nunca vai para o app.
 - **Demonstração**: dados de exemplo só no aparelho; as alterações são desfeitas após 10 minutos.
 
 Quem cadastra as pessoas é o **administrador** (Perfil → Pessoas): nome completo, celular,
@@ -103,10 +105,16 @@ As chaves de segurança das notificações (VAPID) são criadas sozinhas e guard
 No iPhone (iOS 16.4 ou mais novo), as notificações só funcionam com o Serve instalado na tela inicial.
 Opcional: `CRON_SECRET` na Vercel protege a rota do lembrete diário.
 
+### Backup e planilha
+
+Todo dia, junto com o lembrete das 18h, o servidor guarda uma cópia de todos os dados no banco
+(`serve:backup:AAAA-MM-DD`, mantida por 15 dias). Em **Pessoas**, o administrador baixa a planilha
+de pessoas (CSV que abre no Excel/Google Planilhas).
+
 ### Desenvolvimento local
 
 `npm run dev` já atende as rotas `/api` com um banco em memória (apagado ao reiniciar).
-O administrador de teste é **(16) 99999-0000**, iniciais **A T**.
+O administrador de teste é **(16) 99999-0000** (cria o PIN no primeiro acesso).
 
 ## Próximos passos para produção
 

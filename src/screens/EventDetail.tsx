@@ -8,7 +8,7 @@ import { canEditSetlist, canManage, isPast, openSlots, rankCandidates, slotsFor 
 import { AssignmentActions } from '../components/AssignmentActions'
 import { Avatar, Empty, MinistryBadge, Sheet, StatusPill, TopBar } from '../components/ui'
 import type { ChurchEvent, Ministry, Song } from '../data/types'
-import { fillOf } from './Agenda'
+import { FillBar, fillOf } from './Agenda'
 
 export function EventDetail({ id }: { id: string }) {
   const { data } = useStore()
@@ -23,7 +23,7 @@ export function EventDetail({ id }: { id: string }) {
   const canRemove = me.access === 'admin' || (!!ev.slots && ev.ministryIds.every((id) => canManage(me, id, data)))
   const mine = join(data, data.assignments.filter((a) => a.eventId === ev.id && a.memberId === me.id && a.status !== 'declined'))
   const hasLouvor = ev.ministryIds.includes('louvor')
-  const { total, filled } = fillOf(data, ev)
+  const { total } = fillOf(data, ev)
   // ministérios que eu gerencio aparecem primeiro
   const ministries = ev.ministryIds
     .map((mid) => data.ministries.find((m) => m.id === mid))
@@ -43,10 +43,7 @@ export function EventDetail({ id }: { id: string }) {
           <p className="event-meta">{[ev.activity, ev.responsible && `Responsável: ${ev.responsible}`].filter(Boolean).join(' · ')}</p>
         )}
         {total > 0 && (
-          <div className="progress-row light">
-            <div className="progress"><div style={{ width: `${(filled / total) * 100}%` }} /></div>
-            <span className="small">{filled}/{total} vagas preenchidas</span>
-          </div>
+          <FillBar data={data} ev={ev} light />
         )}
       </div>
 

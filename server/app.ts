@@ -1,23 +1,20 @@
 /*
- * Regras do servidor do Serve: dados reais, login (celular + iniciais) e alterações.
+ * Regras do servidor do Serve: dados reais, login (celular + PIN) e alterações.
  * As rotas em /api chamam `route()` através de server/http.ts.
  */
-import { createHash, createHmac, randomBytes } from 'node:crypto'
-import type { AppData, Member } from '../src/data/types.js'
+import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
+import type { AppData } from '../src/data/types.js'
 import { ActionError, applyAction, selfRegister, type Action } from '../src/data/actions.js'
 import { buildAgenda, ministryList } from '../src/data/seed.js'
 import { addDays, fromISO, toISO } from '../src/lib/dates.js'
-import { decoyInitials, initialsOf, isValidPhone, normalizePhone, seededRandom } from '../src/lib/people.js'
+import { isValidPhone, normalizePhone } from '../src/lib/people.js'
 import { canManage } from '../src/lib/schedule.js'
-import { getStore, storageSecret, type Store } from './storage.js'
+import { getStore, type Store } from './storage.js'
 import { addSub, isValidSub, removeSub, sendPush, vapidKeys } from './push.js'
 import { notificationsFor, remindersFor, taskRemindersFor, type Outgoing } from './notify.js'
 
 const LIVE_VERSION = 1
 const SESSION_TTL = 180 * 24 * 3600 // 180 dias
-const CHALLENGE_TTL = 5 * 60
-const MAX_FAILS = 5
-const LOCK_TTL = 15 * 60
 
 export interface Reply { status: number; body: unknown }
 const ok = (body: unknown): Reply => ({ status: 200, body })
@@ -114,9 +111,10 @@ function viewFor(d: AppData, meId: string): AppData {
   return {
     ...d,
     tasks: (d.tasks ?? []).filter((t) => me.access === 'admin' || t.assigneeId === me.id || led.has(t.ministryId) || inMinistry.has(t.ministryId)),
-    members: d.members.map((m) =>
-      me.access === 'admin' || m.id === me.id || m.ministries.some((mm) => led.has(mm.ministryId)) ? m : { ...m, phone: '' },
-    ),
+    members: d.members.map(({ pinHash, ...m }) => {
+      const view = { ...m, hasPin: !!pinHash }
+      return me.access === 'admin' || m.id === me.id || m.ministries.some((mm) => led.has(mm.ministryId)) ? view : { ...view, phone: '' }
+    }),
   }
 }
 
@@ -129,17 +127,33 @@ async function deliver(store: Store, list: Outgoing[]) {
 
 const sha = (s: string) => createHash('sha256').update(s).digest('hex')
 
-function optionsFor(phone: string, member: Member | undefined): { correct: string; options: string[] } {
-  const seed = createHmac('sha256', storageSecret()).update(phone).digest().readUInt32BE(0)
-  const rand = seededRandom(seed)
-  // celular sem cadastro recebe opções falsas fixas (não revela quem está cadastrado)
-  const correct = member ? initialsOf(member.name) : decoyInitials('', 1, rand)[0]
-  const options = [correct, ...decoyInitials(correct, 5, rand)]
-  for (let i = options.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1))
-    ;[options[i], options[j]] = [options[j], options[i]]
-  }
-  return { correct, options }
+
+/* ---------- PIN (4 dígitos) ---------- */
+const PIN_MAX = 10 // tentativas de PIN por dia
+const DAY = 24 * 3600
+const WEAK = new Set(['0123', '1234', '2345', '3456', '4567', '5678', '6789', '9876', '8765', '7654', '6543', '5432', '4321', '3210'])
+
+function pinProblem(pin: unknown): string | null {
+  const p = String(pin ?? '')
+  if (!/^\d{4}$/.test(p)) return 'O PIN precisa ter 4 números.'
+  if (/^(\d)\1{3}$/.test(p) || WEAK.has(p)) return 'Esse PIN é fácil demais de adivinhar. Escolha outro.'
+  return null
+}
+function hashPin(pin: string): string {
+  const salt = randomBytes(16)
+  return `scrypt$${salt.toString('hex')}$${scryptSync(pin, salt, 32).toString('hex')}`
+}
+function checkPin(pin: string, stored: string | undefined): boolean {
+  const [kind, salt, hash] = (stored ?? '').split('$')
+  if (kind !== 'scrypt' || !salt || !hash) return false
+  const got = scryptSync(String(pin), Buffer.from(salt, 'hex'), 32)
+  const want = Buffer.from(hash, 'hex')
+  return got.length === want.length && timingSafeEqual(got, want)
+}
+async function newSession(store: Store, memberId: string) {
+  const token = randomBytes(32).toString('hex')
+  await store.set(`serve:sess:${sha(token)}`, memberId, SESSION_TTL)
+  return token
 }
 
 const CLOSED_MSG = 'O Serve ainda não foi liberado. Em breve teremos novidades! 😉'
@@ -161,46 +175,86 @@ export async function route(name: string, method: string, body: any, auth: strin
   try {
     switch (name) {
       case 'login': {
+        // celular → quem já tem PIN digita o PIN; no primeiro acesso, cria o PIN
         if (method !== 'POST') return fail(405, 'Método não permitido')
         if (!isValidPhone(String(body?.phone ?? ''))) return fail(400, 'Informe um celular válido com DDD.')
         const phone = normalizePhone(body.phone)
-        if (Number(await store.get(`serve:fail:${phone}`)) >= MAX_FAILS) {
-          return fail(429, 'Muitas tentativas erradas. Tente de novo em 15 minutos.')
+        const { data } = await withData(store)
+        const member = data.members.find((m) => normalizePhone(m.phone) === phone)
+        if (!member) return fail(404, 'Não encontramos esse celular. Se você ainda não tem cadastro, fale com a liderança.')
+        if (member.pinHash) return ok({ mode: 'pin' })
+        if (!allowed(data, member.id)) {
+          return { status: 403, body: { error: CLOSED_MSG, closed: true, firstName: '' } }
+        }
+        const setupId = randomBytes(16).toString('hex')
+        await store.set(`serve:setup:${setupId}`, member.id, 15 * 60)
+        return ok({ mode: 'create', setupId })
+      }
+
+      case 'pin-create': {
+        // cria o PIN no primeiro acesso (depois das iniciais) e já entra
+        if (method !== 'POST') return fail(405, 'Método não permitido')
+        const memberId = await store.get(`serve:setup:${String(body?.setupId ?? '')}`)
+        if (!memberId) return fail(400, 'O tempo para criar o PIN acabou. Comece de novo pelo celular.')
+        const problem = pinProblem(body?.pin)
+        if (problem) return fail(400, problem)
+        let already = false
+        await withData(store, (d) => {
+          const m = d.members.find((x) => x.id === memberId)
+          if (!m) throw new ActionError('Sua conta não foi encontrada.', 401)
+          if (m.pinHash) { already = true; return }
+          m.pinHash = hashPin(String(body.pin))
+        })
+        await store.del(`serve:setup:${String(body.setupId)}`)
+        if (already) return fail(409, 'Você já tem um PIN. Entre com ele.')
+        return ok({ token: await newSession(store, memberId) })
+      }
+
+      case 'pin': {
+        // login com celular + PIN
+        if (method !== 'POST') return fail(405, 'Método não permitido')
+        if (!isValidPhone(String(body?.phone ?? ''))) return fail(400, 'Informe um celular válido com DDD.')
+        const phone = normalizePhone(body.phone)
+        if (Number(await store.get(`serve:pinfail:${phone}`)) >= PIN_MAX) {
+          return fail(429, 'Muitas tentativas erradas hoje. Tente amanhã ou peça para a liderança redefinir seu PIN.')
         }
         const { data } = await withData(store)
         const member = data.members.find((m) => normalizePhone(m.phone) === phone)
-        const { correct, options } = optionsFor(phone, member)
-        const challengeId = randomBytes(16).toString('hex')
-        await store.set(`serve:ch:${challengeId}`, JSON.stringify({ phone, memberId: member?.id ?? null, answer: correct }), CHALLENGE_TTL)
-        return ok({ challengeId, options })
+        if (!member || !checkPin(String(body?.pin ?? ''), member.pinHash)) {
+          const left = PIN_MAX - (await store.incr(`serve:pinfail:${phone}`, DAY))
+          return fail(401, left > 0
+            ? `PIN incorreto. Você tem mais ${left} ${left === 1 ? 'tentativa' : 'tentativas'} hoje.`
+            : 'Muitas tentativas erradas hoje. Tente amanhã ou peça para a liderança redefinir seu PIN.')
+        }
+        await store.del(`serve:pinfail:${phone}`)
+        if (!allowed(data, member.id)) {
+          return { status: 403, body: { error: CLOSED_MSG, closed: true, firstName: member.name.split(' ')[0] } }
+        }
+        return ok({ token: await newSession(store, member.id) })
       }
 
-      case 'verify': {
+      case 'pin-set':
+      case 'pin-change': {
+        // dentro do app: criar o PIN (quem ainda não tem) ou trocar (precisa do PIN atual)
         if (method !== 'POST') return fail(405, 'Método não permitido')
-        const key = `serve:ch:${String(body?.challengeId ?? '')}`
-        const raw = await store.get(key)
-        if (!raw) return fail(400, 'O tempo para escolher acabou. Digite o celular de novo.')
-        await store.del(key) // cada desafio vale uma tentativa só
-        const ch = JSON.parse(raw) as { phone: string; memberId: string | null; answer: string }
-        if (Number(await store.get(`serve:fail:${ch.phone}`)) >= MAX_FAILS) {
-          return fail(429, 'Muitas tentativas erradas. Tente de novo em 15 minutos.')
+        const meId = await sessionMember(store, auth)
+        if (!meId) return fail(401, 'Sua sessão expirou. Entre novamente.')
+        const problem = pinProblem(body?.pin)
+        if (problem) return fail(400, problem)
+        const { data } = await withData(store)
+        const me = data.members.find((m) => m.id === meId)
+        if (!me) return fail(401, 'Sua conta não foi encontrada.')
+        if (name === 'pin-set' && me.pinHash) return fail(409, 'Você já tem um PIN. Use “Alterar PIN”.')
+        if (name === 'pin-change') {
+          const phone = normalizePhone(me.phone)
+          if (Number(await store.get(`serve:pinfail:${phone}`)) >= PIN_MAX) return fail(429, 'Muitas tentativas erradas hoje. Tente amanhã.')
+          if (!checkPin(String(body?.current ?? ''), me.pinHash)) {
+            await store.incr(`serve:pinfail:${phone}`, DAY)
+            return fail(401, 'O PIN atual está incorreto.')
+          }
         }
-        if (!ch.memberId || String(body?.answer ?? '') !== ch.answer) {
-          const n = await store.incr(`serve:fail:${ch.phone}`, LOCK_TTL)
-          const left = MAX_FAILS - n
-          return fail(401, left > 0
-            ? `Essas não são as suas iniciais. Você tem mais ${left} ${left === 1 ? 'tentativa' : 'tentativas'}. Se ainda não tem cadastro, fale com a liderança.`
-            : 'Muitas tentativas erradas. Tente de novo em 15 minutos.')
-        }
-        await store.del(`serve:fail:${ch.phone}`)
-        const { data: current } = await withData(store)
-        if (!allowed(current, ch.memberId)) {
-          const firstName = current.members.find((m) => m.id === ch.memberId)?.name.split(' ')[0] ?? ''
-          return { status: 403, body: { error: CLOSED_MSG, closed: true, firstName } }
-        }
-        const token = randomBytes(32).toString('hex')
-        await store.set(`serve:sess:${sha(token)}`, ch.memberId, SESSION_TTL)
-        return ok({ token })
+        await withData(store, (d) => { const m = d.members.find((x) => x.id === meId); if (m) m.pinHash = hashPin(String(body.pin)) })
+        return ok({ ok: true })
       }
 
       case 'logout': {
@@ -215,7 +269,7 @@ export async function route(name: string, method: string, body: any, auth: strin
         const { data } = await withData(store)
         if (!data.members.some((m) => m.id === meId)) return fail(401, 'Sua conta não foi encontrada. Fale com a liderança.')
         if (!allowed(data, meId)) return fail(403, CLOSED_MSG)
-        return ok({ data: viewFor(data, meId), meId })
+        return ok({ data: viewFor(data, meId), meId, needsPin: !data.members.find((m) => m.id === meId)?.pinHash })
       }
 
       case 'action': {
@@ -283,6 +337,9 @@ export async function route(name: string, method: string, body: any, auth: strin
         // chamado pela Vercel uma vez por dia (vercel.json → crons); se CRON_SECRET existir, é exigido
         const secret = process.env.CRON_SECRET
         if (secret && auth !== `Bearer ${secret}`) return fail(401, 'Não autorizado')
+        // backup diário de todos os dados (guardado por 15 dias): serve:backup:AAAA-MM-DD
+        const { doc } = await store.getDoc()
+        if (doc) await store.set(`serve:backup:${brToday()}`, doc, 15 * 24 * 3600)
         const tomorrow = toISO(addDays(fromISO(brToday()), 1))
         if (!(await store.setNX(`serve:reminded:${tomorrow}`, '1', 3 * 24 * 3600))) return ok({ skipped: true, tomorrow })
         const { data } = await withData(store)

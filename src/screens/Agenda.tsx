@@ -10,15 +10,41 @@ import type { AppData, ChurchEvent } from '../data/types'
 
 export function fillOf(data: AppData, ev: ChurchEvent, ministryIds?: string[]) {
   let total = 0
-  let filled = 0
+  let confirmed = 0
+  let pending = 0
   for (const mid of ev.ministryIds) {
     if (ministryIds && !ministryIds.includes(mid)) continue
     for (const r of slotsFor(data, ev, mid)) {
+      const list = data.assignments.filter((a) => a.eventId === ev.id && a.ministryId === mid && a.role === r.name && a.status !== 'declined')
+      const c = Math.min(r.count, list.filter((a) => a.status === 'confirmed').length)
       total += r.count
-      filled += Math.min(r.count, data.assignments.filter((a) => a.eventId === ev.id && a.ministryId === mid && a.role === r.name && a.status !== 'declined').length)
+      confirmed += c
+      pending += Math.min(r.count - c, list.filter((a) => a.status === 'pending').length)
     }
   }
-  return { total, filled }
+  return { total, confirmed, pending, open: total - confirmed - pending, filled: confirmed + pending }
+}
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+
+/** Barra de preenchimento: confirmados (cheio), pendentes (claro) e vagas abertas (vazio) */
+export function FillBar({ data, ev, ministryIds, light, color }: { data: AppData; ev: ChurchEvent; ministryIds?: string[]; light?: boolean; color?: string }) {
+  const f = fillOf(data, ev, ministryIds)
+  if (!f.total) return null
+  const parts = [
+    f.confirmed === f.total ? 'Todos confirmados' : plural(f.confirmed, 'confirmado', 'confirmados'),
+    f.pending > 0 && plural(f.pending, 'pendente', 'pendentes'),
+    f.open > 0 && plural(f.open, 'vaga aberta', 'vagas abertas'),
+  ].filter(Boolean)
+  return (
+    <div className={`fill${light ? ' light' : ''}`}>
+      <div className="fill-bar" role="img" aria-label={parts.join(', ')}>
+        <div className="fill-confirmed" style={{ width: `${(f.confirmed / f.total) * 100}%`, ...(color ? { background: color } : {}) }} />
+        <div className="fill-pending" style={{ width: `${(f.pending / f.total) * 100}%`, ...(color ? { background: color } : {}) }} />
+      </div>
+      <span className="fill-text">{parts.join(' · ')}</span>
+    </div>
+  )
 }
 
 export function Agenda() {
@@ -73,7 +99,7 @@ export function Agenda() {
             <h4 className="day-title">{relativeDay(date) === 'Hoje' || relativeDay(date) === 'Amanhã' ? `${relativeDay(date)} · ` : ''}{longDate(date)}</h4>
             <div className="list">
               {evs.map((ev) => {
-                const { total, filled } = fillOf(data, ev)
+                const { total } = fillOf(data, ev)
                 const myA = data.assignments.find((a) => a.eventId === ev.id && a.memberId === me.id && a.status !== 'declined')
                 return (
                   <button key={ev.id} className="card event-card" onClick={() => push({ name: 'event', id: ev.id })}>
@@ -94,10 +120,7 @@ export function Agenda() {
                             return m ? <MinistryBadge key={id} ministry={m} size={26} /> : null
                           })}
                         </div>
-                        <div className="progress-row">
-                          <div className="progress"><div style={{ width: `${(filled / total) * 100}%` }} /></div>
-                          <span className="small muted">{filled}/{total} vagas</span>
-                        </div>
+                        <FillBar data={data} ev={ev} />
                       </>
                     ) : (
                       <span className="small muted">{ev.activity ? `${ev.activity} · ` : ''}sem escala de voluntários</span>

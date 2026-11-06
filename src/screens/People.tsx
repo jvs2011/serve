@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
-import { Check, ChevronRight, Search, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Check, ChevronRight, Download, KeyRound, Search, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react'
+import { downloadText, peopleCsv } from '../lib/export'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
-import { formatPhone, initialsOf, isValidPhone, nextPhoneValue, spaced } from '../lib/people'
+import { formatPhone, isValidPhone, nextPhoneValue } from '../lib/people'
 import { Avatar, Empty, MinistryBadge, TopBar } from '../components/ui'
 import type { MemberInput } from '../data/actions'
 
@@ -10,7 +11,8 @@ const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCa
 
 /** Lista de pessoas cadastradas (somente administrador) */
 export function People() {
-  const { data } = useStore()
+  const { data, reload } = useStore()
+  useEffect(() => { reload() }, [reload])
   const { back, push } = useNav()
   const [q, setQ] = useState('')
   const list = useMemo(() => {
@@ -64,13 +66,17 @@ export function People() {
         </div>
       )}
       <button className="btn btn-primary btn-block mt" onClick={() => push({ name: 'person' })}><UserPlus size={18} /> Cadastrar pessoa</button>
+      <button className="btn btn-ghost btn-block mt" onClick={() => {
+        downloadText(`serve-pessoas-${new Date().toISOString().slice(0, 10)}.csv`, peopleCsv(data))
+      }}><Download size={18} /> Baixar planilha de pessoas</button>
     </div>
   )
 }
 
 /** Cadastro / edição de uma pessoa */
 export function PersonForm({ id }: { id?: string }) {
-  const { data, actions, notify } = useStore()
+  const { data, actions, notify, mode, reload } = useStore()
+  useEffect(() => { reload() }, [reload])
   const me = useMe()
   const { back } = useNav()
   const existing = id ? data.members.find((m) => m.id === id) : undefined
@@ -89,7 +95,6 @@ export function PersonForm({ id }: { id?: string }) {
   const [error, setError] = useState('')
   const [confirmRemove, setConfirmRemove] = useState(false)
 
-  const initials = initialsOf(name)
   const isSelf = existing?.id === me.id
   const selected = (mid: string) => mins.find((m) => m.ministryId === mid)
   const toggleMinistry = (mid: string) =>
@@ -106,7 +111,7 @@ export function PersonForm({ id }: { id?: string }) {
     const r = await actions.saveMember({ id: existing?.id, name, phone, admin, ministries: mins })
     setSaving(false)
     if (!r.ok) return setError(r.error)
-    notify(existing ? 'Cadastro atualizado' : `${name.trim().split(' ')[0]} cadastrado(a). Iniciais para entrar: ${spaced(initials)}`)
+    notify(existing ? 'Cadastro atualizado' : `${name.trim().split(' ')[0]} cadastrado(a). No primeiro acesso, a pessoa cria o PIN.`)
     back()
   }
 
@@ -133,10 +138,16 @@ export function PersonForm({ id }: { id?: string }) {
           <span>Celular com DDD</span>
           <input id="person-phone" type="tel" inputMode="tel" value={phone} onChange={(e) => setPhone((p) => nextPhoneValue(p, e.target.value))} placeholder="(16) 99999-9999" />
         </label>
-        {initials.length >= 2 && (
-          <div className="initials-preview">
-            <span>Iniciais para entrar no app</span>
-            <b>{spaced(initials)}</b>
+        {existing && mode === 'live' && (
+          <div className="pin-status">
+            <KeyRound size={16} />
+            <span className="grow">{existing.hasPin ? 'Já criou o PIN de acesso' : 'Ainda não criou o PIN (cria no primeiro acesso)'}</span>
+            {existing.hasPin && !isSelf && (
+              <button className="btn btn-ghost btn-sm" disabled={saving} onClick={async () => {
+                const r = await actions.resetPin(existing.id)
+                notify(r.ok ? `PIN redefinido. ${existing.name.split(' ')[0]} cria um novo no próximo acesso.` : r.error)
+              }}>Redefinir PIN</button>
+            )}
           </div>
         )}
       </div>

@@ -48,6 +48,7 @@ export type Action =
   | { type: 'saveMember'; member: MemberInput }
   | { type: 'removeMember'; memberId: string }
   | { type: 'setOpen'; open: boolean }
+  | { type: 'resetPin'; memberId: string }
   | { type: 'saveTask'; task: TaskInput }
   | { type: 'createTeamSession'; sessionId: string; date: string; time: string; place?: string; note?: string }
   | { type: 'removeEvent'; eventId: string }
@@ -272,6 +273,13 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
       task.doneAt = action.done ? new Date().toISOString() : undefined
       const link = action.link?.trim()
       task.link = action.done && link ? (/^https?:\/\//.test(link) ? link : `https://${link}`).slice(0, 500) : action.done ? task.link : undefined
+      return {}
+    }
+    case 'resetPin': {
+      if (!isAdmin) throw deny()
+      const m = d.members.find((x) => x.id === action.memberId) ?? (() => { throw notFound() })()
+      delete m.pinHash
+      m.hasPin = false
       return {}
     }
     case 'setOpen':
