@@ -95,7 +95,7 @@ function TabBar() {
     <nav className="tabbar">
       {items.map((it) => (
         <button key={it.id} className={tab === it.id && !stack.length ? 'on' : ''} onClick={() => setTab(it.id)}
-          style={{ flexGrow: it.label.length > 10 ? 1.5 : it.label.length > 8 ? 1.2 : 1 }}>
+          style={it.label.length >= 13 ? { flexGrow: 1.4 } : undefined}>
           <span className="tab-icon">{it.icon}{!!it.badge && <i className="badge">{it.badge}</i>}</span>
           <span>{it.label}</span>
         </button>
