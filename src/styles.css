@@ -559,15 +559,26 @@ input:focus, textarea:focus { border-color: var(--accent); }
 .closed-news { background: var(--surface-2); border-radius: 14px; padding: 14px; color: var(--ink) !important; font-weight: 500; line-height: 1.45; margin: 6px 0 8px; }
 
 /* ============ Formulário de cadastro: fundo escuro inteiro + vidro fosco ============ */
-html:has(.signup), body:has(.signup) { background: #0B0B0D; }
+/* No celular o fundo é pintado na raiz da página: cobre a área da barra de status, a barra do navegador
+   e o efeito de puxar a tela, sem bordas. A cor do ministério vem de --m (definida pelo formulário). */
+html:has(.signup) {
+  background:
+    radial-gradient(640px 460px at 100% 0, color-mix(in srgb, var(--m, #E57A47) 75%, transparent), transparent 70%),
+    radial-gradient(520px 420px at 0 620px, color-mix(in srgb, var(--m, #E57A47) 55%, transparent), transparent 72%),
+    radial-gradient(480px 380px at 100% 1100px, color-mix(in srgb, var(--m, #E57A47) 30%, transparent), transparent 72%),
+    radial-gradient(680px 460px at 80% 100%, rgba(229, 122, 71, .38), transparent 70%),
+    #0B0B0D;
+}
+body:has(.signup) { background: transparent; }
 .signup {
   --m: var(--accent);
-  position: relative; isolation: isolate; color: #fff; background: #0B0B0D;
+  position: relative; isolation: isolate; color: #fff; background: transparent;
   --glass: rgba(255, 255, 255, .07); --glass-strong: rgba(255, 255, 255, .11); --glass-line: rgba(255, 255, 255, .14);
   --text-soft: rgba(255, 255, 255, .72); --text-faint: rgba(255, 255, 255, .5);
 }
-/* brilhos fixos atrás de tudo (na cor do ministério), visíveis através do vidro */
-.signup::before {
+/* no computador, dentro do celular simulado: brilhos numa camada fixa da tela, atrás do vidro */
+.phone-screen .signup { background: #0B0B0D; }
+.phone-screen .signup::before {
   content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
     radial-gradient(75% 40% at 100% 0%, color-mix(in srgb, var(--m) 75%, transparent), transparent 70%),
@@ -611,15 +622,3 @@ html:has(.signup), body:has(.signup) { background: #0B0B0D; }
   transform: translateY(-1px) rotate(-45deg);
 }
 .signup-consent input:focus-visible { outline: 2px solid var(--m); outline-offset: 2px; }
-/* vidro mais fosco/claro */
-.signup { --glass-line: rgba(255, 255, 255, .22); }
-.signup .card.signup-card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, .17), rgba(255, 255, 255, .11));
-  backdrop-filter: blur(30px) saturate(170%); -webkit-backdrop-filter: blur(30px) saturate(170%);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, .18) inset, 0 20px 60px rgba(0, 0, 0, .35);
-}
-.signup input:not([type="checkbox"]) { background: rgba(255, 255, 255, .09); }
-.signup input:not([type="checkbox"]):focus { background: rgba(255, 255, 255, .14); }
-.signup-team { background: rgba(255, 255, 255, .08); }
-.signup .muted { color: rgba(255, 255, 255, .62); }
-.signup-news { background: rgba(255, 255, 255, .12); }

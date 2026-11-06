@@ -35,6 +35,13 @@ export function Signup({ ministryId }: { ministryId: string }) {
       .catch((e) => setLoadError(e instanceof Error && e.message !== 'Failed to fetch' ? e.message : 'Não foi possível abrir o formulário. Confira sua internet e tente de novo.'))
   }, [ministryId])
 
+  // a cor do ministério também pinta o fundo da página inteira (html)
+  useEffect(() => {
+    if (!info) return
+    document.documentElement.style.setProperty('--m', info.color)
+    return () => { document.documentElement.style.removeProperty('--m') }
+  }, [info])
+
   const toggle = (t: string) => {
     setTeams((s) => (s.includes(t) ? s.filter((x) => x !== t) : [...s, t]))
     setInterests((s) => s.filter((x) => x !== t)) // quem já serve na equipe não precisa marcar interesse
