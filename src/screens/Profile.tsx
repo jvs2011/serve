@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { openGuide } from './Guide'
-import { BarChart3, CalendarOff, Compass, ChevronRight, History, KeyRound, LogOut, RotateCcw, Smartphone, Users } from 'lucide-react'
+import { BarChart3, CalendarClock, CalendarOff, Compass, ChevronRight, History, KeyRound, LogOut, RotateCcw, Smartphone, Users } from 'lucide-react'
 import { ChangePinForm } from './PinScreens'
 import { formatPhone } from '../lib/people'
 import { NotificationSettings } from '../components/Notifications'
@@ -74,6 +74,11 @@ export function Profile() {
             <Users size={20} /><span className="grow">Pessoas</span>
             <span className="muted small">{data.members.length}</span>
             <ChevronRight size={18} className="muted" />
+          </button>
+        )}
+        {me.access === 'admin' && (
+          <button className="menu-item" onClick={() => push({ name: 'weekly' })}>
+            <CalendarClock size={20} /><span className="grow">Cultos da semana</span><ChevronRight size={18} className="muted" />
           </button>
         )}
         {isLeader && (

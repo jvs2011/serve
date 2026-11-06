@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import type { AppData, AssignmentStatus, Member, Song } from './types'
+import type { AppData, AssignmentStatus, Member, Song, WeeklySlot } from './types'
 import { createSeed, DATA_VERSION } from './seed'
 import { visibleTo } from '../lib/schedule'
-import { ActionError, applyAction, type Action, type ActionResult, type MemberInput, type MinistryEventInput, type TaskInput } from './actions'
+import { ActionError, applyAction, type Action, type ActionResult, type EventPatch, type MemberInput, type MinistryEventInput, type TaskInput } from './actions'
 import { disablePush, resyncPush } from '../lib/push'
 
 /*
@@ -14,7 +14,8 @@ const DEMO_KEY = 'serve:data'
 const SESSION_KEY = 'serve:session'
 const LEGACY_USER_KEY = 'serve:user'
 export const DEMO_TTL_MS = 10 * 60 * 1000
-const POLL_MS = 60_000
+// a cada 30 s (com o app aberto) o app só pergunta se algo mudou; os dados vêm só quando mudaram
+const POLL_MS = 30_000
 
 type Session = { mode: 'demo'; userId: string } | { mode: 'live'; token: string }
 
@@ -146,6 +147,10 @@ function makeActions(
       dispatchAsync({ type: 'createTeamSession', sessionId, date, time, place, note }),
     removeEvent: (eventId: string) => dispatchAsync({ type: 'removeEvent', eventId }),
     addMinistryEvent: (event: MinistryEventInput) => dispatchAsync({ type: 'addMinistryEvent', event }),
+    editEvent: (eventId: string, patch: EventPatch) => dispatchAsync({ type: 'editEvent', eventId, patch }),
+    saveWeekly: (slot: WeeklySlot) => dispatchAsync({ type: 'saveWeekly', slot }),
+    removeWeekly: (slotId: string) => dispatchAsync({ type: 'removeWeekly', slotId }),
+    sendSetlist: (eventId: string) => dispatchAsync({ type: 'sendSetlist', eventId }),
     removeTask: (taskId: string) => { dispatch({ type: 'removeTask', taskId }) },
     setTaskDone: (taskId: string, done: boolean, link?: string) => { dispatch({ type: 'setTaskDone', taskId, done, link }) },
     saveMember: (member: MemberInput) => dispatchAsync({ type: 'saveMember', member }),
@@ -205,11 +210,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [expiresAt, replaceDemo, notify])
 
   // ---------- dados reais ----------
-  const fetchLive = useCallback(async () => {
+  const versionRef = useRef(0)
+  const fetchLive = useCallback(async (opts?: { quick?: boolean }) => {
     const s = sessionRef.current
     if (s?.mode !== 'live') return
     try {
-      const r = await api<{ data: AppData; meId: string; needsPin?: boolean }>('data', { token: s.token })
+      const since = opts?.quick && versionRef.current ? `?since=${versionRef.current}` : ''
+      const r = await api<{ data: AppData; meId: string; needsPin?: boolean; version?: number; unchanged?: boolean }>(`data${since}`, { token: s.token })
+      if (r.unchanged) return
+      versionRef.current = r.version ?? 0
       setLiveData(r.data)
       setLiveMeId(r.meId)
       setNeedsPin(!!r.needsPin)
@@ -223,8 +232,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (session?.mode !== 'live') return
     fetchLive()
-    const t = setInterval(() => document.visibilityState === 'visible' && fetchLive(), POLL_MS)
-    const onVisible = () => document.visibilityState === 'visible' && fetchLive()
+    const t = setInterval(() => document.visibilityState === 'visible' && fetchLive({ quick: true }), POLL_MS)
+    const onVisible = () => document.visibilityState === 'visible' && fetchLive({ quick: true })
     document.addEventListener('visibilitychange', onVisible)
     return () => { clearInterval(t); document.removeEventListener('visibilitychange', onVisible) }
   }, [session, fetchLive])
@@ -235,7 +244,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const sendLive = useCallback(async (action: Action) => {
     const s = sessionRef.current
     if (s?.mode !== 'live') throw new ApiError('Entre novamente.', 401)
-    const r = await api<{ data: AppData; meId: string; result: ActionResult }>('action', { body: { action }, token: s.token })
+    const r = await api<{ data: AppData; meId: string; result: ActionResult; version?: number }>('action', { body: { action }, token: s.token })
+    versionRef.current = r.version ?? 0
     setLiveData(r.data)
     setLiveMeId(r.meId)
     return r.result
@@ -323,6 +333,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     },
   }), [dispatch, dispatchAsync, setSession, replaceDemo])
 
+  const reload = useCallback(() => { fetchLive({ quick: true }) }, [fetchLive])
   const mode = session?.mode ?? null
   // na demonstração, cada perfil vê o mesmo que veria nos dados reais (rascunhos só para líderes)
   const demoView = useMemo(() => (meId ? visibleTo(demoData, meId) : demoData), [demoData, meId])
@@ -336,7 +347,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [mode, me, liveData, setSession])
 
   return (
-    <Ctx.Provider value={{ mode, needsPin: mode === 'live' && needsPin, token: session?.mode === 'live' ? session.token : null, data, me, loading, loadError, toast, notify, reload: fetchLive, actions }}>
+    <Ctx.Provider value={{ mode, needsPin: mode === 'live' && needsPin, token: session?.mode === 'live' ? session.token : null, data, me, loading, loadError, toast, notify, reload, actions }}>
       {children}
     </Ctx.Provider>
   )

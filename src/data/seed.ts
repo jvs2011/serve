@@ -1,9 +1,10 @@
-import type { AppData, ChurchEvent, Member, Ministry, Song } from './types.js'
+import type { AppData, ChurchEvent, Member, Ministry, Song, WeeklySlot } from './types.js'
 import { addDays, toISO, fromISO, todayISO } from '../lib/dates.js'
 import { autoFill } from '../lib/schedule.js'
+import { DEFAULT_WEEKLY, eventId, weeklyEvents } from './agenda.js'
 
 /** Versão do formato dos dados. Mude para forçar recriação dos dados de exemplo. */
-export const DATA_VERSION = 16
+export const DATA_VERSION = 17
 
 /*
  * Ministérios da Lagoinha Franca.
@@ -203,91 +204,16 @@ function rng(seed: number) {
   }
 }
 
-/** Próxima data (a partir de `from`) que cai no dia da semana `dow` (0 = domingo) */
-function nextDow(from: Date, dow: number) {
-  const d = new Date(from)
-  while (d.getDay() !== dow) d.setDate(d.getDate() + 1)
-  return d
-}
-
-/** Cultos e encontros fixos da semana (para a pessoa marcar os que não consegue servir) */
-export interface RecurringSlot { key: string; day: string; time: string; title: string; ministryIds: string[] }
-const TEMPLO = ['louvor', 'follow', 'diaconato', 'centurioes', 'intercessao', 'consolidacao']
-export const RECURRING_SLOTS: RecurringSlot[] = [
-  { key: '0-09:30', day: 'Domingo', time: '9h30', title: 'Culto da manhã', ministryIds: [...TEMPLO, 'kids'] },
-  { key: '0-18:30', day: 'Domingo', time: '18h30', title: 'Culto da noite', ministryIds: [...TEMPLO, 'kids'] },
-  { key: '3-20:00', day: 'Quarta', time: '20h', title: 'Culto Fé', ministryIds: TEMPLO },
-  { key: '1-20:00', day: 'Segunda', time: '20h', title: 'Carisma', ministryIds: ['carisma'] },
-  { key: '2-19:30', day: 'Terça', time: '19h30', title: 'Link (GC)', ministryIds: ['link'] },
-  { key: '4-19:30', day: 'Quinta', time: '19h30', title: 'Shine', ministryIds: ['shine'] },
-  { key: '5-20:00', day: 'Sexta', time: '20h', title: 'Sala de Adoração (quinzenal)', ministryIds: ['louvor'] },
-  { key: '6-19:30', day: 'Sábado', time: '19h30', title: 'Cultos Rocket e Legacy', ministryIds: ['rocket', 'legacy'] },
-]
-
 /**
- * Agenda da igreja entre duas datas (YYYY-MM-DD, inclusivas): cultos fixos, uso contínuo
- * dos espaços e eventos especiais. Os ids são estáveis (data + horário + título), então
+ * Agenda da igreja entre duas datas (YYYY-MM-DD, inclusivas): cultos fixos (da agenda fixa
+ * `weekly`) e eventos especiais. Os ids são estáveis (data + horário + título), então
  * gerar de novo o mesmo período não duplica eventos.
  */
-export function buildAgenda(fromDate: string, toDate: string): ChurchEvent[] {
-  const events: ChurchEvent[] = []
-  const slug = (s: string) => s.normalize('NFD').replace(/[^\w]+/g, '-').toLowerCase()
+export function buildAgenda(fromDate: string, toDate: string, weekly: WeeklySlot[] = DEFAULT_WEEKLY): ChurchEvent[] {
+  const events: ChurchEvent[] = weeklyEvents(weekly, fromDate, toDate)
   const ev = (d: Date, title: string, time: string, ministryIds: string[], extra: Partial<ChurchEvent> = {}) => {
     const iso = toISO(d)
-    events.push({ id: `e-${iso}-${time.replace(':', '')}-${slug(title)}`, title, date: iso, time, ministryIds, setlist: [], ...extra })
-  }
-
-  /*
-   * Agenda fixa da Lagoinha Franca
-   * Cultos no templo: domingos 09:30 e 18:30, quartas 20:00 (o tema muda conforme a semana do mês).
-   * Uso contínuo dos espaços: cursos, GCs, ensaios e cultos dos ministérios.
-   */
-  const templo = ['louvor', 'follow', 'diaconato', 'centurioes', 'intercessao', 'consolidacao']
-  const domingo = [...templo, 'kids']
-  const T = { place: 'Templo' }
-  // ano de referência para a sexta quinzenal do Louvor (semanas alternadas)
-  const fridayAnchor = nextDow(new Date(2026, 0, 1), 5).getTime()
-  for (let d = fromISO(fromDate); toISO(d) <= toDate; d = addDays(d, 1)) {
-    const nth = Math.ceil(d.getDate() / 7) // 1ª, 2ª… ocorrência do dia da semana no mês
-    switch (d.getDay()) {
-      case 0: // Domingo
-        ev(d, nth === 2 ? 'Culto de Ceia' : 'Culto de Celebração', '09:30', domingo, T)
-        ev(d, nth === 1 ? 'Culto de Ceia' : 'Culto de Celebração', '18:30', domingo, T)
-        break
-      case 1: // Segunda
-        ev(d, 'Carisma', '20:00', ['carisma'], { endTime: '21:30', place: 'Templo e sala "Carisma"', activity: 'Curso' })
-        ev(d, 'Restaurar Homem', '20:00', [], { endTime: '21:30', place: 'Sala "Na Mesa"', activity: 'Curso' })
-        break
-      case 2: // Terça
-        ev(d, 'Link', '19:30', ['link'], { endTime: '21:00', place: 'Garagem', activity: 'GC' })
-        break
-      case 3: { // Quarta
-        ev(d, 'Restaurar Mulher', '18:30', [], { endTime: '20:00', place: 'Sala "Na Mesa"', activity: 'Curso' })
-        const shineMonth = [3, 6, 8].includes(d.getMonth()) // abril, julho e setembro
-        if (nth === 1) ev(d, 'Culto Fé – Louvor e Clamor', '20:00', templo, T)
-        else if (nth === 2) ev(d, 'Culto Fé', '20:00', templo, T)
-        // cultos temáticos: mesma equipe de um culto de quarta normal
-        else if (nth === 3) ev(d, 'Culto Fé – Gerações', '20:00', templo, { ...T, responsible: 'Equipe Bem Casados' })
-        else if (nth === 4) ev(d, 'Culto Fé – Carisma', '20:00', templo, { ...T, responsible: 'Pr. Alexandre' })
-        else if (shineMonth) ev(d, 'Culto Shine', '20:00', templo, { ...T, responsible: 'Ministério Shine' })
-        else ev(d, 'Culto Fé', '20:00', templo, T)
-        break
-      }
-      case 4: // Quinta
-        ev(d, 'Shine', '19:30', ['shine'], { endTime: '21:30', place: 'Sala "Na Mesa"', activity: 'Curso Experiência do Lar' })
-        break
-      case 5: // Sexta (quinzenal)
-        if (Math.round((d.getTime() - fridayAnchor) / 86_400_000 / 7) % 2 === 0) {
-          ev(d, 'Sala de Adoração', '20:00', ['louvor'], { endTime: '21:30', place: 'Garagem', activity: 'Louvor' })
-        }
-        break
-      case 6: // Sábado
-        // DNA está parado por enquanto: o ensaio fica na agenda, sem escala
-        ev(d, 'Ensaio DNA', '08:30', [], { endTime: '11:00', place: 'Templo', activity: 'Ensaio' })
-        ev(d, 'Culto Rocket', '19:30', ['rocket'], { endTime: '21:00', place: 'Templo', activity: 'Culto' })
-        ev(d, 'Culto Legacy', '19:30', ['legacy'], { endTime: '21:30', place: 'Prédio Kids', activity: 'Culto' })
-        break
-    }
+    events.push({ id: eventId(iso, time, title), title, date: iso, time, ministryIds, setlist: [], ...extra })
   }
 
   /*
@@ -331,8 +257,9 @@ export function createSeed(): AppData {
 
   const data: AppData = {
     version: DATA_VERSION,
-    ministries,
-    members,
+    // cópias: cada demonstração começa dos mesmos dados, sem mexer nos originais
+    ministries: structuredClone(ministries),
+    members: structuredClone(members),
     events: [],
     assignments: [],
     unavailability: {},
@@ -340,6 +267,8 @@ export function createSeed(): AppData {
     notices: [],
   }
   data.events = events
+  data.weekly = structuredClone(DEFAULT_WEEKLY)
+  data.generatedUntil = toISO(addDays(today, 49))
 
   // algumas indisponibilidades futuras
   const future = data.events.filter((e) => e.date > todayISO())

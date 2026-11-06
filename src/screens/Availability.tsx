@@ -5,7 +5,7 @@ import { useNav } from '../nav'
 import { dayNum, longDate, monthLong, monthMatrix, todayISO } from '../lib/dates'
 import { myUpcoming } from '../lib/selectors'
 import { TopBar } from '../components/ui'
-import { RECURRING_SLOTS } from '../data/seed'
+import { DEFAULT_WEEKLY, recurringSlots } from '../data/agenda'
 
 export function Availability() {
   const { data, actions } = useStore()
@@ -22,8 +22,9 @@ export function Availability() {
   const futureOff = [...off].filter((d) => d >= today).sort()
   // cultos fixos que fazem sentido para a pessoa (pelos ministérios dela)
   const mine = new Set(me.ministries.map((m) => m.ministryId))
-  const slots = RECURRING_SLOTS.filter((s) => s.ministryIds.some((id) => mine.has(id)))
-  const shownSlots = slots.length ? slots : RECURRING_SLOTS.slice(0, 3)
+  const all = recurringSlots(data.weekly ?? DEFAULT_WEEKLY)
+  const slots = all.filter((s) => s.ministryIds.some((id) => mine.has(id)))
+  const shownSlots = slots.length ? slots : all.slice(0, 3)
   const recurringOff = new Set(me.recurringOff ?? [])
 
   return (

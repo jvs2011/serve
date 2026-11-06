@@ -14,6 +14,8 @@ export interface Store {
   incr(key: string, ttlSeconds: number): Promise<number>
   /** Documento principal (todos os dados) e sua versão */
   getDoc(): Promise<{ doc: string | null; version: number }>
+  /** Só a versão do documento (leve: usada para saber se algo mudou) */
+  getVersion(): Promise<number>
   /** Grava o documento só se a versão ainda for `expected` (evita uma alteração apagar outra) */
   casDoc(expected: number, doc: string): Promise<boolean>
 }
@@ -60,6 +62,7 @@ class UpstashStore implements Store {
     const r = await this.call<{ result?: number; error?: string }[]>('/pipeline', [['INCR', key], ['EXPIRE', key, ttl, 'NX']])
     return Number(r[0]?.result ?? 0)
   }
+  async getVersion() { return Number((await this.get(VER)) ?? 0) }
   async getDoc() {
     const r = await this.call<{ result?: string | null }[]>('/pipeline', [['GET', DOC], ['GET', VER]])
     return { doc: r[0]?.result ?? null, version: Number(r[1]?.result ?? 0) }
@@ -98,6 +101,7 @@ class MemoryStore implements Store {
     return n
   }
   async getDoc() { return { doc: await this.get(DOC), version: Number((await this.get(VER)) ?? 0) } }
+  async getVersion() { return Number((await this.get(VER)) ?? 0) }
   async casDoc(expected: number, doc: string) {
     if (Number((await this.get(VER)) ?? 0) !== expected) return false
     await this.set(DOC, doc)

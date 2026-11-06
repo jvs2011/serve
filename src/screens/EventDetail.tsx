@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Check, ExternalLink, Music2, Pencil, Plus, Sparkles, Trash2, UserPlus, Users, X } from 'lucide-react'
+import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Check, ExternalLink, Music2, Pencil, Plus, Send, Sparkles, Trash2, UserPlus, Users, X } from 'lucide-react'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
 import { longDate, relativeDay, timeRange } from '../lib/dates'
@@ -7,6 +7,7 @@ import { firstName, join, memberById } from '../lib/selectors'
 import { canEditSetlist, canManage, isPast, openSlots, rankCandidates, rankGroups, slotsFor } from '../lib/schedule'
 import { AssignmentActions } from '../components/AssignmentActions'
 import { DraftBar } from '../components/DraftBar'
+import { EventEditForm } from './MinistryEvents'
 import { Avatar, Empty, MinistryBadge, Sheet, StatusPill, TopBar } from '../components/ui'
 import type { Assignment, ChurchEvent, Ministry, Song } from '../data/types'
 import { FillBar, fillOf } from './Agenda'
@@ -19,6 +20,7 @@ export function EventDetail({ id }: { id: string }) {
   const [tab, setTab] = useState<'team' | 'setlist'>('team')
   const { actions, notify } = useStore()
   const [confirmRemove, setConfirmRemove] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
   if (!ev) return <div className="screen"><TopBar title="Evento" onBack={back} /><Empty icon={<X />} title="Evento não encontrado" /></div>
 
   const canRemove = me.access === 'admin' || (!!ev.slots && ev.ministryIds.every((id) => canManage(me, id, data)))
@@ -35,7 +37,10 @@ export function EventDetail({ id }: { id: string }) {
     <div className="screen">
       <div className="event-hero">
         <TopBar title="" onBack={back} right={canRemove && (
-          <button className="icon-btn hero-icon" aria-label="Cancelar evento" onClick={() => setConfirmRemove(true)}><Trash2 size={18} /></button>
+          <div className="hero-actions">
+            <button className="icon-btn hero-icon" aria-label="Editar evento" onClick={() => setEditOpen(true)}><Pencil size={18} /></button>
+            <button className="icon-btn hero-icon" aria-label="Cancelar evento" onClick={() => setConfirmRemove(true)}><Trash2 size={18} /></button>
+          </div>
         )} />
         <span className="kicker light">{relativeDay(ev.date)} · {timeRange(ev)}</span>
         <h1>{ev.title}</h1>
@@ -62,6 +67,10 @@ export function EventDetail({ id }: { id: string }) {
           </div>
         </div>
       )}
+
+      <Sheet open={editOpen} onClose={() => setEditOpen(false)} title="Editar evento">
+        {editOpen && <EventEditForm ev={ev} onDone={() => setEditOpen(false)} />}
+      </Sheet>
 
       {mine.map((x) => (
         <div key={x.a.id} className="card my-assignment">
@@ -322,6 +331,17 @@ function Setlist({ ev }: { ev: ChurchEvent }) {
           <button className="btn btn-ghost" disabled={ev.setlist.length < 2} onClick={() => { setReorder(true); setConfirmDel(null) }}><ArrowUpDown size={16} /> Reordenar</button>
         </div>
       ))}
+      {canEdit && !reorder && ev.setlist.length > 0 && (
+        <div className="setlist-send">
+          <button className="btn btn-primary btn-block" onClick={async () => {
+            const r = await actions.sendSetlist(ev.id)
+            notify(r.ok ? 'Repertório enviado para a equipe do Louvor 🎶' : r.error)
+          }}><Send size={16} /> {ev.setlistSentAt ? 'Avisar a equipe de novo' : 'Avisar a equipe'}</button>
+          <span className="muted small">{ev.setlistSentAt
+            ? `Equipe avisada em ${new Date(ev.setlistSentAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}. Mudou algo? Avise de novo.`
+            : 'Quando o repertório estiver pronto, avise quem está escalado no Louvor.'}</span>
+        </div>
+      )}
       {!canEdit && !isPast(ev) && <p className="muted small setlist-hint">Quem está escalado no Louvor deste culto pode montar o repertório.</p>}
       <Sheet open={!!editing} onClose={() => setEditing(null)} title={editing === 'new' ? 'Adicionar música' : 'Editar música'}>
         {editing && <SongForm key={editing === 'new' ? 'new' : editing.id} song={editing === 'new' ? null : editing} onSave={(song) => {

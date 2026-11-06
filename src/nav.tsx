@@ -11,6 +11,7 @@ export type Route =
   | { name: 'dashboard' }
   | { name: 'history' }
   | { name: 'people' }
+  | { name: 'weekly' }
   | { name: 'person'; id?: string }
 
 interface Nav {

@@ -3,7 +3,9 @@
  * O mesmo código roda no celular (demonstração) e no servidor (dados reais),
  * e o servidor confere as permissões de quem está pedindo a alteração.
  */
-import type { AppData, AssignmentStatus, Member, Song } from './types.js'
+import type { AppData, AssignmentStatus, Member, Song, WeeklySlot } from './types.js'
+import { applyWeekly } from './agenda.js'
+import { todayISO } from '../lib/dates.js'
 import { autoFill, canEditSetlist, canManage, groupAssignments, isOff, uid } from '../lib/schedule.js'
 import { TEAM_SESSIONS } from './sessions.js'
 import { LEADER_ROLES } from './seed.js'
@@ -40,6 +42,20 @@ export interface MinistryEventInput {
   slots: { role: string; count: number }[]
 }
 
+/** Alterações de um evento (líder: eventos do ministério; coordenação: qualquer evento) */
+export interface EventPatch {
+  title: string
+  date: string
+  time: string
+  endTime?: string
+  place?: string
+  activity?: string
+  /** só a coordenação muda os ministérios de um evento */
+  ministryIds?: string[]
+  /** vagas próprias do evento (eventos de ministério) */
+  slots?: { ministryId: string; role: string; count: number }[]
+}
+
 export type Action =
   | { type: 'respond'; assignmentId: string; status: AssignmentStatus }
   | { type: 'checkIn'; assignmentId: string }
@@ -74,11 +90,17 @@ export type Action =
   | { type: 'createTeamSession'; sessionId: string; date: string; time: string; place?: string; note?: string }
   | { type: 'removeEvent'; eventId: string }
   | { type: 'addMinistryEvent'; event: MinistryEventInput }
+  | { type: 'editEvent'; eventId: string; patch: EventPatch }
+  | { type: 'saveWeekly'; slot: WeeklySlot }
+  | { type: 'removeWeekly'; slotId: string }
+  | { type: 'sendSetlist'; eventId: string }
   | { type: 'removeTask'; taskId: string }
   | { type: 'setTaskDone'; taskId: string; done: boolean; link?: string }
 
 export interface ActionResult {
   created?: number
+  updated?: number
+  removed?: number
   memberId?: string
 }
 
@@ -333,10 +355,90 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
       d.events.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
       return {}
     }
+    case 'editEvent': {
+      const ev = findEv(action.eventId)
+      const p = action.patch
+      if (!isAdmin && !(ev.slots && ev.ministryIds.every((id) => canManage(me, id, d)))) throw deny()
+      const title = String(p.title ?? '').trim().replace(/\s+/g, ' ').slice(0, 120)
+      if (!title) throw new ActionError('Dê um nome para o evento.')
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(p.date)) throw new ActionError('Escolha o dia.')
+      if (p.time && !/^\d{2}:\d{2}$/.test(p.time)) throw new ActionError('Horário inválido.')
+      // culto fixo ajustado à mão: a agenda fixa não sobrescreve mais este dia
+      if (ev.slotId) {
+        if (p.date !== ev.date) {
+          d.skipped = [...new Set([...(d.skipped ?? []), `${ev.slotId}|${ev.date}`])]
+          delete ev.slotId
+        }
+        ev.edited = true
+      }
+      ev.title = title
+      ev.date = p.date
+      ev.time = p.time ?? ''
+      const endTime = p.endTime && /^\d{2}:\d{2}$/.test(p.endTime) && (!ev.time || p.endTime > ev.time) ? p.endTime : undefined
+      if (endTime) ev.endTime = endTime; else delete ev.endTime
+      const place = p.place?.trim().slice(0, 80)
+      if (place) ev.place = place; else delete ev.place
+      const activity = p.activity?.trim().slice(0, 80)
+      if (activity) ev.activity = activity; else delete ev.activity
+      if (p.ministryIds && isAdmin && !ev.slots) {
+        const next = [...new Set(p.ministryIds)].filter((id) => d.ministries.some((m) => m.id === id))
+        const removed = ev.ministryIds.filter((id) => !next.includes(id))
+        if (removed.length) {
+          const gone = new Set(d.assignments.filter((a) => a.eventId === ev.id && removed.includes(a.ministryId)).map((a) => a.id))
+          d.assignments = d.assignments.filter((a) => !gone.has(a.id))
+          d.swaps = d.swaps.filter((s) => !gone.has(s.assignmentId))
+        }
+        ev.ministryIds = next
+      }
+      if (p.slots && ev.slots) {
+        const slots = p.slots
+          .filter((x) => ev.ministryIds.includes(x.ministryId) && d.ministries.find((m) => m.id === x.ministryId)?.roles.some((r) => r.name === x.role))
+          .map((x) => ({ ministryId: x.ministryId, role: x.role, count: Math.max(0, Math.min(50, Math.round(x.count))) }))
+          .filter((x) => x.count > 0)
+        if (!slots.length) throw new ActionError('Diga quantas pessoas o evento precisa.')
+        ev.slots = slots
+      }
+      d.events.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+      return {}
+    }
+    case 'saveWeekly': {
+      if (!isAdmin) throw deny()
+      const slot = cleanSlot(d, action.slot)
+      d.weekly ??= []
+      const i = d.weekly.findIndex((x) => x.id === slot.id)
+      const old = i >= 0 ? d.weekly[i] : undefined
+      if (i >= 0) d.weekly[i] = slot
+      else d.weekly.push(slot)
+      // mudou de dia/horário: quem marcou que não pode nesse culto continua marcado
+      const oldKey = old && `${old.day}-${old.time}`
+      const newKey = `${slot.day}-${slot.time}`
+      if (oldKey && oldKey !== newKey && !d.weekly.some((x) => `${x.day}-${x.time}` === oldKey)) {
+        for (const m of d.members) if (m.recurringOff?.includes(oldKey)) m.recurringOff = [...new Set(m.recurringOff.map((k) => (k === oldKey ? newKey : k)))].sort()
+      }
+      const c = applyWeekly(d, todayISO())
+      return { created: c.added, updated: c.updated, removed: c.removed }
+    }
+    case 'removeWeekly': {
+      if (!isAdmin) throw deny()
+      if (!d.weekly?.some((x) => x.id === action.slotId)) throw notFound()
+      d.weekly = d.weekly.filter((x) => x.id !== action.slotId)
+      d.skipped = (d.skipped ?? []).filter((k) => !k.startsWith(`${action.slotId}|`))
+      const c = applyWeekly(d, todayISO())
+      return { created: c.added, updated: c.updated, removed: c.removed }
+    }
+    case 'sendSetlist': {
+      const ev = findEv(action.eventId)
+      if (!canEditSetlist(d, me, ev)) throw deny()
+      if (!ev.setlist.length) throw new ActionError('Adicione as músicas antes de avisar a equipe.')
+      ev.setlistSentAt = new Date().toISOString()
+      return {}
+    }
     case 'removeEvent': {
       const ev = findEv(action.eventId)
       // líder só cancela encontros de equipe dos ministérios que lidera; admin cancela qualquer evento
       if (!isAdmin && !(ev.slots && ev.ministryIds.every((id) => canManage(me, id, d)))) throw deny()
+      // culto fixo cancelado neste dia: não volta quando a agenda for gerada de novo
+      if (ev.slotId) d.skipped = [...new Set([...(d.skipped ?? []), `${ev.slotId}|${ev.date}`])]
       const gone = new Set(d.assignments.filter((a) => a.eventId === ev.id).map((a) => a.id))
       d.assignments = d.assignments.filter((a) => !gone.has(a.id))
       d.swaps = d.swaps.filter((s) => !gone.has(s.assignmentId))
@@ -504,6 +606,37 @@ export function selfRegister(d: AppData, input: SelfSignup): { status: 'created'
   }
   d.members.push(member)
   return { status: 'created', memberId: member.id }
+}
+
+/** Confere e arruma um culto fixo vindo do app */
+function cleanSlot(d: AppData, s: WeeklySlot): WeeklySlot {
+  const title = String(s.title ?? '').trim().replace(/\s+/g, ' ').slice(0, 120)
+  if (!title) throw new ActionError('Dê um nome para o culto.')
+  const day = Math.round(Number(s.day))
+  if (!(day >= 0 && day <= 6)) throw new ActionError('Escolha o dia da semana.')
+  if (!/^\d{2}:\d{2}$/.test(s.time ?? '')) throw new ActionError('Escolha o horário.')
+  const endTime = s.endTime && /^\d{2}:\d{2}$/.test(s.endTime) && s.endTime > s.time ? s.endTime : undefined
+  const weeks = [...new Set((s.weeks ?? []).map(Number))].filter((w) => w >= 1 && w <= 5).sort()
+  const months = [...new Set((s.months ?? []).map(Number))].filter((m) => m >= 1 && m <= 12).sort((a, b) => a - b)
+  let biweekly: string | undefined
+  if (s.biweekly) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(s.biweekly)) throw new ActionError('Escolha uma data em que o culto acontece.')
+    const [y, m, dd] = s.biweekly.split('-').map(Number)
+    if (new Date(y, m - 1, dd).getDay() !== day) throw new ActionError('A data de referência precisa cair no mesmo dia da semana.')
+    biweekly = s.biweekly
+  }
+  const opt = (v?: string, max = 80) => v?.trim().slice(0, max) || undefined
+  const slot: WeeklySlot = {
+    id: s.id && /^[\w-]{1,40}$/.test(s.id) ? s.id : `w-${uid()}`,
+    day, time: s.time, title,
+    ministryIds: [...new Set(s.ministryIds ?? [])].filter((id) => d.ministries.some((m) => m.id === id)),
+  }
+  if (endTime) slot.endTime = endTime
+  for (const [k, v] of [['place', opt(s.place)], ['activity', opt(s.activity)], ['responsible', opt(s.responsible)]] as const) if (v) slot[k] = v
+  if (biweekly) slot.biweekly = biweekly
+  else if (weeks.length && weeks.length < 5) slot.weeks = weeks
+  if (months.length && months.length < 12) slot.months = months
+  return slot
 }
 
 function cleanSong(song: Omit<Song, 'id'>): Omit<Song, 'id'> {

@@ -7,7 +7,8 @@ Web app (PWA) para gestão de escalas de voluntários dos ministérios da Lagoin
 ```bash
 npm install
 npm run dev        # abre em http://localhost:5173 (use --host para testar no celular na mesma rede)
-npm run build      # gera /dist para publicar (Vercel, Netlify, Cloudflare Pages…)
+npm test           # testes automáticos (agenda, escala, permissões, servidor, notificações)
+npm run build      # roda os testes e gera /dist (se algum teste falhar, a publicação não acontece)
 npm run build:single  # gera /dist-single/index.html, um arquivo único para prévia
 ```
 
@@ -42,6 +43,12 @@ ativar notificações e, para líderes, como publicar a escala). Dá para rever 
   e "Quem precisa de cuidado" (voluntários afastados)
 - Ranking de dedicação, equipe com atalho para WhatsApp, avisos e repertório
 - Criar eventos (coordenação)
+- **Cultos da semana** (coordenação, em Perfil): a agenda fixa fica nos dados e é editável no app —
+  dia, horário, local, ministérios e frequência (toda semana, semanas do mês, a cada 15 dias, meses).
+  Ao salvar, os próximos eventos são atualizados sem perder as escalas; dias editados à mão ou cancelados ficam como estão
+- **Editar evento** (lápis no evento): a coordenação edita qualquer evento (num culto fixo, muda só aquele dia);
+  o líder edita os eventos do próprio ministério. Quem está escalado é avisado se mudar dia, horário ou local
+- Repertório: botão **Avisar a equipe** manda as músicas para quem está escalado no Louvor
 
 **Eventos do ministério**
 - O líder cria eventos do próprio ministério (ex.: ações internas e externas do We Care) na aba Escalas:
@@ -119,7 +126,12 @@ Cada pessoa ativa em **Perfil → Notificações** (ou no convite da tela Iníci
 
 - nova escala (à mão ou automática) e lembrete na véspera, por volta das 18h (agendamento diário da Vercel em `vercel.json`);
 - pedido de troca, se tiver a mesma função e estiver livre; troca resolvida, para quem pediu;
-- escala recusada, para os líderes do ministério; avisos do ministério ou da igreja.
+- escala recusada, para os líderes do ministério; avisos do ministério ou da igreja;
+- mudança ou cancelamento de um evento em que está escalado; repertório enviado pelo Louvor;
+- às 18h: lembrete de confirmar (escalas pendentes daqui a 3 dias) e, para os líderes, vagas abertas
+  nos próximos 3 dias e escala ainda em rascunho.
+
+O app confere a cada 30 segundos (só com ele aberto) se algo mudou e baixa os dados só quando mudaram.
 
 As chaves de segurança das notificações (VAPID) são criadas sozinhas e guardadas no banco.
 No iPhone (iOS 16.4 ou mais novo), as notificações só funcionam com o Serve instalado na tela inicial.

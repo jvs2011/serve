@@ -6,12 +6,13 @@ import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypt
 import type { AppData } from '../src/data/types.js'
 import { ActionError, applyAction, selfRegister, type Action } from '../src/data/actions.js'
 import { buildAgenda, DATA_VERSION, LEADER_ROLES, ministryList, ROLE_RENAMES } from '../src/data/seed.js'
+import { applyWeekly, DEFAULT_WEEKLY, weeklyEvents } from '../src/data/agenda.js'
 import { addDays, fromISO, toISO } from '../src/lib/dates.js'
 import { isValidPhone, normalizePhone } from '../src/lib/people.js'
 import { canManage, visibleTo } from '../src/lib/schedule.js'
 import { getStore, type Store } from './storage.js'
 import { addSub, isValidSub, removeSub, sendPush, vapidKeys } from './push.js'
-import { draftRemindersFor, notificationsFor, remindersFor, taskRemindersFor, type Outgoing } from './notify.js'
+import { confirmRemindersFor, draftRemindersFor, notificationsFor, openSlotsAlertsFor, remindersFor, taskRemindersFor, type Outgoing } from './notify.js'
 
 const LIVE_VERSION = 1
 const SESSION_TTL = 180 * 24 * 3600 // 180 dias
@@ -36,7 +37,7 @@ function emptyData(): AppData {
  * Acompanha mudanças de estrutura feitas no código:
  * - funções renomeadas (ex.: Ministro/Vocal → Voz) nos cadastros, interesses e escalas futuras;
  * - funções que deixaram de existir saem dos cadastros e das escalas futuras;
- * - cultos fixos futuros passam a ter os ministérios definidos no código (ex.: DNA fora dos cultos).
+ * - cultos fixos futuros seguem a agenda fixa.
  */
 function syncStructure(d: AppData, today: string) {
   const rename = (mid: string, role: string): string | null => {
@@ -63,31 +64,8 @@ function syncStructure(d: AppData, today: string) {
     }
   }
 
-  // cultos fixos futuros: ministérios e horário conforme o código
-  const generated = new Map(buildAgenda(today, d.generatedUntil ?? today).map((e) => [e.id, e]))
-  const fixedId = /^e-\d{4}-\d{2}-\d{2}-\d{4}-/
-  const moved = new Map<string, string>()
-  for (const e of d.events) {
-    if (e.date < today) continue
-    const g = generated.get(e.id)
-    if (g) {
-      if (JSON.stringify(g.ministryIds) !== JSON.stringify(e.ministryIds)) e.ministryIds = g.ministryIds
-    } else if (fixedId.test(e.id) && !e.slots) {
-      // culto fixo que mudou de horário (ex.: Rocket 19h → 19h30): vai para o novo, com as escalas
-      const twin = [...generated.values()].find((x) => x.date === e.date && x.title === e.title && x.id !== e.id)
-      if (twin) moved.set(e.id, twin.id)
-    }
-  }
-  if (moved.size) {
-    for (const [from, to] of moved) {
-      const oldEv = d.events.find((e) => e.id === from)!
-      if (!d.events.some((e) => e.id === to)) d.events.push({ ...generated.get(to)!, setlist: oldEv.setlist })
-    }
-    d.events = d.events.filter((e) => !moved.has(e.id))
-    for (const a of d.assignments) if (moved.has(a.eventId)) a.eventId = moved.get(a.eventId)!
-    for (const t of d.tasks ?? []) if (t.eventId && moved.has(t.eventId)) t.eventId = moved.get(t.eventId)
-    d.events.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
-  }
+  // cultos fixos futuros seguem a agenda fixa (editada pela coordenação)
+  if (d.weekly) applyWeekly(d, today)
   const events = new Map(d.events.map((e) => [e.id, e]))
 
   // escalas futuras: renomeia a função ou tira a escala que não cabe mais
@@ -143,13 +121,25 @@ function prepare(d: AppData): boolean {
     changed = true
   }
 
-  // agenda fixa: gera o que falta até 10 semanas à frente (ids estáveis, sem duplicar)
+  // agenda fixa nos dados: na primeira vez, a do código; os eventos já gerados ganham o culto de origem
   const today = brToday()
+  if (!d.weekly) {
+    d.weekly = structuredClone(DEFAULT_WEEKLY)
+    const first = d.events.reduce((m, e) => (e.date < m ? e.date : m), today)
+    const origin = new Map(weeklyEvents(d.weekly, first, d.generatedUntil ?? today).map((e) => [e.id, e.slotId]))
+    for (const e of d.events) if (!e.slotId && origin.has(e.id)) e.slotId = origin.get(e.id)
+    changed = true
+  }
+
+  // agenda fixa: gera o que falta até 10 semanas à frente (sem duplicar nem trazer de volta dias cancelados)
   const until = toISO(addDays(fromISO(today), 70))
   const from = d.generatedUntil ? toISO(addDays(fromISO(d.generatedUntil), 1)) : toISO(addDays(fromISO(today), -7))
   if (from <= until) {
     const ids = new Set(d.events.map((e) => e.id))
-    for (const e of buildAgenda(from, until)) if (!ids.has(e.id)) d.events.push(e)
+    const keys = new Set([...d.events.filter((e) => e.slotId).map((e) => `${e.slotId}|${e.date}`), ...(d.skipped ?? [])])
+    for (const e of buildAgenda(from, until, d.weekly)) {
+      if (!ids.has(e.id) && !(e.slotId && keys.has(`${e.slotId}|${e.date}`))) d.events.push(e)
+    }
     d.events.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
     d.generatedUntil = until
     changed = true
@@ -171,15 +161,15 @@ function prepare(d: AppData): boolean {
 }
 
 /** Lê os dados, aplica `fn` e grava com controle de versão (tenta de novo se outra pessoa gravou antes) */
-async function withData<T>(store: Store, fn?: (d: AppData) => T): Promise<{ data: AppData; result?: T }> {
+async function withData<T>(store: Store, fn?: (d: AppData) => T): Promise<{ data: AppData; result?: T; version: number }> {
   for (let attempt = 0; attempt < 6; attempt++) {
     const { doc, version } = await store.getDoc()
     const data: AppData = doc ? JSON.parse(doc) : emptyData()
     let changed = prepare(data) || !doc
     let result: T | undefined
     if (fn) { result = fn(data); changed = true }
-    if (!changed) return { data, result }
-    if (await store.casDoc(version, JSON.stringify(data))) return { data, result }
+    if (!changed) return { data, result, version }
+    if (await store.casDoc(version, JSON.stringify(data))) return { data, result, version: version + 1 }
   }
   throw new Error('Muitas alterações ao mesmo tempo. Tente de novo.')
 }
@@ -355,10 +345,13 @@ export async function route(name: string, method: string, body: any, auth: strin
       case 'data': {
         const meId = await sessionMember(store, auth)
         if (!meId) return fail(401, 'Sua sessão expirou. Entre novamente.')
-        const { data } = await withData(store)
+        // o app pergunta "mudou algo desde a versão X?": se não mudou, responde só isso (bem mais leve)
+        const since = Number(query?.since)
+        if (since > 0 && (await store.getVersion()) === since) return ok({ unchanged: true, version: since })
+        const { data, version } = await withData(store)
         if (!data.members.some((m) => m.id === meId)) return fail(401, 'Sua conta não foi encontrada. Fale com a liderança.')
         if (!allowed(data, meId)) return fail(403, CLOSED_MSG)
-        return ok({ data: viewFor(data, meId), meId, needsPin: !data.members.find((m) => m.id === meId)?.pinHash })
+        return ok({ data: viewFor(data, meId), meId, version, needsPin: !data.members.find((m) => m.id === meId)?.pinHash })
       }
 
       case 'action': {
@@ -369,14 +362,14 @@ export async function route(name: string, method: string, body: any, auth: strin
         if (!action?.type) return fail(400, 'Pedido inválido.')
         if (!allowed((await withData(store)).data, meId)) return fail(403, CLOSED_MSG)
         let before: AppData | null = null
-        const { data, result } = await withData(store, (d) => {
+        const { data, result, version } = await withData(store, (d) => {
           before = structuredClone(d)
           return applyAction(d, action, meId)
         })
         if (before) {
           try { await deliver(store, notificationsFor(before, data, meId, brToday())) } catch (e) { console.error('notificações', e) }
         }
-        return ok({ data: viewFor(data, meId), meId, result })
+        return ok({ data: viewFor(data, meId), meId, version, result })
       }
 
       case 'signup-info': {
@@ -432,7 +425,13 @@ export async function route(name: string, method: string, body: any, auth: strin
         const tomorrow = toISO(addDays(fromISO(brToday()), 1))
         if (!(await store.setNX(`serve:reminded:${tomorrow}`, '1', 3 * 24 * 3600))) return ok({ skipped: true, tomorrow })
         const { data } = await withData(store)
-        const list = [...remindersFor(data, tomorrow), ...taskRemindersFor(data, tomorrow), ...draftRemindersFor(data, brToday(), toISO(addDays(fromISO(brToday()), 3)))]
+        const in3 = toISO(addDays(fromISO(brToday()), 3))
+        const list = [
+          ...remindersFor(data, tomorrow), ...taskRemindersFor(data, tomorrow),
+          ...draftRemindersFor(data, brToday(), in3),
+          ...openSlotsAlertsFor(data, tomorrow, in3),
+          ...confirmRemindersFor(data, in3),
+        ]
         await deliver(store, list)
         return ok({ tomorrow, people: list.length })
       }

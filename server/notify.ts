@@ -4,7 +4,7 @@
  */
 import type { AppData, Assignment, ChurchEvent } from '../src/data/types.js'
 import type { PushPayload } from './push.js'
-import { isOff } from '../src/lib/schedule.js'
+import { isOff, openSlots } from '../src/lib/schedule.js'
 
 export interface Outgoing { to: string[]; payload: PushPayload }
 
@@ -129,7 +129,97 @@ export function notificationsFor(before: AppData, after: AppData, actorId: strin
     }
   }
 
+  // 7) evento mudou de dia, horário ou local, ou foi cancelado → quem está escalado (uma notificação por pessoa)
+  const changes = new Map<string, string[]>()
+  const addChange = (memberId: string, line: string) => changes.set(memberId, [...(changes.get(memberId) ?? []), line])
+  const people = (data: AppData, eventId: string) =>
+    [...new Set(data.assignments.filter((a) => a.eventId === eventId && !a.draft && a.status !== 'declined' && a.memberId !== actorId).map((a) => a.memberId))]
+  const afterEvents = new Map(after.events.map((e) => [e.id, e]))
+  for (const old of before.events) {
+    if (old.date < today) continue
+    const cur = afterEvents.get(old.id)
+    if (!cur) {
+      for (const id of people(before, old.id)) addChange(id, `${old.title} (${when(old)}) foi cancelado`)
+      continue
+    }
+    if (old.date === cur.date && old.time === cur.time && (old.place ?? '') === (cur.place ?? '')) continue
+    const what = old.date !== cur.date || old.time !== cur.time ? `agora ${when(cur)}` : `agora em ${cur.place || 'Lagoinha Franca'}`
+    for (const id of people(after, cur.id)) addChange(id, `${cur.title}: ${what}${old.date !== cur.date || old.time !== cur.time ? (cur.place ? ` · ${cur.place}` : '') : ''}`)
+  }
+  for (const [memberId, lines] of changes) {
+    out.push({
+      to: [memberId],
+      payload: {
+        title: lines.length === 1 ? 'Mudança na sua escala' : `${lines.length} mudanças nas suas escalas`,
+        body: lines.slice(0, 3).join('\n') + (lines.length > 3 ? '\n…' : ''),
+        tag: `mudanca-${today}-${memberId}`,
+      },
+    })
+  }
+
+  // 8) repertório enviado → equipe do Louvor escalada no culto
+  const beforeEvents = new Map(before.events.map((e) => [e.id, e]))
+  for (const e of after.events) {
+    if (!e.setlistSentAt || beforeEvents.get(e.id)?.setlistSentAt === e.setlistSentAt) continue
+    const to = [...new Set(after.assignments.filter((a) => a.eventId === e.id && a.ministryId === 'louvor' && !a.draft && a.status !== 'declined' && a.memberId !== actorId).map((a) => a.memberId))]
+    out.push({
+      to,
+      payload: {
+        title: `Repertório · ${e.title} 🎶`,
+        body: `${when(e)}\n` + e.setlist.slice(0, 6).map((x, i) => `${i + 1}. ${x.title} (${x.key})`).join('\n') + (e.setlist.length > 6 ? '\n…' : ''),
+        tag: `repertorio-${e.id}`,
+      },
+    })
+  }
+
   return out.filter((o) => o.to.length > 0)
+}
+
+/** Líderes: vagas ainda abertas nos cultos dos próximos dias */
+export function openSlotsAlertsFor(data: AppData, from: string, until: string): Outgoing[] {
+  const out: Outgoing[] = []
+  const events = data.events.filter((e) => e.date >= from && e.date <= until).sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+  for (const m of data.ministries) {
+    const lines: string[] = []
+    let total = 0
+    for (const e of events) {
+      if (!e.ministryIds.includes(m.id)) continue
+      const open = openSlots(data, e.id, m.id)
+      const n = open.reduce((s, x) => s + x.missing, 0)
+      if (!n) continue
+      total += n
+      lines.push(`${e.title} (${when(e)}): ${open.map((x) => (x.missing > 1 ? `${x.missing} ${x.role}` : x.role)).join(', ')}`)
+    }
+    if (!total) continue
+    out.push({
+      to: m.leaderIds,
+      payload: {
+        title: `${m.name}: ${total} ${total === 1 ? 'vaga aberta' : 'vagas abertas'}`,
+        body: lines.slice(0, 3).join('\n') + (lines.length > 3 ? '\n…' : '') + '\nToque para escalar.',
+        tag: `vagas-${m.id}-${from}`,
+      },
+    })
+  }
+  return out.filter((o) => o.to.length > 0)
+}
+
+/** Quem ainda não confirmou uma escala que acontece em `date` (alguns dias antes) */
+export function confirmRemindersFor(data: AppData, date: string): Outgoing[] {
+  const by = new Map<string, { a: Assignment; e: ChurchEvent }[]>()
+  for (const a of data.assignments) {
+    if (a.status !== 'pending' || a.draft) continue
+    const e = data.events.find((x) => x.id === a.eventId)
+    if (!e || e.date !== date) continue
+    by.set(a.memberId, [...(by.get(a.memberId) ?? []), { a, e }])
+  }
+  return [...by].map(([memberId, list]) => ({
+    to: [memberId],
+    payload: {
+      title: 'Você ainda não confirmou ⏳',
+      body: list.map((x) => `${x.e.title} · ${when(x.e)} · ${x.a.role}`).join('\n') + '\nToque para confirmar ou avisar que não pode.',
+      tag: `confirmar-${date}`,
+    },
+  }))
 }
 
 function dueText(due: string, today: string): string {

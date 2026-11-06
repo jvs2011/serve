@@ -30,7 +30,7 @@ function devApi(): Plugin {
       if (!process.env.ADMIN_PHONE) {
         process.env.ADMIN_PHONE = '16999990000'
         process.env.ADMIN_NAME ??= 'Administrador Teste'
-        server.config.logger.info('  Serve (dev): admin de teste → celular (16) 99999-0000, iniciais A T')
+        server.config.logger.info('  Serve (dev): admin de teste → celular (16) 99999-0000 (cria o PIN no primeiro acesso)')
       }
       server.middlewares.use(async (req, res, next) => {
         const path = req.url?.split('?')[0] ?? ''

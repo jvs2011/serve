@@ -16,6 +16,7 @@ import { Dashboard } from './screens/Dashboard'
 import { People, PersonForm } from './screens/People'
 import { CreatePinGate } from './screens/PinScreens'
 import { Logo } from './components/Logo'
+import { Weekly } from './screens/Weekly'
 import { Guide, guideSeen } from './screens/Guide'
 import { useEffect, useState } from 'react'
 
@@ -74,6 +75,7 @@ function Main() {
       case 'history': screen = <History />; break
       case 'dashboard': screen = <Dashboard />; break
       case 'people': screen = <People />; break
+      case 'weekly': screen = <Weekly />; break
       case 'person': screen = <PersonForm key={top.id ?? 'new'} id={top.id} />; break
     }
   } else {

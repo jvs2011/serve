@@ -61,8 +61,33 @@ export interface Song {
   link?: string // cifra/áudio
 }
 
+/** Culto ou encontro fixo da semana (a coordenação edita no app) */
+export interface WeeklySlot {
+  id: string
+  day: number // 0 = domingo … 6 = sábado
+  time: string // HH:mm
+  endTime?: string
+  title: string
+  place?: string
+  activity?: string
+  responsible?: string
+  ministryIds: string[]
+  /** Semanas do mês em que acontece (1ª a 5ª ocorrência do dia); vazio = toda semana */
+  weeks?: number[]
+  /** Meses em que acontece (1 a 12); vazio = todos */
+  months?: number[]
+  /** A cada 15 dias: uma data em que acontece (YYYY-MM-DD) */
+  biweekly?: string
+}
+
 export interface ChurchEvent {
   id: string
+  /** Culto fixo que gerou este evento */
+  slotId?: string
+  /** Ajustado à mão: mudanças no culto fixo não sobrescrevem este dia */
+  edited?: boolean
+  /** Momento em que o repertório foi enviado para a equipe */
+  setlistSentAt?: string
   title: string
   date: string // YYYY-MM-DD
   time: string // HH:mm ('' = horário a definir)
@@ -144,6 +169,10 @@ export interface AppData {
   }
   /** Dados reais: até que data a agenda fixa já foi gerada (YYYY-MM-DD) */
   generatedUntil?: string
+  /** Agenda fixa da semana */
+  weekly?: WeeklySlot[]
+  /** Dias de cultos fixos cancelados (slotId|YYYY-MM-DD), para não serem gerados de novo */
+  skipped?: string[]
   /** Dados reais: versão da estrutura do código já aplicada (funções renomeadas etc.) */
   codeVersion?: number
   ministries: Ministry[]
