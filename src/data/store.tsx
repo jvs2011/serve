@@ -66,12 +66,12 @@ async function api<T>(path: string, init: { method?: string; body?: unknown; tok
     throw new ApiError('Sem conexão com a internet. Confira sua rede e tente de novo.', 0)
   }
   const json = await res.json().catch(() => ({}))
-  if (!res.ok) throw new ApiError((json as { error?: string }).error ?? 'Algo deu errado. Tente de novo.', res.status)
+  if (!res.ok) throw new ApiError((json as { error?: string }).error ?? 'Algo deu errado. Tente de novo.', res.status, json as Record<string, unknown>)
   return json as T
 }
 
 export class ApiError extends Error {
-  constructor(message: string, readonly status: number) { super(message) }
+  constructor(message: string, readonly status: number, readonly data: Record<string, unknown> = {}) { super(message) }
 }
 
 interface Toast { id: number; text: string }

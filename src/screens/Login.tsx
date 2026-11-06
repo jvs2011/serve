@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, ArrowRight } from 'lucide-react'
-import { useStore } from '../data/store'
+import { ArrowLeft, ArrowRight, PartyPopper } from 'lucide-react'
+import { ApiError, useStore } from '../data/store'
 import { createSeed, demoProfiles } from '../data/seed'
 import { Avatar } from '../components/ui'
 import { Logo } from '../components/Logo'
@@ -16,6 +16,7 @@ export function Login() {
   const [challenge, setChallenge] = useState<{ challengeId: string; options: string[] } | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [closedFor, setClosedFor] = useState<string | null>(null) // cadastrado, mas o app ainda não foi liberado
 
   useEffect(() => {
     fetch('/api/status')
@@ -45,9 +46,10 @@ export function Login() {
     try {
       await actions.verifyLogin(challenge.challengeId, answer)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Não foi possível entrar.')
       setStep('phone')
       setChallenge(null)
+      if (e instanceof ApiError && e.data.closed) setClosedFor(String(e.data.firstName ?? ''))
+      else setError(e instanceof Error ? e.message : 'Não foi possível entrar.')
     } finally {
       setBusy(false)
     }
@@ -62,7 +64,15 @@ export function Login() {
       </div>
 
       <div className="login-card">
-        {available === false ? (
+        {closedFor !== null ? (
+          <div className="closed-box">
+            <span className="closed-icon"><PartyPopper size={26} /></span>
+            <h2>{closedFor ? `Quase lá, ${closedFor}!` : 'Quase lá!'}</h2>
+            <p>Seu cadastro já está feito 🙌</p>
+            <p className="closed-news">O Serve ainda não foi liberado. Em breve teremos novidades: uma nova forma de gerenciarmos as escalas. Fique de olho no grupo! 😉</p>
+            <button className="btn btn-ghost btn-block" onClick={() => { setClosedFor(null); setPhone('') }}>Entendi</button>
+          </div>
+        ) : available === false ? (
           <p className="notice-box">O acesso com celular ainda está sendo configurado. Enquanto isso, explore a demonstração abaixo.</p>
         ) : step === 'phone' ? (
           <>

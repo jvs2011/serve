@@ -550,3 +550,10 @@ input:focus, textarea:focus { border-color: var(--accent); }
 .phone-icons { display: flex; align-items: center; gap: 6px; }
 .phone-icons svg { fill: currentColor; }
 .phone-home { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 150px; height: 5px; border-radius: 3px; background: #fff; mix-blend-mode: difference; z-index: 89; pointer-events: none; }
+
+/* Login: cadastrado, mas o app ainda não foi liberado */
+.closed-box { display: grid; justify-items: center; text-align: center; gap: 8px; padding: 6px 4px 4px; }
+.closed-icon { width: 56px; height: 56px; border-radius: 18px; background: var(--accent-soft); color: var(--accent-strong); display: grid; place-items: center; margin-bottom: 4px; }
+.closed-box h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+.closed-box p { color: var(--ink-2); }
+.closed-news { background: var(--surface-2); border-radius: 14px; padding: 14px; color: var(--ink) !important; font-weight: 500; line-height: 1.45; margin: 6px 0 8px; }

@@ -184,7 +184,10 @@ export async function route(name: string, method: string, body: any, auth: strin
         }
         await store.del(`serve:fail:${ch.phone}`)
         const { data: current } = await withData(store)
-        if (!allowed(current, ch.memberId)) return fail(403, CLOSED_MSG)
+        if (!allowed(current, ch.memberId)) {
+          const firstName = current.members.find((m) => m.id === ch.memberId)?.name.split(' ')[0] ?? ''
+          return { status: 403, body: { error: CLOSED_MSG, closed: true, firstName } }
+        }
         const token = randomBytes(32).toString('hex')
         await store.set(`serve:sess:${sha(token)}`, ch.memberId, SESSION_TTL)
         return ok({ token })
