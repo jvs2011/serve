@@ -141,3 +141,9 @@ export function canManage(member: Member, ministryId: string, data: AppData): bo
 export function sortEvents(a: ChurchEvent, b: ChurchEvent) {
   return a.date.localeCompare(b.date) || a.time.localeCompare(b.time)
 }
+
+/** Repertório do culto: líder do Louvor, admin ou quem está escalado no Louvor desse culto (e não recusou) */
+export function canEditSetlist(data: AppData, member: Member, ev: ChurchEvent): boolean {
+  if (canManage(member, 'louvor', data)) return true
+  return data.assignments.some((a) => a.eventId === ev.id && a.ministryId === 'louvor' && a.memberId === member.id && a.status !== 'declined')
+}

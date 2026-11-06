@@ -4,7 +4,7 @@
  * e o servidor confere as permissões de quem está pedindo a alteração.
  */
 import type { AppData, AssignmentStatus, Member, Song } from './types.js'
-import { autoFill, canManage, isOff, uid } from '../lib/schedule.js'
+import { autoFill, canEditSetlist, canManage, isOff, uid } from '../lib/schedule.js'
 import { TEAM_SESSIONS } from './sessions.js'
 import { isValidPhone, normalizePhone, tidyName } from '../lib/people.js'
 
@@ -42,6 +42,7 @@ export type Action =
   | { type: 'addNotice'; ministryId: string | null; title: string; body: string }
   | { type: 'addSong'; eventId: string; song: Omit<Song, 'id'> }
   | { type: 'removeSong'; eventId: string; songId: string }
+  | { type: 'editSong'; eventId: string; songId: string; song: Omit<Song, 'id'> }
   | { type: 'addEvent'; title: string; date: string; time: string; ministryIds: string[] }
   | { type: 'saveMember'; member: MemberInput }
   | { type: 'removeMember'; memberId: string }
@@ -170,13 +171,21 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
       return {}
     }
     case 'addSong': {
-      manage('louvor')
-      findEv(action.eventId).setlist.push({ ...action.song, id: uid() })
+      const ev = findEv(action.eventId)
+      if (!canEditSetlist(d, me, ev)) throw deny()
+      ev.setlist.push({ ...cleanSong(action.song), id: uid() })
+      return {}
+    }
+    case 'editSong': {
+      const ev = findEv(action.eventId)
+      if (!canEditSetlist(d, me, ev)) throw deny()
+      const s = ev.setlist.find((x) => x.id === action.songId) ?? (() => { throw notFound() })()
+      Object.assign(s, cleanSong(action.song))
       return {}
     }
     case 'removeSong': {
-      manage('louvor')
       const ev = findEv(action.eventId)
+      if (!canEditSetlist(d, me, ev)) throw deny()
       ev.setlist = ev.setlist.filter((s) => s.id !== action.songId)
       return {}
     }
@@ -347,4 +356,16 @@ export function selfRegister(d: AppData, input: SelfSignup): { status: 'created'
   }
   d.members.push(member)
   return { status: 'created', memberId: member.id }
+}
+
+function cleanSong(song: Omit<Song, 'id'>): Omit<Song, 'id'> {
+  const title = String(song.title ?? '').trim().slice(0, 100)
+  if (!title) throw new ActionError('Informe o nome da música.')
+  const link = String(song.link ?? '').trim()
+  return {
+    title,
+    artist: String(song.artist ?? '').trim().slice(0, 80),
+    key: String(song.key ?? '').trim().slice(0, 8) || '—',
+    ...(link ? { link: (/^https?:\/\//.test(link) ? link : `https://${link}`).slice(0, 500) } : {}),
+  }
 }

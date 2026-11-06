@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import { AlertTriangle, ExternalLink, Music2, Plus, Sparkles, Trash2, UserPlus, Users, X } from 'lucide-react'
+import { AlertTriangle, ExternalLink, Music2, Pencil, Plus, Sparkles, Trash2, UserPlus, Users, X } from 'lucide-react'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
 import { longDate, relativeDay, timeRange } from '../lib/dates'
 import { firstName, join, memberById } from '../lib/selectors'
-import { canManage, isPast, openSlots, rankCandidates, slotsFor } from '../lib/schedule'
+import { canEditSetlist, canManage, isPast, openSlots, rankCandidates, slotsFor } from '../lib/schedule'
 import { AssignmentActions } from '../components/AssignmentActions'
 import { Avatar, Empty, MinistryBadge, Sheet, StatusPill, TopBar } from '../components/ui'
-import type { ChurchEvent, Ministry } from '../data/types'
+import type { ChurchEvent, Ministry, Song } from '../data/types'
 import { fillOf } from './Agenda'
 
 export function EventDetail({ id }: { id: string }) {
@@ -211,16 +211,16 @@ function CandidatePicker({ ev, ministry, role, onPick }: { ev: ChurchEvent; mini
 }
 
 function Setlist({ ev }: { ev: ChurchEvent }) {
-  const { data, actions } = useStore()
+  const { data, actions, notify } = useStore()
   const me = useMe()
-  const manage = canManage(me, 'louvor', data) && !isPast(ev)
-  const [open, setOpen] = useState(false)
-  const [song, setSong] = useState({ title: '', artist: '', key: '' })
+  const canEdit = canEditSetlist(data, me, ev) && !isPast(ev)
+  const [editing, setEditing] = useState<Song | 'new' | null>(null)
+  const [confirmDel, setConfirmDel] = useState<string | null>(null)
   const q = (s: string) => encodeURIComponent(s)
 
   return (
     <div className="card">
-      {ev.setlist.length === 0 && <Empty icon={<Music2 />} title="Repertório ainda não definido" />}
+      {ev.setlist.length === 0 && <Empty icon={<Music2 />} title="Repertório ainda não definido" text={canEdit ? 'Toque em “Adicionar música” para montar o repertório deste culto.' : undefined} />}
       <ol className="setlist">
         {ev.setlist.map((s, i) => (
           <li key={s.id}>
@@ -230,26 +230,47 @@ function Setlist({ ev }: { ev: ChurchEvent }) {
               <span className="muted small">{s.artist}</span>
             </div>
             <span className="key">{s.key}</span>
-            <a className="icon-btn sm" href={s.link || `https://www.cifraclub.com.br/?q=${q(`${s.title} ${s.artist}`)}`} target="_blank" rel="noreferrer" aria-label="Cifra">
+            <a className="icon-btn sm" href={s.link || `https://www.cifraclub.com.br/?q=${q(`${s.title} ${s.artist}`)}`} target="_blank" rel="noreferrer" aria-label={s.link ? 'Abrir link' : 'Buscar cifra'}>
               <ExternalLink size={16} />
             </a>
-            {manage && <button className="icon-btn sm" onClick={() => actions.removeSong(ev.id, s.id)} aria-label="Remover"><Trash2 size={16} /></button>}
+            {canEdit && <button className="icon-btn sm" onClick={() => setEditing(s)} aria-label="Editar"><Pencil size={16} /></button>}
+            {canEdit && (confirmDel === s.id ? (
+              <button className="btn btn-danger btn-sm" onClick={() => { actions.removeSong(ev.id, s.id); setConfirmDel(null); notify('Música removida') }}>Remover</button>
+            ) : (
+              <button className="icon-btn sm" onClick={() => setConfirmDel(s.id)} aria-label="Remover"><Trash2 size={16} /></button>
+            ))}
           </li>
         ))}
       </ol>
-      {manage && <button className="btn btn-soft btn-block" onClick={() => setOpen(true)}><Plus size={16} /> Adicionar música</button>}
-      <Sheet open={open} onClose={() => setOpen(false)} title="Adicionar música">
-        <label className="field"><span>Música</span><input value={song.title} onChange={(e) => setSong({ ...song, title: e.target.value })} /></label>
-        <div className="field-row">
-          <label className="field"><span>Artista</span><input value={song.artist} onChange={(e) => setSong({ ...song, artist: e.target.value })} /></label>
-          <label className="field narrow"><span>Tom</span><input value={song.key} onChange={(e) => setSong({ ...song, key: e.target.value })} placeholder="G" /></label>
-        </div>
-        <button className="btn btn-primary btn-block" disabled={!song.title.trim()} onClick={() => {
-          actions.addSong(ev.id, { title: song.title.trim(), artist: song.artist.trim(), key: song.key.trim() || '—' })
-          setSong({ title: '', artist: '', key: '' })
-          setOpen(false)
-        }}>Adicionar</button>
+      {canEdit && <button className="btn btn-soft btn-block" onClick={() => setEditing('new')}><Plus size={16} /> Adicionar música</button>}
+      {!canEdit && !isPast(ev) && <p className="muted small setlist-hint">Quem está escalado no Louvor deste culto pode montar o repertório.</p>}
+      <Sheet open={!!editing} onClose={() => setEditing(null)} title={editing === 'new' ? 'Adicionar música' : 'Editar música'}>
+        {editing && <SongForm key={editing === 'new' ? 'new' : editing.id} song={editing === 'new' ? null : editing} onSave={(song) => {
+          if (editing === 'new') { actions.addSong(ev.id, song); notify('Música adicionada') }
+          else { actions.editSong(ev.id, editing.id, song); notify('Música atualizada') }
+          setEditing(null)
+        }} />}
       </Sheet>
     </div>
+  )
+}
+
+function SongForm({ song, onSave }: { song: Song | null; onSave: (s: Omit<Song, 'id'>) => void }) {
+  const [title, setTitle] = useState(song?.title ?? '')
+  const [artist, setArtist] = useState(song?.artist ?? '')
+  const [key, setKey] = useState(song && song.key !== '—' ? song.key : '')
+  const [link, setLink] = useState(song?.link ?? '')
+  return (
+    <>
+      <label className="field"><span>Música</span><input id="song-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex.: Bondade de Deus" /></label>
+      <div className="field-row">
+        <label className="field"><span>Artista</span><input id="song-artist" value={artist} onChange={(e) => setArtist(e.target.value)} /></label>
+        <label className="field narrow"><span>Tom</span><input id="song-key" value={key} onChange={(e) => setKey(e.target.value)} placeholder="G" /></label>
+      </div>
+      <label className="field"><span>Link da cifra ou do vídeo (opcional)</span><input id="song-link" inputMode="url" value={link} onChange={(e) => setLink(e.target.value)} placeholder="Cifra Club, YouTube…" /></label>
+      <button className="btn btn-primary btn-block" disabled={!title.trim()} onClick={() => onSave({ title: title.trim(), artist: artist.trim(), key: key.trim() || '—', ...(link.trim() ? { link: link.trim() } : {}) })}>
+        {song ? 'Salvar' : 'Adicionar'}
+      </button>
+    </>
   )
 }

@@ -694,3 +694,5 @@ select:focus { border-color: var(--accent); }
 .leader-switch { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: calc(var(--sat) + 12px) 16px 0; margin: 0 -16px; }
 .tabbar button > span:last-child { max-width: 100%; padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.01em; }
 .tabbar button { flex-basis: 0; min-width: 0; }
+.setlist-hint { text-align: center; margin-top: 4px; }
+.setlist li .btn-sm { flex-shrink: 0; }
