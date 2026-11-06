@@ -24,7 +24,7 @@ const ministrySeeds: MinistrySeed[] = [
   },
   {
     id: 'follow', name: 'Follow', color: '#7C6CF2', icon: 'megaphone',
-    description: 'Ministério de Comunicação: conecta a igreja com a comunidade local e global por meio das mídias digitais.',
+    description: 'Ministério de Comunicação: com fotografia, vídeo, stories, projeção e transmissão, servimos a igreja em cada culto e levamos a mensagem de Jesus mais longe.',
     roles: [
       { name: 'Fotografia', count: 1, people: 3 }, { name: 'Vídeo', count: 1, people: 3 }, { name: 'Stories', count: 1, people: 3 },
       { name: 'Projeção', count: 1, people: 3 }, { name: 'Transmissão', count: 1, people: 3 },

@@ -76,7 +76,10 @@ export function Signup({ ministryId }: { ministryId: string }) {
   return (
     <div className="signup">
       <header className="signup-hero" style={{ ['--m' as string]: color }}>
-        <div className="signup-brand"><Logo size={26} light /><span>Lagoinha Franca</span></div>
+        <div className="signup-brand">
+          <Logo size={30} light />
+          <img className="signup-church" src="/lagoinha-franca.png" alt="Lagoinha Franca" width={645} height={164} />
+        </div>
         {info && !done && (
           <>
             <span className="signup-kicker">Cadastro de voluntários</span>

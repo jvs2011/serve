@@ -49,6 +49,15 @@ function prepare(d: AppData): boolean {
     changed = true
   }
 
+  // ministérios: nome, descrição, cor e ícone seguem o código (funções e líderes ficam como estão)
+  for (const base of ministryList()) {
+    const m = d.ministries.find((x) => x.id === base.id)
+    if (!m) { d.ministries.push(base); changed = true; continue }
+    for (const k of ['name', 'description', 'color', 'icon'] as const) {
+      if (m[k] !== base[k]) { m[k] = base[k]; changed = true }
+    }
+  }
+
   // agenda fixa: gera o que falta até 10 semanas à frente (ids estáveis, sem duplicar)
   const today = brToday()
   const until = toISO(addDays(fromISO(today), 70))

@@ -481,8 +481,8 @@ input:focus, textarea:focus { border-color: var(--accent); }
 /* ============ Formulário público de cadastro ============ */
 .signup { min-height: var(--vh); background: var(--bg); }
 .signup-hero { --m: var(--accent); background: var(--dark); color: #fff; padding: calc(var(--sat) + 22px) max(20px, env(safe-area-inset-right)) 40px max(20px, env(safe-area-inset-left)); background-image: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--m) 55%, transparent), transparent 62%); }
-.signup-brand { display: flex; align-items: baseline; gap: 10px; }
-.signup-brand span { font-size: 13px; color: rgba(255,255,255,.7); font-weight: 500; }
+.signup-brand { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.signup-church { height: 34px; width: auto; display: block; }
 .signup-kicker { display: block; margin-top: 36px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: rgba(255,255,255,.75); }
 .signup-hero h1 { font-size: 40px; line-height: 1.05; font-weight: 800; letter-spacing: -0.03em; margin-top: 6px; text-wrap: balance; }
 .signup-hero p { color: rgba(255,255,255,.8); margin-top: 10px; font-size: 15px; max-width: 46ch; }
