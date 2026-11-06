@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import { Signup } from './screens/Signup'
+import { DeviceFrame } from './components/DeviceFrame'
 import './styles.css'
 
 // /cadastro/<ministério> → formulário público de cadastro (sem o app)
@@ -9,7 +10,9 @@ const signup = location.pathname.match(/^\/cadastro\/([a-z0-9-]+)\/?$/i)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {signup ? <Signup ministryId={signup[1].toLowerCase()} /> : <App />}
+    <DeviceFrame kind={signup ? 'form' : 'app'}>
+      {signup ? <Signup ministryId={signup[1].toLowerCase()} /> : <App />}
+    </DeviceFrame>
   </StrictMode>,
 )
 

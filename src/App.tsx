@@ -18,10 +18,6 @@ import { Logo } from './components/Logo'
 export default function App() {
   return (
     <StoreProvider>
-      <div className="desktop-aside" aria-hidden="true">
-        <Logo size={40} />
-        <p>O Serve foi feito para o celular.<br />Abra este endereço no seu telefone e adicione à tela inicial.</p>
-      </div>
       <div className="app">
         <Shell />
       </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Check, CheckCircle2 } from 'lucide-react'
 import { Logo } from '../components/Logo'
+import { scrollToTop } from '../lib/scroll'
 import { formatPhone, isValidPhone, tidyName } from '../lib/people'
 
 interface Info { id: string; name: string; description: string; color: string; teams: string[] }
@@ -61,7 +62,7 @@ export function Signup({ ministryId }: { ministryId: string }) {
       const j = await r.json().catch(() => ({}))
       if (!r.ok) throw new Error(j.error ?? 'Não foi possível enviar.')
       setDone(j.status === 'exists' ? 'exists' : 'created')
-      window.scrollTo(0, 0)
+      scrollToTop()
     } catch (err) {
       setError(err instanceof Error && err.message !== 'Failed to fetch' ? err.message : 'Sem conexão. Confira sua internet e tente de novo.')
     } finally {

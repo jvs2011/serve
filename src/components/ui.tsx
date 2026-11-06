@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Baby, BookOpen, Briefcase, ChevronLeft, Flame, Footprints, HandHelping, Heart, HeartHandshake, House,
   Link2, Megaphone, Music, Rocket, Shield, Sparkles, UserPlus, Users, X,
@@ -86,7 +87,9 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
   if (!open) return null
-  return (
+  // desenhada fora da árvore (por cima de tudo); no computador, dentro da tela do celular simulado
+  const target = document.querySelector('.phone-screen') ?? document.body
+  return createPortal(
     <div className="sheet-backdrop" onClick={onClose}>
       <div className="sheet" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
         <div className="sheet-grip" />
@@ -96,7 +99,8 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
         </div>
         <div className="sheet-body">{children}</div>
       </div>
-    </div>
+    </div>,
+    target,
   )
 }
 

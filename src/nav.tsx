@@ -1,3 +1,4 @@
+import { scrollToTop } from './lib/scroll'
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 
 export type Tab = 'home' | 'agenda' | 'swaps' | 'team' | 'profile'
@@ -43,7 +44,7 @@ export function NavProvider({ children }: { children: ReactNode }) {
   const push = useCallback((r: Route) => {
     if (USE_HISTORY) { try { history.pushState({ serve: true }, '') } catch { /* ignore */ } }
     setStack((s) => [...s, r])
-    window.scrollTo(0, 0)
+    scrollToTop()
   }, [])
 
   const back = useCallback(() => {
@@ -63,7 +64,7 @@ export function NavProvider({ children }: { children: ReactNode }) {
     }
     setStack([])
     setTabState(t)
-    window.scrollTo(0, 0)
+    scrollToTop()
   }, [])
 
   return <Ctx.Provider value={{ tab, stack, setTab, push, back }}>{children}</Ctx.Provider>
