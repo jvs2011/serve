@@ -3,7 +3,7 @@ import { addDays, toISO, fromISO, todayISO } from '../lib/dates.js'
 import { autoFill } from '../lib/schedule.js'
 
 /** Versão do formato dos dados. Mude para forçar recriação dos dados de exemplo. */
-export const DATA_VERSION = 9
+export const DATA_VERSION = 10
 
 /*
  * Ministérios da Lagoinha Franca.
@@ -29,6 +29,7 @@ const ministrySeeds: MinistrySeed[] = [
       { name: 'Fotografia', count: 1, people: 3 }, { name: 'Vídeo', count: 1, people: 3 }, { name: 'Stories', count: 1, people: 3 },
       { name: 'Projeção', count: 1, people: 3 }, { name: 'Transmissão', count: 1, people: 3 },
       { name: 'Lagoinha News', count: 1, people: 3 },
+      { name: 'Edição de artes', count: 1, people: 3 },
     ],
   },
   {
