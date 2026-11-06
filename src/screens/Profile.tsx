@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BarChart3, CalendarOff, ChevronRight, History, LogOut, Minus, Plus, RotateCcw, Smartphone, Users } from 'lucide-react'
+import { BarChart3, CalendarOff, ChevronRight, History, LogOut, RotateCcw, Smartphone, Users } from 'lucide-react'
 import { formatPhone } from '../lib/people'
 import { NotificationSettings } from '../components/Notifications'
 import { useMe, useStore } from '../data/store'
@@ -78,17 +78,6 @@ export function Profile() {
             <BarChart3 size={20} /><span className="grow">Painel do líder</span><ChevronRight size={18} className="muted" />
           </button>
         )}
-        <div className="menu-item">
-          <div className="grow">
-            <span>Quero servir até</span>
-            <span className="muted small block">A escala automática respeita esse limite</span>
-          </div>
-          <div className="stepper">
-            <button aria-label="Menos" onClick={() => actions.setMaxPerMonth(Math.max(1, me.maxPerMonth - 1))}><Minus size={16} /></button>
-            <b>{me.maxPerMonth}x</b>
-            <button aria-label="Mais" onClick={() => actions.setMaxPerMonth(Math.min(12, me.maxPerMonth + 1))}><Plus size={16} /></button>
-          </div>
-        </div>
       </div>
 
       {me.access === 'admin' && mode === 'live' && <AccessToggle />}

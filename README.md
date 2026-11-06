@@ -19,7 +19,7 @@ Na tela de entrada há três perfis de demonstração: **Voluntária** (Ana), **
 - Início com a próxima escala, confirmação/recusa em um toque e check-in no dia
 - Pedido de troca: quem tem a mesma função vê o pedido e assume
 - Disponibilidade: calendário para marcar os dias em que não pode servir
-- Preferência de frequência ("quero servir até N vezes por mês")
+- Limite de 4 escalas por mês por pessoa na escala automática (o líder pode passar disso ao escalar à mão)
 - Feedback com estrelas depois do culto
 - Gamificação: pontos (check-in, confirmação, feedback, cobrir troca) e níveis
 - Repertório do culto com tom e link para a cifra
