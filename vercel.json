@@ -40,8 +40,8 @@
   ],
   "rewrites": [
     {
-      "source": "/cadastro/:path*",
-      "destination": "/index.html"
+      "source": "/cadastro/:id",
+      "destination": "/cadastro/:id.html"
     }
   ]
 }
