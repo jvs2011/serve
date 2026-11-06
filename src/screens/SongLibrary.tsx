@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Check, Plus, Search } from 'lucide-react'
 import { useStore } from '../data/store'
-import { MOST_PLAYED, REPERTOIRE, songKey } from '../data/repertoire'
+import { ARTISTS, PLAY_COUNTS, REPERTOIRE, songKey } from '../data/repertoire'
 import type { ChurchEvent, Song } from '../data/types'
 
 interface Entry { title: string; artist: string; key: string; link?: string; times: number; k: string }
@@ -13,8 +13,8 @@ export function SongLibrary({ ev, onPick }: { ev: ChurchEvent; onPick: (s: Omit<
 
   const entries = useMemo(() => {
     const map = new Map<string, Entry>()
-    // repertório da igreja
-    for (const title of REPERTOIRE) map.set(songKey(title), { title, artist: '', key: '—', times: 0, k: songKey(title) })
+    // repertório da igreja, com quantas vezes já tocamos (planilha do Louvor)
+    for (const title of REPERTOIRE) map.set(songKey(title), { title, artist: ARTISTS[title] ?? '', key: '—', times: PLAY_COUNTS[title] ?? 0, k: songKey(title) })
     // o que já foi colocado no app, do mais antigo ao mais recente (fica o artista/tom/link mais recente)
     const played = [...data.events].filter((e) => e.id !== ev.id && e.setlist.length).sort((a, b) => a.date.localeCompare(b.date))
     for (const e of played) {
@@ -34,15 +34,12 @@ export function SongLibrary({ ev, onPick }: { ev: ChurchEvent; onPick: (s: Omit<
   const inSetlist = new Set(ev.setlist.map((s) => songKey(s.title)))
   const term = songKey(q)
   const filtered = term ? entries.filter((e) => e.k.includes(term) || songKey(e.artist).includes(term)) : entries
-  const top = useMemo(() => {
-    const byKey = new Map(entries.map((e) => [e.k, e]))
-    const picks = [...MOST_PLAYED.map((t) => byKey.get(songKey(t))), ...[...entries].filter((e) => e.times >= 2).sort((a, b) => b.times - a.times)]
-    return [...new Map(picks.filter((e): e is Entry => !!e).map((e) => [e.k, e])).values()].slice(0, 16)
-  }, [entries])
+  // as 20 mais tocadas (planilha + o que já foi colocado no app)
+  const top = useMemo(() => [...entries].filter((e) => e.times > 0).sort((a, b) => b.times - a.times || a.title.localeCompare(b.title, 'pt-BR')).slice(0, 20), [entries])
 
   const row = (e: Entry) => {
     const has = inSetlist.has(e.k)
-    const info = [e.artist, e.key !== '—' && `tom ${e.key}`, e.times > 0 && `${e.times}× no app`].filter(Boolean).join(' · ')
+    const info = [e.artist, e.key !== '—' && `tom ${e.key}`, e.times > 0 && `tocada ${e.times} ${e.times === 1 ? 'vez' : 'vezes'}`].filter(Boolean).join(' · ')
     return (
       <button key={e.k} className={`song-pick${has ? ' has' : ''}`} disabled={has}
         onClick={() => onPick({ title: e.title, artist: e.artist, key: e.key, ...(e.link ? { link: e.link } : {}) })}>
