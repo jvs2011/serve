@@ -33,6 +33,7 @@ export type Action =
   | { type: 'addEvent'; title: string; date: string; time: string; ministryIds: string[] }
   | { type: 'saveMember'; member: MemberInput }
   | { type: 'removeMember'; memberId: string }
+  | { type: 'setOpen'; open: boolean }
 
 export interface ActionResult {
   created?: number
@@ -164,6 +165,10 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
     case 'saveMember':
       if (!isAdmin) throw deny()
       return { memberId: saveMember(d, action.member, me.id) }
+    case 'setOpen':
+      if (!isAdmin) throw deny()
+      d.settings = { ...d.settings, open: action.open }
+      return {}
     case 'removeMember': {
       if (!isAdmin) throw deny()
       if (action.memberId === me.id) throw new ActionError('Você não pode remover a sua própria conta.')

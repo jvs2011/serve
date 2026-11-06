@@ -87,6 +87,8 @@ export function Profile() {
         </div>
       </div>
 
+      {me.access === 'admin' && mode === 'live' && <AccessToggle />}
+
       <h3 className="form-title">Notificações</h3>
       <div className="card push-card">
         <NotificationSettings />
@@ -114,5 +116,48 @@ export function Profile() {
         <p className="muted small">O Serve abre em tela cheia, como um aplicativo.</p>
       </Sheet>
     </div>
+  )
+}
+
+/** Liberar o app para todos (enquanto desligado, só administradores entram) */
+function AccessToggle() {
+  const { data, actions, notify } = useStore()
+  const [busy, setBusy] = useState(false)
+  const [confirm, setConfirm] = useState(false)
+  const open = data.settings?.open === true
+  const people = data.members.filter((m) => m.access !== 'admin').length
+  const apply = async (value: boolean) => {
+    setBusy(true)
+    const r = await actions.setOpen(value)
+    setBusy(false)
+    setConfirm(false)
+    notify(r.ok ? (value ? 'App liberado para todos 🎉' : 'Acesso restrito aos administradores') : r.error)
+  }
+  return (
+    <>
+      <h3 className="form-title">Acesso ao app</h3>
+      <div className="card push-card access-card">
+        <label className="switch-row">
+          <span>{open ? 'Liberado para todos' : 'Só administradores'}</span>
+          <input type="checkbox" checked={open} disabled={busy} onChange={(e) => (e.target.checked ? setConfirm(true) : apply(false))} />
+        </label>
+        <p className="muted small">
+          {open
+            ? 'Todas as pessoas cadastradas podem entrar com o celular e as iniciais.'
+            : people === 0
+              ? 'Fase de cadastros: só administradores entram no app. O formulário de cadastro continua funcionando.'
+              : `Fase de cadastros: ${people === 1 ? 'a pessoa cadastrada ainda não entra no app e vê' : `as ${people} pessoas cadastradas ainda não entram no app e veem`} a mensagem “em breve teremos novidades”. O formulário de cadastro continua funcionando.`}
+        </p>
+        {confirm && (
+          <div className="confirm-box access-confirm">
+            <p>{people === 1 ? 'Liberar o Serve para a pessoa cadastrada?' : `Liberar o Serve para todas as ${people} pessoas cadastradas?`}</p>
+            <div className="btn-row">
+              <button className="btn btn-ghost" onClick={() => setConfirm(false)}>Cancelar</button>
+              <button className="btn btn-primary" disabled={busy} onClick={() => apply(true)}>Liberar</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   )
 }

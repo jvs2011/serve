@@ -121,6 +121,7 @@ function makeActions(
     addSong: (eventId: string, song: Omit<Song, 'id'>) => { dispatch({ type: 'addSong', eventId, song }) },
     removeSong: (eventId: string, songId: string) => { dispatch({ type: 'removeSong', eventId, songId }) },
     addEvent: (title: string, date: string, time: string, ministryIds: string[]) => { dispatch({ type: 'addEvent', title, date, time, ministryIds }) },
+    setOpen: (open: boolean) => dispatchAsync({ type: 'setOpen', open }),
     saveMember: (member: MemberInput) => dispatchAsync({ type: 'saveMember', member }),
     removeMember: (memberId: string) => dispatchAsync({ type: 'removeMember', memberId }),
   }
@@ -186,7 +187,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setLiveMeId(r.meId)
       setLoadError(null)
     } catch (e) {
-      if (e instanceof ApiError && e.status === 401) { setSession(null); notify(e.message) }
+      if (e instanceof ApiError && (e.status === 401 || e.status === 403)) { setSession(null); notify(e.message) }
       else setLoadError(e instanceof Error ? e.message : 'Não foi possível carregar.')
     }
   }, [notify, setSession])

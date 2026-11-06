@@ -95,6 +95,11 @@ export interface AppData {
   version: number
   /** Momento (ms) da primeira alteração feita sobre os dados padrão da demonstração */
   modifiedAt?: number
+  /** Configurações gerais (dados reais) */
+  settings?: {
+    /** false/ausente = só administradores entram no app (fase de cadastros) */
+    open?: boolean
+  }
   /** Dados reais: até que data a agenda fixa já foi gerada (YYYY-MM-DD) */
   generatedUntil?: string
   ministries: Ministry[]

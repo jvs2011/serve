@@ -123,6 +123,11 @@ function optionsFor(phone: string, member: Member | undefined): { correct: strin
   return { correct, options }
 }
 
+const CLOSED_MSG = 'O Serve ainda não foi liberado. Em breve teremos novidades! 😉'
+/** Enquanto o app não for liberado (Perfil → Acesso ao app), só administradores entram */
+const allowed = (d: AppData, memberId: string) =>
+  d.settings?.open === true || d.members.find((m) => m.id === memberId)?.access === 'admin'
+
 async function sessionMember(store: Store, auth: string | undefined): Promise<string | null> {
   const token = auth?.startsWith('Bearer ') ? auth.slice(7).trim() : ''
   if (!token) return null
@@ -168,9 +173,11 @@ export async function route(name: string, method: string, body: any, auth: strin
             ? `Essas não são as suas iniciais. Você tem mais ${left} ${left === 1 ? 'tentativa' : 'tentativas'}. Se ainda não tem cadastro, fale com a liderança.`
             : 'Muitas tentativas erradas. Tente de novo em 15 minutos.')
         }
+        await store.del(`serve:fail:${ch.phone}`)
+        const { data: current } = await withData(store)
+        if (!allowed(current, ch.memberId)) return fail(403, CLOSED_MSG)
         const token = randomBytes(32).toString('hex')
         await store.set(`serve:sess:${sha(token)}`, ch.memberId, SESSION_TTL)
-        await store.del(`serve:fail:${ch.phone}`)
         return ok({ token })
       }
 
@@ -185,6 +192,7 @@ export async function route(name: string, method: string, body: any, auth: strin
         if (!meId) return fail(401, 'Sua sessão expirou. Entre novamente.')
         const { data } = await withData(store)
         if (!data.members.some((m) => m.id === meId)) return fail(401, 'Sua conta não foi encontrada. Fale com a liderança.')
+        if (!allowed(data, meId)) return fail(403, CLOSED_MSG)
         return ok({ data: viewFor(data, meId), meId })
       }
 
@@ -194,6 +202,7 @@ export async function route(name: string, method: string, body: any, auth: strin
         if (!meId) return fail(401, 'Sua sessão expirou. Entre novamente.')
         const action = body?.action as Action
         if (!action?.type) return fail(400, 'Pedido inválido.')
+        if (!allowed((await withData(store)).data, meId)) return fail(403, CLOSED_MSG)
         let before: AppData | null = null
         const { data, result } = await withData(store, (d) => {
           before = structuredClone(d)

@@ -512,3 +512,6 @@ input:focus, textarea:focus { border-color: var(--accent); }
 .tag-form { background: var(--info-soft); color: var(--info); }
 .interest-line { color: var(--info); }
 .interest-card { display: grid; gap: 4px; border-color: var(--info); }
+.access-card { display: grid; gap: 8px; }
+.access-confirm { display: grid; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.access-confirm.confirm-box { border-color: var(--line); }
