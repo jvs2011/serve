@@ -3,7 +3,7 @@ import { addDays, toISO, fromISO, todayISO } from '../lib/dates.js'
 import { autoFill } from '../lib/schedule.js'
 
 /** Versão do formato dos dados. Mude para forçar recriação dos dados de exemplo. */
-export const DATA_VERSION = 14
+export const DATA_VERSION = 15
 
 /*
  * Ministérios da Lagoinha Franca.
@@ -77,12 +77,12 @@ const ministrySeeds: MinistrySeed[] = [
   {
     id: 'legacy', name: 'Legacy', color: '#E0533D', icon: 'flame',
     description: 'Ministério de Jovens: prepara os jovens para uma vida de discipulado e serviço a Deus.',
-    roles: [{ name: 'Recepção', count: 2, people: 4 }, { name: 'Organização', count: 2, people: 4 }, { name: 'Mídia', count: 1, people: 2 }],
+    roles: [{ name: 'Recepção', count: 2, people: 4 }, { name: 'Mídia', count: 1, people: 2 }, { name: 'Projeção', count: 1, people: 2 }],
   },
   {
     id: 'rocket', name: 'Rocket', color: '#F08A24', icon: 'rocket',
     description: 'Ministério de adolescentes: amizade, diversão e aprendizado sobre os valores cristãos.',
-    roles: [{ name: 'Líder de grupo', count: 2, people: 4 }, { name: 'Apoio', count: 2, people: 4 }],
+    roles: [{ name: 'Projeção', count: 1, people: 2 }, { name: 'Mídia', count: 1, people: 2 }],
   },
   {
     id: 'link', name: 'Link', color: '#18A999', icon: 'link',
@@ -92,7 +92,7 @@ const ministrySeeds: MinistrySeed[] = [
   {
     id: 'shine', name: 'Shine', color: '#D94F8A', icon: 'sparkles',
     description: 'Ministério de mulheres: comunhão e crescimento espiritual para mulheres de todas as idades.',
-    roles: [{ name: 'Recepção', count: 2, people: 3 }, { name: 'Apoio', count: 2, people: 3 }],
+    roles: [{ name: 'Organização', count: 1, people: 3, hint: 'curso' }],
   },
   {
     id: 'geracoes', name: 'Gerações', color: '#3E9B5B', icon: 'house',
@@ -112,7 +112,7 @@ const ministrySeeds: MinistrySeed[] = [
   {
     id: 'carisma', name: 'Carisma', color: '#5468D4', icon: 'book',
     description: 'Classes Start, Deep e Go: estudo bíblico para aprofundamento e crescimento espiritual.',
-    roles: [{ name: 'Professor', count: 1, people: 3 }, { name: 'Apoio', count: 1, people: 2 }],
+    roles: [{ name: 'Secretário', count: 1, people: 1, hint: 'líder do Carisma' }, { name: 'Professor', count: 2, people: 4 }],
   },
 ]
 
@@ -214,13 +214,12 @@ const TEMPLO = ['louvor', 'follow', 'diaconato', 'centurioes', 'intercessao', 'c
 export const RECURRING_SLOTS: RecurringSlot[] = [
   { key: '0-09:30', day: 'Domingo', time: '9h30', title: 'Culto da manhã', ministryIds: [...TEMPLO, 'kids'] },
   { key: '0-18:30', day: 'Domingo', time: '18h30', title: 'Culto da noite', ministryIds: [...TEMPLO, 'kids'] },
-  { key: '3-20:00', day: 'Quarta', time: '20h', title: 'Culto Fé', ministryIds: [...TEMPLO, 'geracoes', 'carisma', 'shine'] },
+  { key: '3-20:00', day: 'Quarta', time: '20h', title: 'Culto Fé', ministryIds: TEMPLO },
   { key: '1-20:00', day: 'Segunda', time: '20h', title: 'Carisma', ministryIds: ['carisma'] },
   { key: '2-19:30', day: 'Terça', time: '19h30', title: 'Link (GC)', ministryIds: ['link'] },
   { key: '4-19:30', day: 'Quinta', time: '19h30', title: 'Shine', ministryIds: ['shine'] },
   { key: '5-20:00', day: 'Sexta', time: '20h', title: 'Sala de Adoração (quinzenal)', ministryIds: ['louvor'] },
-  { key: '6-19:00', day: 'Sábado', time: '19h', title: 'Culto Rocket', ministryIds: ['rocket'] },
-  { key: '6-19:30', day: 'Sábado', time: '19h30', title: 'Culto Legacy', ministryIds: ['legacy'] },
+  { key: '6-19:30', day: 'Sábado', time: '19h30', title: 'Cultos Rocket e Legacy', ministryIds: ['rocket', 'legacy'] },
 ]
 
 /**
@@ -265,9 +264,10 @@ export function buildAgenda(fromDate: string, toDate: string): ChurchEvent[] {
         const shineMonth = [3, 6, 8].includes(d.getMonth()) // abril, julho e setembro
         if (nth === 1) ev(d, 'Culto Fé – Louvor e Clamor', '20:00', templo, T)
         else if (nth === 2) ev(d, 'Culto Fé', '20:00', templo, T)
-        else if (nth === 3) ev(d, 'Culto Fé – Gerações', '20:00', [...templo, 'geracoes'], { ...T, responsible: 'Equipe Bem Casados' })
-        else if (nth === 4) ev(d, 'Culto Fé – Carisma', '20:00', [...templo, 'carisma'], { ...T, responsible: 'Pr. Alexandre' })
-        else if (shineMonth) ev(d, 'Culto Shine', '20:00', [...templo, 'shine'], { ...T, responsible: 'Ministério Shine' })
+        // cultos temáticos: mesma equipe de um culto de quarta normal
+        else if (nth === 3) ev(d, 'Culto Fé – Gerações', '20:00', templo, { ...T, responsible: 'Equipe Bem Casados' })
+        else if (nth === 4) ev(d, 'Culto Fé – Carisma', '20:00', templo, { ...T, responsible: 'Pr. Alexandre' })
+        else if (shineMonth) ev(d, 'Culto Shine', '20:00', templo, { ...T, responsible: 'Ministério Shine' })
         else ev(d, 'Culto Fé', '20:00', templo, T)
         break
       }
@@ -282,7 +282,7 @@ export function buildAgenda(fromDate: string, toDate: string): ChurchEvent[] {
       case 6: // Sábado
         // DNA está parado por enquanto: o ensaio fica na agenda, sem escala
         ev(d, 'Ensaio DNA', '08:30', [], { endTime: '11:00', place: 'Templo', activity: 'Ensaio' })
-        ev(d, 'Culto Rocket', '19:00', ['rocket'], { endTime: '20:00', place: 'Templo', activity: 'Culto' })
+        ev(d, 'Culto Rocket', '19:30', ['rocket'], { endTime: '21:00', place: 'Templo', activity: 'Culto' })
         ev(d, 'Culto Legacy', '19:30', ['legacy'], { endTime: '21:30', place: 'Prédio Kids', activity: 'Culto' })
         break
     }
@@ -457,7 +457,11 @@ export function createSeed(): AppData {
  * Funções que mudaram de nome ou saíram: usado para atualizar os dados reais.
  * null = a função deixou de existir (sai do cadastro das pessoas).
  */
+/** Função que o líder ocupa no ministério (ex.: Secretário do Carisma) */
+export const LEADER_ROLES: Record<string, string> = { carisma: 'Secretário' }
+
 export const ROLE_RENAMES: Record<string, Record<string, string | null>> = {
   louvor: { Ministro: 'Voz', Vocal: 'Voz' },
   centurioes: { 'Portão': 'Estacionamento', 'Ronda externa': 'Estacionamento' },
+  shine: { 'Recepção': 'Organização', Apoio: 'Organização' },
 }

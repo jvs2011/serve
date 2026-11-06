@@ -43,8 +43,13 @@ export function availabilityFor(data: AppData, member: Member, event: ChurchEven
  * senão as vagas padrão do ministério (funções com 0 não entram nos cultos).
  */
 export function slotsFor(data: AppData, ev: ChurchEvent | undefined, ministryId: string): { name: string; count: number; group?: boolean; hint?: string }[] {
-  if (ev?.slots) return ev.slots.filter((s) => s.ministryId === ministryId).map((s) => ({ name: s.role, count: s.count }))
   const ministry = data.ministries.find((m) => m.id === ministryId)
+  if (ev?.slots) {
+    return ev.slots.filter((s) => s.ministryId === ministryId).map((s) => {
+      const r = ministry?.roles.find((x) => x.name === s.role)
+      return { name: s.role, count: s.count, ...(r?.group ? { group: true } : {}), ...(r?.hint ? { hint: r.hint } : {}) }
+    })
+  }
   return (ministry?.roles ?? []).filter((r) => r.count > 0)
 }
 

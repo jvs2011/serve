@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { AppData, AssignmentStatus, Member, Song } from './types'
 import { createSeed, DATA_VERSION } from './seed'
-import { ActionError, applyAction, type Action, type ActionResult, type MemberInput, type TaskInput } from './actions'
+import { ActionError, applyAction, type Action, type ActionResult, type MemberInput, type MinistryEventInput, type TaskInput } from './actions'
 import { disablePush, resyncPush } from '../lib/push'
 
 /*
@@ -141,6 +141,7 @@ function makeActions(
     createTeamSession: (sessionId: string, date: string, time: string, place?: string, note?: string) =>
       dispatchAsync({ type: 'createTeamSession', sessionId, date, time, place, note }),
     removeEvent: (eventId: string) => dispatchAsync({ type: 'removeEvent', eventId }),
+    addMinistryEvent: (event: MinistryEventInput) => dispatchAsync({ type: 'addMinistryEvent', event }),
     removeTask: (taskId: string) => { dispatch({ type: 'removeTask', taskId }) },
     setTaskDone: (taskId: string, done: boolean, link?: string) => { dispatch({ type: 'setTaskDone', taskId, done, link }) },
     saveMember: (member: MemberInput) => dispatchAsync({ type: 'saveMember', member }),

@@ -35,6 +35,11 @@ Na tela de entrada há três perfis de demonstração: **Voluntária** (Ana), **
 - Ranking de dedicação, equipe com atalho para WhatsApp, avisos e repertório
 - Criar eventos (coordenação)
 
+**Eventos do ministério**
+- O líder cria eventos do próprio ministério (ex.: ações internas e externas do We Care) na aba Escalas:
+  nome, interno/externo, dia, horário, local e quantas pessoas de cada função; depois escala à mão ou na automática
+- O líder pode cancelar esses eventos
+
 **Grupos de voz (Louvor)**
 - O líder monta os grupos na aba **Grupos** do Louvor (nome + quem tem a função Voz)
 - No culto, a vaga de Voz é ocupada por um grupo inteiro: "Escolher grupo" mostra quantos estão

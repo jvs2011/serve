@@ -5,7 +5,7 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
 import type { AppData } from '../src/data/types.js'
 import { ActionError, applyAction, selfRegister, type Action } from '../src/data/actions.js'
-import { buildAgenda, DATA_VERSION, ministryList, ROLE_RENAMES } from '../src/data/seed.js'
+import { buildAgenda, DATA_VERSION, LEADER_ROLES, ministryList, ROLE_RENAMES } from '../src/data/seed.js'
 import { addDays, fromISO, toISO } from '../src/lib/dates.js'
 import { isValidPhone, normalizePhone } from '../src/lib/people.js'
 import { canManage } from '../src/lib/schedule.js'
@@ -49,14 +49,46 @@ function syncStructure(d: AppData, today: string) {
       mm.roles = [...new Set(mm.roles.map((r) => rename(mm.ministryId, r)).filter((r): r is string => !!r && valid.has(r)))]
     })
   for (const m of d.members) { fixRoles(m.ministries); fixRoles(m.interests) }
-
-  // cultos fixos futuros: ministérios conforme o código
-  const generated = new Map(buildAgenda(today, d.generatedUntil ?? today).map((e) => [e.id, e]))
-  const events = new Map(d.events.map((e) => [e.id, e]))
-  for (const e of d.events) {
-    const g = generated.get(e.id)
-    if (g && e.date >= today && JSON.stringify(g.ministryIds) !== JSON.stringify(e.ministryIds)) e.ministryIds = g.ministryIds
+  // culto fixo que mudou de horário: a indisponibilidade marcada acompanha (Rocket 19h → 19h30)
+  const KEY_MOVES: Record<string, string> = { '6-19:00': '6-19:30' }
+  for (const m of d.members) {
+    if (m.recurringOff?.some((k) => k in KEY_MOVES)) m.recurringOff = [...new Set(m.recurringOff.map((k) => KEY_MOVES[k] ?? k))].sort()
   }
+
+  // função de liderança: no Carisma o líder é o Secretário
+  for (const [mid, role] of Object.entries(LEADER_ROLES)) {
+    for (const id of d.ministries.find((x) => x.id === mid)?.leaderIds ?? []) {
+      const mm = d.members.find((m) => m.id === id)?.ministries.find((x) => x.ministryId === mid)
+      if (mm && !mm.roles.includes(role)) mm.roles.unshift(role)
+    }
+  }
+
+  // cultos fixos futuros: ministérios e horário conforme o código
+  const generated = new Map(buildAgenda(today, d.generatedUntil ?? today).map((e) => [e.id, e]))
+  const fixedId = /^e-\d{4}-\d{2}-\d{2}-\d{4}-/
+  const moved = new Map<string, string>()
+  for (const e of d.events) {
+    if (e.date < today) continue
+    const g = generated.get(e.id)
+    if (g) {
+      if (JSON.stringify(g.ministryIds) !== JSON.stringify(e.ministryIds)) e.ministryIds = g.ministryIds
+    } else if (fixedId.test(e.id) && !e.slots) {
+      // culto fixo que mudou de horário (ex.: Rocket 19h → 19h30): vai para o novo, com as escalas
+      const twin = [...generated.values()].find((x) => x.date === e.date && x.title === e.title && x.id !== e.id)
+      if (twin) moved.set(e.id, twin.id)
+    }
+  }
+  if (moved.size) {
+    for (const [from, to] of moved) {
+      const oldEv = d.events.find((e) => e.id === from)!
+      if (!d.events.some((e) => e.id === to)) d.events.push({ ...generated.get(to)!, setlist: oldEv.setlist })
+    }
+    d.events = d.events.filter((e) => !moved.has(e.id))
+    for (const a of d.assignments) if (moved.has(a.eventId)) a.eventId = moved.get(a.eventId)!
+    for (const t of d.tasks ?? []) if (t.eventId && moved.has(t.eventId)) t.eventId = moved.get(t.eventId)
+    d.events.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+  }
+  const events = new Map(d.events.map((e) => [e.id, e]))
 
   // escalas futuras: renomeia a função ou tira a escala que não cabe mais
   const gone = new Set<string>()

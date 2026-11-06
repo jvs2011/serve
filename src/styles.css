@@ -740,3 +740,6 @@ select:focus { border-color: var(--accent); }
 .pin-gate .closed-icon { margin-top: 24px; }
 .pin-status { display: flex; align-items: center; gap: 8px; background: var(--surface-2); border-radius: 12px; padding: 10px 12px; font-size: 13px; color: var(--ink-2); }
 .chip-hint { font-weight: 500; opacity: .75; }
+.count-list { display: grid; gap: 6px; }
+.count-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+.stepper button:disabled { opacity: .4; }

@@ -10,6 +10,7 @@ import type { Ministry } from '../data/types'
 import { ARTS_MINISTRIES, ArtsTab } from './Arts'
 import { SessionCards } from './Sessions'
 import { GroupsTab } from './Groups'
+import { MinistryEventCard } from './MinistryEvents'
 import { FillBar, fillOf } from './Agenda'
 
 export function Team() {
@@ -97,6 +98,7 @@ export function MinistryDetail({ id, initialTab, asTab }: { id: string; initialT
       {tab === 'schedule' && (
         <>
           {manage && <SessionCards ministry={ministry} />}
+          {manage && <MinistryEventCard ministry={ministry} />}
           {manage && (
             <div className="card auto-card">
               <Sparkles size={22} />

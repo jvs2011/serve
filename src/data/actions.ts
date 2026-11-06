@@ -6,6 +6,7 @@
 import type { AppData, AssignmentStatus, Member, Song } from './types.js'
 import { autoFill, canEditSetlist, canManage, groupAssignments, isOff, uid } from '../lib/schedule.js'
 import { TEAM_SESSIONS } from './sessions.js'
+import { LEADER_ROLES } from './seed.js'
 import { isValidPhone, normalizePhone, tidyName } from '../lib/people.js'
 
 export interface MemberInput {
@@ -24,6 +25,19 @@ export interface TaskInput {
   details: string
   assigneeId: string
   dueDate: string
+}
+
+/** Evento criado pelo líder para o próprio ministério (ex.: ação externa do We Care) */
+export interface MinistryEventInput {
+  ministryId: string
+  title: string
+  date: string
+  time: string
+  endTime?: string
+  place?: string
+  /** 'Interno' ou 'Externo' */
+  kind?: string
+  slots: { role: string; count: number }[]
 }
 
 export type Action =
@@ -56,6 +70,7 @@ export type Action =
   | { type: 'saveTask'; task: TaskInput }
   | { type: 'createTeamSession'; sessionId: string; date: string; time: string; place?: string; note?: string }
   | { type: 'removeEvent'; eventId: string }
+  | { type: 'addMinistryEvent'; event: MinistryEventInput }
   | { type: 'removeTask'; taskId: string }
   | { type: 'setTaskDone'; taskId: string; done: boolean; link?: string }
 
@@ -275,6 +290,28 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
       for (const m of invited) d.assignments.push({ id: uid(), eventId: ev.id, ministryId: cfg.ministryId, role: cfg.role, memberId: m.id, status: 'pending' })
       return { created: invited.length }
     }
+    case 'addMinistryEvent': {
+      const e = action.event
+      manage(e.ministryId)
+      const ministry = d.ministries.find((m) => m.id === e.ministryId) ?? (() => { throw notFound() })()
+      const title = e.title.trim().replace(/\s+/g, ' ').slice(0, 120)
+      if (!title) throw new ActionError('Dê um nome para o evento.')
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date)) throw new ActionError('Escolha o dia.')
+      if (e.time && !/^\d{2}:\d{2}$/.test(e.time)) throw new ActionError('Horário inválido.')
+      const endTime = e.endTime && /^\d{2}:\d{2}$/.test(e.endTime) && e.endTime > e.time ? e.endTime : undefined
+      const slots = e.slots
+        .filter((s) => ministry.roles.some((r) => r.name === s.role))
+        .map((s) => ({ ministryId: ministry.id, role: s.role, count: Math.max(0, Math.min(50, Math.round(s.count))) }))
+        .filter((s) => s.count > 0)
+      if (!slots.length) throw new ActionError('Diga quantas pessoas o evento precisa.')
+      const kind = e.kind === 'Externo' || e.kind === 'Interno' ? e.kind : undefined
+      d.events.push({
+        id: uid(), title, date: e.date, time: e.time, ...(endTime ? { endTime } : {}), ministryIds: [ministry.id], setlist: [],
+        special: true, place: e.place?.trim().slice(0, 80) || undefined, activity: kind ? `Evento ${kind.toLowerCase()}` : undefined, slots,
+      })
+      d.events.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+      return {}
+    }
     case 'removeEvent': {
       const ev = findEv(action.eventId)
       // líder só cancela encontros de equipe dos ministérios que lidera; admin cancela qualquer evento
@@ -365,7 +402,11 @@ function saveMember(d: AppData, input: MemberInput, actorId: string): string {
   member.access = access
   member.ministries = valid.map((mm) => {
     const ministry = d.ministries.find((m) => m.id === mm.ministryId)!
-    return { ministryId: mm.ministryId, roles: mm.roles.filter((r) => ministry.roles.some((x) => x.name === r)) }
+    const roles = mm.roles.filter((r) => ministry.roles.some((x) => x.name === r))
+    // no Carisma o líder é o Secretário
+    const leaderRole = LEADER_ROLES[mm.ministryId]
+    if (mm.leader && leaderRole && !roles.includes(leaderRole)) roles.unshift(leaderRole)
+    return { ministryId: mm.ministryId, roles }
   })
   if (!existing) d.members.push(member)
 
