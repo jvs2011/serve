@@ -3,7 +3,7 @@ import { addDays, toISO, fromISO, todayISO } from '../lib/dates.js'
 import { autoFill } from '../lib/schedule.js'
 
 /** Versão do formato dos dados. Mude para forçar recriação dos dados de exemplo. */
-export const DATA_VERSION = 15
+export const DATA_VERSION = 16
 
 /*
  * Ministérios da Lagoinha Franca.
@@ -125,6 +125,7 @@ function buildPeople() {
     { id: 'm-lucas', name: 'Lucas Andrade', access: 'admin', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: ['Transmissão'] }] },
     { id: 'm-mariana', name: 'Mariana Costa', access: 'leader', maxPerMonth: 6, phone: '', ministries: [{ ministryId: 'louvor', roles: ['Voz'] }] },
     { id: 'm-ana', name: 'Ana Ribeiro', access: 'volunteer', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'louvor', roles: ['Voz'] }, { ministryId: 'diaconato', roles: ['Acolhimento'] }] },
+    { id: 'm-rafaela', name: 'Rafaela Lopes', access: 'leader', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: ['Edição de artes', 'Stories', 'Lagoinha News'] }] },
   ]
   const used = new Set(members.map((m) => m.name))
   let n = 0
@@ -137,7 +138,7 @@ function buildPeople() {
       if (!used.has(name)) { used.add(name); return name }
     }
   }
-  const leaders: Record<string, string[]> = { louvor: ['m-mariana'] }
+  const leaders: Record<string, string[]> = { louvor: ['m-mariana'], follow: ['m-rafaela'] }
   let idx = 0
   for (const ms of ministrySeeds) {
     for (const role of ms.roles) {
@@ -175,7 +176,8 @@ export const { members, ministries } = buildPeople()
 /** Membros sugeridos na tela de entrada (modo demonstração) */
 export const demoProfiles = [
   { id: 'm-ana', label: 'Voluntária', hint: 'Louvor e Diaconato' },
-  { id: 'm-mariana', label: 'Líder', hint: 'Ministério de Louvor' },
+  { id: 'm-mariana', label: 'Líder', hint: 'Louvor: grupos de voz e rascunho da escala' },
+  { id: 'm-rafaela', label: 'Líder', hint: 'Follow: artes e gravações do Lagoinha News' },
   { id: 'm-lucas', label: 'Coordenação', hint: 'Acesso a todos os ministérios' },
 ]
 
@@ -438,27 +440,55 @@ export function createSeed(): AppData {
   if (e1) data.tasks.push({
     id: 't1', ministryId: 'follow', title: `Arte · ${e1.title} (${dd(e1.date)})`, eventId: e1.id,
     details: 'Feed e stories. Usar a foto do último batismo e o texto "Venha celebrar com a gente".',
-    assigneeId: 'm-lucas', dueDate: toISO(addDays(today, 2)), status: 'open', createdBy: 'm-lucas', createdAt: new Date(now.getTime() - 86_400_000).toISOString(),
+    assigneeId: 'm-rafaela', dueDate: toISO(addDays(today, 2)), status: 'open', createdBy: 'm-lucas', createdAt: new Date(now.getTime() - 86_400_000).toISOString(),
   })
   if (e2 && artists[0]) data.tasks.push({
     id: 't2', ministryId: 'follow', title: `Arte · ${e2.title} (${dd(e2.date)})`, eventId: e2.id, details: 'Versão para o telão (16:9).',
-    assigneeId: artists[0].id, dueDate: toISO(addDays(today, -1)), status: 'open', createdBy: 'm-lucas', createdAt: new Date(now.getTime() - 3 * 86_400_000).toISOString(),
+    assigneeId: artists[0].id, dueDate: toISO(addDays(today, -1)), status: 'open', createdBy: 'm-rafaela', createdAt: new Date(now.getTime() - 3 * 86_400_000).toISOString(),
   })
   if (artists[1]) data.tasks.push({
     id: 't3', ministryId: 'follow', title: 'Arte · Reunião Follow', details: '', assigneeId: artists[1].id,
-    dueDate: toISO(addDays(today, -3)), status: 'done', link: 'https://www.canva.com/', createdBy: 'm-lucas',
+    dueDate: toISO(addDays(today, -3)), status: 'done', link: 'https://www.canva.com/', createdBy: 'm-rafaela',
     createdAt: new Date(now.getTime() - 6 * 86_400_000).toISOString(), doneAt: new Date(now.getTime() - 4 * 86_400_000).toISOString(),
   })
 
+  // Louvor: rascunho da escala dos 2 cultos seguintes, esperando a Mariana publicar
+  for (const e of data.events.filter((e) => e.date > horizon && e.ministryIds.includes('louvor') && e.ministryIds.length > 1).slice(0, 2)) {
+    for (const a of autoFill(data, e.id, 'louvor')) data.assignments.push({ ...a, draft: true })
+  }
+
+  // Follow: gravação do Lagoinha News com a equipe convidada (alguns já responderam)
+  const newsDay = toISO(addDays(today, 4))
+  const newsTeam = data.members.filter((m) => m.ministries.some((mm) => mm.ministryId === 'follow' && mm.roles.includes('Lagoinha News')))
+  data.events.push({
+    id: 'e-demo-news', title: 'Gravação Lagoinha News', date: newsDay, time: '19:30', ministryIds: ['follow'], setlist: [],
+    activity: 'Gravação · episódio de dezembro', place: 'Garagem', slots: [{ ministryId: 'follow', role: 'Lagoinha News', count: newsTeam.length }],
+  })
+  newsTeam.forEach((m, i) => data.assignments.push({
+    id: `a-news-${i}`, eventId: 'e-demo-news', ministryId: 'follow', role: 'Lagoinha News', memberId: m.id,
+    status: m.id === 'm-rafaela' ? 'confirmed' : i % 3 === 1 ? 'declined' : i % 3 === 2 ? 'confirmed' : 'pending',
+  }))
+
+  // We Care: ação externa criada pelo líder, com parte da equipe escalada
+  const care = toISO(addDays(today, 9))
+  data.events.push({
+    id: 'e-demo-wecare', title: 'Ação no Lar São Vicente', date: care, time: '09:00', endTime: '12:00', ministryIds: ['wecare'], setlist: [],
+    special: true, place: 'Lar São Vicente de Paulo', activity: 'Evento externo',
+    slots: [{ ministryId: 'wecare', role: 'Triagem', count: 1 }, { ministryId: 'wecare', role: 'Voluntário de ação', count: 6 }],
+  })
+  for (const a of autoFill(data, 'e-demo-wecare', 'wecare').slice(0, 4)) data.assignments.push({ ...a, status: rand() < 0.5 ? 'confirmed' : 'pending' })
+  data.events.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+
   return data
 }
+
+/** Função que o líder ocupa no ministério (ex.: Secretário do Carisma) */
+export const LEADER_ROLES: Record<string, string> = { carisma: 'Secretário' }
 
 /**
  * Funções que mudaram de nome ou saíram: usado para atualizar os dados reais.
  * null = a função deixou de existir (sai do cadastro das pessoas).
  */
-/** Função que o líder ocupa no ministério (ex.: Secretário do Carisma) */
-export const LEADER_ROLES: Record<string, string> = { carisma: 'Secretário' }
 
 export const ROLE_RENAMES: Record<string, Record<string, string | null>> = {
   louvor: { Ministro: 'Voz', Vocal: 'Voz' },

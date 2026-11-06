@@ -31,7 +31,9 @@ export function notificationsFor(before: AppData, after: AppData, actorId: strin
   // 1) novas escalas (à mão ou automática), agrupadas por pessoa
   const fresh = new Map<string, Assignment[]>()
   for (const a of after.assignments) {
-    if (prevA.has(a.id) || a.memberId === actorId || !future(a)) continue
+    // escala nova publicada, ou rascunho que acabou de ser publicado
+    const p = prevA.get(a.id)
+    if (a.draft || (p && !p.draft) || a.memberId === actorId || !future(a)) continue
     // troca assumida também muda o dono, mas é tratada abaixo
     fresh.set(a.memberId, [...(fresh.get(a.memberId) ?? []), a])
   }
@@ -158,7 +160,7 @@ export function taskRemindersFor(data: AppData, tomorrow: string): Outgoing[] {
 export function remindersFor(data: AppData, tomorrow: string): Outgoing[] {
   const byMember = new Map<string, { a: Assignment; e: ChurchEvent }[]>()
   for (const a of data.assignments) {
-    if (a.status === 'declined') continue
+    if (a.status === 'declined' || a.draft) continue
     const e = data.events.find((x) => x.id === a.eventId)
     if (!e || e.date !== tomorrow) continue
     byMember.set(a.memberId, [...(byMember.get(a.memberId) ?? []), { a, e }])
@@ -176,4 +178,26 @@ export function remindersFor(data: AppData, tomorrow: string): Outgoing[] {
       },
     }
   })
+}
+
+/** Líderes com escala em rascunho para os próximos dias: lembra de publicar */
+export function draftRemindersFor(data: AppData, from: string, until: string): Outgoing[] {
+  const out: Outgoing[] = []
+  for (const m of data.ministries) {
+    const drafts = data.assignments.filter((a) => {
+      if (!a.draft || a.ministryId !== m.id) return false
+      const e = data.events.find((x) => x.id === a.eventId)
+      return !!e && e.date >= from && e.date <= until
+    })
+    if (!drafts.length) continue
+    out.push({
+      to: m.leaderIds,
+      payload: {
+        title: `${m.name}: escala ainda em rascunho`,
+        body: `${drafts.length} ${drafts.length === 1 ? 'escala dos próximos dias ainda não foi publicada' : 'escalas dos próximos dias ainda não foram publicadas'}. A equipe só fica sabendo quando você publicar.`,
+        tag: `rascunho-${m.id}-${from}`,
+      },
+    })
+  }
+  return out.filter((o) => o.to.length > 0)
 }

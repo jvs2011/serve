@@ -107,7 +107,7 @@ export function Agenda() {
             <div className="list">
               {evs.map((ev) => {
                 const { total } = fillOf(data, ev)
-                const myA = data.assignments.find((a) => a.eventId === ev.id && a.memberId === me.id && a.status !== 'declined')
+                const myA = data.assignments.find((a) => a.eventId === ev.id && a.memberId === me.id && a.status !== 'declined' && !a.draft)
                 return (
                   <button key={ev.id} className="card event-card" onClick={() => push({ name: 'event', id: ev.id })}>
                     <div className="event-card-top">

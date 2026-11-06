@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { AppData, AssignmentStatus, Member, Song } from './types'
 import { createSeed, DATA_VERSION } from './seed'
+import { visibleTo } from '../lib/schedule'
 import { ActionError, applyAction, type Action, type ActionResult, type MemberInput, type MinistryEventInput, type TaskInput } from './actions'
 import { disablePush, resyncPush } from '../lib/push'
 
@@ -129,6 +130,8 @@ function makeActions(
     unassignGroup: (eventId: string, groupId: string) => { dispatch({ type: 'unassignGroup', eventId, groupId }) },
     /** Gera a escala automática; retorna quantas vagas preencheu */
     autoSchedule: (eventIds: string[], ministryId: string): number => dispatch({ type: 'autoSchedule', eventIds, ministryId })?.created ?? 0,
+    publishDrafts: (ministryId: string, eventId?: string): number => dispatch({ type: 'publishDrafts', ministryId, eventId })?.created ?? 0,
+    discardDrafts: (ministryId: string, eventId?: string): number => dispatch({ type: 'discardDrafts', ministryId, eventId })?.created ?? 0,
     addNotice: (ministryId: string | null, title: string, body: string) => { dispatch({ type: 'addNotice', ministryId, title, body }) },
     addSong: (eventId: string, song: Omit<Song, 'id'>) => { dispatch({ type: 'addSong', eventId, song }) },
     removeSong: (eventId: string, songId: string) => { dispatch({ type: 'removeSong', eventId, songId }) },
@@ -136,6 +139,7 @@ function makeActions(
     moveSong: (eventId: string, songId: string, dir: -1 | 1) => { dispatch({ type: 'moveSong', eventId, songId, dir }) },
     addEvent: (title: string, date: string, time: string, ministryIds: string[]) => { dispatch({ type: 'addEvent', title, date, time, ministryIds }) },
     setOpen: (open: boolean) => dispatchAsync({ type: 'setOpen', open }),
+    setDemo: (show: boolean) => dispatchAsync({ type: 'setDemo', show }),
     resetPin: (memberId: string) => dispatchAsync({ type: 'resetPin', memberId }),
     saveTask: (task: TaskInput) => dispatchAsync({ type: 'saveTask', task }),
     createTeamSession: (sessionId: string, date: string, time: string, place?: string, note?: string) =>
@@ -320,7 +324,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }), [dispatch, dispatchAsync, setSession, replaceDemo])
 
   const mode = session?.mode ?? null
-  const data = mode === 'live' ? liveData ?? emptyLive : demoData
+  // na demonstração, cada perfil vê o mesmo que veria nos dados reais (rascunhos só para líderes)
+  const demoView = useMemo(() => (meId ? visibleTo(demoData, meId) : demoData), [demoData, meId])
+  const data = mode === 'live' ? liveData ?? emptyLive : demoView
   const me = meId ? data.members.find((m) => m.id === meId) ?? null : null
   const loading = mode === 'live' && !liveData
 

@@ -8,10 +8,10 @@ import { ActionError, applyAction, selfRegister, type Action } from '../src/data
 import { buildAgenda, DATA_VERSION, LEADER_ROLES, ministryList, ROLE_RENAMES } from '../src/data/seed.js'
 import { addDays, fromISO, toISO } from '../src/lib/dates.js'
 import { isValidPhone, normalizePhone } from '../src/lib/people.js'
-import { canManage } from '../src/lib/schedule.js'
+import { canManage, visibleTo } from '../src/lib/schedule.js'
 import { getStore, type Store } from './storage.js'
 import { addSub, isValidSub, removeSub, sendPush, vapidKeys } from './push.js'
-import { notificationsFor, remindersFor, taskRemindersFor, type Outgoing } from './notify.js'
+import { draftRemindersFor, notificationsFor, remindersFor, taskRemindersFor, type Outgoing } from './notify.js'
 
 const LIVE_VERSION = 1
 const SESSION_TTL = 180 * 24 * 3600 // 180 dias
@@ -185,9 +185,10 @@ async function withData<T>(store: Store, fn?: (d: AppData) => T): Promise<{ data
 }
 
 /** O que cada pessoa recebe: telefones só para admin, líderes do mesmo ministério e a própria pessoa */
-function viewFor(d: AppData, meId: string): AppData {
-  const me = d.members.find((m) => m.id === meId)
-  if (!me) return d
+function viewFor(full: AppData, meId: string): AppData {
+  const me = full.members.find((m) => m.id === meId)
+  if (!me) return full
+  const d = visibleTo(full, meId)
   const led = new Set(d.ministries.filter((m) => canManage(me, m.id, d)).map((m) => m.id))
   const inMinistry = new Set(me.ministries.map((mm) => mm.ministryId))
   return {
@@ -251,7 +252,13 @@ async function sessionMember(store: Store, auth: string | undefined): Promise<st
 
 export async function route(name: string, method: string, body: any, auth: string | undefined, ip = 'unknown', query: Record<string, string> = {}): Promise<Reply> {
   const store = getStore()
-  if (name === 'status') return ok({ configured: !!store })
+  if (name === 'status') {
+    if (!store) return ok({ configured: false, demo: true })
+    // a tela de entrada mostra a demonstração até o administrador esconder
+    const { doc } = await store.getDoc()
+    const settings = doc ? (JSON.parse(doc) as AppData).settings : undefined
+    return ok({ configured: true, demo: settings?.demo !== false })
+  }
   if (!store) return fail(503, 'O servidor do Serve ainda não foi configurado.')
 
   try {
@@ -425,7 +432,7 @@ export async function route(name: string, method: string, body: any, auth: strin
         const tomorrow = toISO(addDays(fromISO(brToday()), 1))
         if (!(await store.setNX(`serve:reminded:${tomorrow}`, '1', 3 * 24 * 3600))) return ok({ skipped: true, tomorrow })
         const { data } = await withData(store)
-        const list = [...remindersFor(data, tomorrow), ...taskRemindersFor(data, tomorrow)]
+        const list = [...remindersFor(data, tomorrow), ...taskRemindersFor(data, tomorrow), ...draftRemindersFor(data, brToday(), toISO(addDays(fromISO(brToday()), 3)))]
         await deliver(store, list)
         return ok({ tomorrow, people: list.length })
       }

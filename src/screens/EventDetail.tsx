@@ -6,6 +6,7 @@ import { longDate, relativeDay, timeRange } from '../lib/dates'
 import { firstName, join, memberById } from '../lib/selectors'
 import { canEditSetlist, canManage, isPast, openSlots, rankCandidates, rankGroups, slotsFor } from '../lib/schedule'
 import { AssignmentActions } from '../components/AssignmentActions'
+import { DraftBar } from '../components/DraftBar'
 import { Avatar, Empty, MinistryBadge, Sheet, StatusPill, TopBar } from '../components/ui'
 import type { Assignment, ChurchEvent, Ministry, Song } from '../data/types'
 import { FillBar, fillOf } from './Agenda'
@@ -21,7 +22,7 @@ export function EventDetail({ id }: { id: string }) {
   if (!ev) return <div className="screen"><TopBar title="Evento" onBack={back} /><Empty icon={<X />} title="Evento não encontrado" /></div>
 
   const canRemove = me.access === 'admin' || (!!ev.slots && ev.ministryIds.every((id) => canManage(me, id, data)))
-  const mine = join(data, data.assignments.filter((a) => a.eventId === ev.id && a.memberId === me.id && a.status !== 'declined'))
+  const mine = join(data, data.assignments.filter((a) => a.eventId === ev.id && a.memberId === me.id && a.status !== 'declined' && !a.draft))
   const hasLouvor = ev.ministryIds.includes('louvor')
   const { total } = fillOf(data, ev)
   // ministérios que eu gerencio aparecem primeiro
@@ -109,8 +110,8 @@ function MinistryTeam({ ev, ministry }: { ev: ChurchEvent; ministry: Ministry })
     const left = before - n
     notify(
       n === 0 ? 'Ninguém disponível para as vagas abertas (indisponíveis, já escalados ou no limite do mês).'
-      : left ? `${n} ${n === 1 ? 'vaga preenchida' : 'vagas preenchidas'} ✨ ${left} sem ninguém disponível.`
-      : `Escala completa: ${n} ${n === 1 ? 'vaga preenchida' : 'vagas preenchidas'} ✨`,
+      : left ? `${n} ${n === 1 ? 'vaga preenchida' : 'vagas preenchidas'} em rascunho. ${left} sem ninguém disponível.`
+      : `${n} ${n === 1 ? 'vaga preenchida' : 'vagas preenchidas'} em rascunho ✨ Confira e publique.`,
     )
   }
 
@@ -123,6 +124,7 @@ function MinistryTeam({ ev, ministry }: { ev: ChurchEvent; ministry: Ministry })
           <button className="btn btn-soft btn-sm" onClick={auto}><Sparkles size={15} /> Automática</button>
         )}
       </div>
+      {manage && <DraftBar ministry={ministry} eventId={ev.id} />}
       {[
         ...slotsFor(data, ev, ministry.id),
         // funções sem vaga neste evento, mas com alguém escalado (ex.: escala antiga)
@@ -142,7 +144,7 @@ function MinistryTeam({ ev, ministry }: { ev: ChurchEvent; ministry: Ministry })
             <div key={a.id} className={`person${a.memberId === me.id ? ' me' : ''}${a.status === 'declined' ? ' declined' : ''}`}>
               <Avatar name={m?.name ?? '?'} size={28} />
               <span className="grow">{m ? (a.memberId === me.id ? 'Você' : m.name) : '—'}{swap && <em className="swap-tag">troca</em>}</span>
-              <StatusPill status={a.status} checkedIn={a.checkedIn} />
+              <StatusPill status={a.status} checkedIn={a.checkedIn} draft={a.draft} />
               {manage && (
                 <button className="icon-btn sm" aria-label="Remover" onClick={() => actions.unassign(a.id)}><X size={16} /></button>
               )}
@@ -193,13 +195,13 @@ function MinistryTeam({ ev, ministry }: { ev: ChurchEvent; ministry: Ministry })
           setGroupPicker(null)
           const r = await actions.assignGroup(ev.id, ministry.id, role, groupId)
           const name = ministry.groups?.find((g) => g.id === groupId)?.name ?? 'Grupo'
-          notify(r.ok ? `${name} foi escalado. Aguardando confirmação de cada pessoa.` : r.error)
+          notify(r.ok ? `${name} entrou no rascunho. Publique para avisar o grupo.` : r.error)
         }} />}
       </Sheet>
       <Sheet open={!!picker} onClose={() => setPicker(null)} title={`Escalar · ${picker ?? ''}`}>
         {picker && <CandidatePicker ev={ev} ministry={ministry} role={picker} onPick={(memberId) => {
           actions.assign(ev.id, ministry.id, picker, memberId)
-          notify(`${firstName(memberById(data, memberId)?.name ?? '')} foi escalado(a). Aguardando confirmação.`)
+          notify(`${firstName(memberById(data, memberId)?.name ?? '')} entrou no rascunho. Publique para avisar.`)
           setPicker(null)
         }} />}
       </Sheet>

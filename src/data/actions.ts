@@ -57,6 +57,8 @@ export type Action =
   | { type: 'assignGroup'; eventId: string; ministryId: string; role: string; groupId: string }
   | { type: 'unassignGroup'; eventId: string; groupId: string }
   | { type: 'autoSchedule'; eventIds: string[]; ministryId: string }
+  | { type: 'publishDrafts'; ministryId: string; eventId?: string }
+  | { type: 'discardDrafts'; ministryId: string; eventId?: string }
   | { type: 'addNotice'; ministryId: string | null; title: string; body: string }
   | { type: 'addSong'; eventId: string; song: Omit<Song, 'id'> }
   | { type: 'removeSong'; eventId: string; songId: string }
@@ -66,6 +68,7 @@ export type Action =
   | { type: 'saveMember'; member: MemberInput }
   | { type: 'removeMember'; memberId: string }
   | { type: 'setOpen'; open: boolean }
+  | { type: 'setDemo'; show: boolean }
   | { type: 'resetPin'; memberId: string }
   | { type: 'saveTask'; task: TaskInput }
   | { type: 'createTeamSession'; sessionId: string; date: string; time: string; place?: string; note?: string }
@@ -164,7 +167,7 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
       manage(action.ministryId)
       findEv(action.eventId)
       if (!d.members.some((m) => m.id === action.memberId)) throw notFound()
-      d.assignments.push({ id: uid(), eventId: action.eventId, ministryId: action.ministryId, role: action.role, memberId: action.memberId, status: 'pending' })
+      d.assignments.push({ id: uid(), eventId: action.eventId, ministryId: action.ministryId, role: action.role, memberId: action.memberId, status: 'pending', draft: true })
       return {}
     }
     case 'unassign': {
@@ -204,6 +207,7 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
       if (d.assignments.some((a) => a.eventId === ev.id && a.groupId === action.groupId)) throw new ActionError('Esse grupo já está nesse culto.', 409)
       const add = groupAssignments(d, ev, action.ministryId, action.role, action.groupId)
       if (!add.length) throw new ActionError('Ninguém desse grupo está disponível nesse dia.')
+      for (const a of add) a.draft = true
       d.assignments.push(...add)
       return { created: add.length }
     }
@@ -223,10 +227,27 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
         const ev = d.events.find((e) => e.id === id)
         if (!ev || !ev.ministryIds.includes(action.ministryId)) continue
         const add = autoFill(d, id, action.ministryId)
+        for (const a of add) a.draft = true
         d.assignments.push(...add)
         created += add.length
       }
       return { created }
+    }
+    case 'publishDrafts': {
+      manage(action.ministryId)
+      let created = 0
+      for (const a of d.assignments) {
+        if (!a.draft || a.ministryId !== action.ministryId || (action.eventId && a.eventId !== action.eventId)) continue
+        delete a.draft
+        created++
+      }
+      return { created }
+    }
+    case 'discardDrafts': {
+      manage(action.ministryId)
+      const before = d.assignments.length
+      d.assignments = d.assignments.filter((a) => !(a.draft && a.ministryId === action.ministryId && (!action.eventId || a.eventId === action.eventId)))
+      return { created: before - d.assignments.length }
     }
     case 'addNotice': {
       if (action.ministryId === null ? !isAdmin : !canManage(me, action.ministryId, d)) throw deny()
@@ -365,6 +386,10 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
       m.hasPin = false
       return {}
     }
+    case 'setDemo':
+      if (!isAdmin) throw deny()
+      d.settings = { ...d.settings, demo: action.show }
+      return {}
     case 'setOpen':
       if (!isAdmin) throw deny()
       d.settings = { ...d.settings, open: action.open }

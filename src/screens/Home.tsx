@@ -4,13 +4,15 @@ import { demoExpiresAt, useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
 import { greeting, relativeDay, timeAgo, timeRange, todayISO, addDays, toISO } from '../lib/dates'
 import { firstName, join, managedMinistries, memberById, myMinistries, myUpcoming, swapsICanCover } from '../lib/selectors'
-import { openSlots } from '../lib/schedule'
+import { draftsOf, openSlots } from '../lib/schedule'
 import { AssignmentActions } from '../components/AssignmentActions'
 import { Avatar, DateBlock, Empty, MinistryBadge, Section, StatusPill } from '../components/ui'
 import { Logo } from '../components/Logo'
 import { NotificationsPrompt } from '../components/Notifications'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { HomeArtsCard } from './Arts'
+import { DraftBar } from '../components/DraftBar'
+import { DemoTips } from '../components/DemoTips'
 
 export function Home() {
   const { data, actions, notify, mode } = useStore()
@@ -72,6 +74,8 @@ export function Home() {
       )}
 
       <NotificationsPrompt />
+      <DemoTips />
+      {managed.filter((m) => draftsOf(data, m.id).length).map((m) => <DraftBar key={m.id} ministry={m} showName />)}
 
       {next ? (
         <div className="hero-card" onClick={() => push({ name: 'event', id: next.ev.id })}>

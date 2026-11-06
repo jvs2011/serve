@@ -100,3 +100,13 @@ export function NotificationsPrompt() {
     </div>
   )
 }
+
+/** Passo do guia de primeiro acesso */
+export function NotificationsStep() {
+  const { mode, state, busy, enable } = usePush()
+  if (mode !== 'live') return <p className="muted small">Na demonstração as notificações ficam desligadas.</p>
+  if (state === 'on') return <p className="push-status on"><BellRing size={18} /> Notificações ativas neste aparelho</p>
+  if (state === 'off') return <button className="btn btn-primary btn-block" disabled={busy} onClick={enable}><Bell size={18} /> Ativar notificações</button>
+  if (!state) return null
+  return <p className="muted small">{HELP[state]}</p>
+}

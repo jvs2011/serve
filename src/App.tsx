@@ -16,6 +16,8 @@ import { Dashboard } from './screens/Dashboard'
 import { People, PersonForm } from './screens/People'
 import { CreatePinGate } from './screens/PinScreens'
 import { Logo } from './components/Logo'
+import { Guide, guideSeen } from './screens/Guide'
+import { useEffect, useState } from 'react'
 
 export default function App() {
   return (
@@ -55,6 +57,13 @@ function Shell() {
 
 function Main() {
   const { tab, stack } = useNav()
+  const { me, mode } = useStore()
+  const [guide, setGuide] = useState(() => !!me && !guideSeen(mode, me.id))
+  useEffect(() => {
+    const open = () => setGuide(true)
+    window.addEventListener('serve:guide', open)
+    return () => window.removeEventListener('serve:guide', open)
+  }, [])
   const top = stack[stack.length - 1]
   let screen
   if (top) {
@@ -70,6 +79,7 @@ function Main() {
   } else {
     screen = { home: <Home />, agenda: <Agenda />, swaps: <Swaps />, team: <LeaderOrTeam />, profile: <Profile /> }[tab]
   }
+  if (guide) return <Guide onDone={() => setGuide(false)} />
   return (
     <>
       <main className="content">{screen}</main>

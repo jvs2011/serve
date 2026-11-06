@@ -90,6 +90,8 @@ export interface Assignment {
   status: AssignmentStatus
   /** escalado como parte de um grupo (ex.: grupo de voz) */
   groupId?: string
+  /** escala em rascunho: só os líderes veem; a pessoa é avisada quando o líder publica */
+  draft?: boolean
   checkedIn?: boolean
   feedback?: { rating: number; comment: string }
 }
@@ -137,6 +139,8 @@ export interface AppData {
   settings?: {
     /** false/ausente = só administradores entram no app (fase de cadastros) */
     open?: boolean
+    /** false = a tela de entrada não mostra a demonstração */
+    demo?: boolean
   }
   /** Dados reais: até que data a agenda fixa já foi gerada (YYYY-MM-DD) */
   generatedUntil?: string

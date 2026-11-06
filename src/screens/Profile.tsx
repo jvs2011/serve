@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { BarChart3, CalendarOff, ChevronRight, History, KeyRound, LogOut, RotateCcw, Smartphone, Users } from 'lucide-react'
+import { openGuide } from './Guide'
+import { BarChart3, CalendarOff, Compass, ChevronRight, History, KeyRound, LogOut, RotateCcw, Smartphone, Users } from 'lucide-react'
 import { ChangePinForm } from './PinScreens'
 import { formatPhone } from '../lib/people'
 import { NotificationSettings } from '../components/Notifications'
@@ -83,6 +84,7 @@ export function Profile() {
       </div>
 
       {me.access === 'admin' && mode === 'live' && <AccessToggle />}
+      {me.access === 'admin' && mode === 'live' && <DemoToggle />}
 
       <h3 className="form-title">Notificações</h3>
       <div className="card push-card">
@@ -95,6 +97,9 @@ export function Profile() {
             <KeyRound size={20} /><span className="grow">Alterar PIN</span><ChevronRight size={18} className="muted" />
           </button>
         )}
+        <button className="menu-item" onClick={openGuide}>
+          <Compass size={20} /><span className="grow">Como usar o Serve</span><ChevronRight size={18} className="muted" />
+        </button>
         <button className="menu-item" onClick={() => setInstallOpen(true)}>
           <Smartphone size={20} /><span className="grow">Instalar na tela inicial</span><ChevronRight size={18} className="muted" />
         </button>
@@ -123,6 +128,32 @@ export function Profile() {
   )
 }
 
+/** Mostrar ou esconder a demonstração na tela de entrada */
+function DemoToggle() {
+  const { data, actions, notify } = useStore()
+  const [busy, setBusy] = useState(false)
+  const show = data.settings?.demo !== false
+  const apply = async (value: boolean) => {
+    setBusy(true)
+    const r = await actions.setDemo(value)
+    setBusy(false)
+    notify(r.ok ? (value ? 'A demonstração voltou para a tela de entrada' : 'Demonstração escondida da tela de entrada') : r.error)
+  }
+  return (
+    <div className="card push-card access-card mt">
+      <label className="switch-row">
+        <span>Demonstração na tela de entrada</span>
+        <input type="checkbox" checked={show} disabled={busy} onChange={(e) => apply(e.target.checked)} />
+      </label>
+      <p className="muted small">
+        {show
+          ? 'Quem abre o Serve vê os perfis de exemplo (voluntária, líder e coordenação) para conhecer o app sem entrar.'
+          : 'A tela de entrada mostra só o celular e o PIN. Os dados de exemplo continuam guardados para quando quiser mostrar de novo.'}
+      </p>
+    </div>
+  )
+}
+
 /** Liberar o app para todos (enquanto desligado, só administradores entram) */
 function AccessToggle() {
   const { data, actions, notify } = useStore()
@@ -147,7 +178,7 @@ function AccessToggle() {
         </label>
         <p className="muted small">
           {open
-            ? 'Todas as pessoas cadastradas podem entrar com o celular e as iniciais.'
+            ? 'Todas as pessoas cadastradas podem entrar com o celular e o PIN.'
             : people === 0
               ? 'Fase de cadastros: só administradores entram no app. O formulário de cadastro continua funcionando.'
               : `Fase de cadastros: ${people === 1 ? 'a pessoa cadastrada ainda não entra no app e vê' : `as ${people} pessoas cadastradas ainda não entram no app e veem`} a mensagem “em breve teremos novidades”. O formulário de cadastro continua funcionando.`}

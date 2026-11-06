@@ -11,6 +11,7 @@ import { ARTS_MINISTRIES, ArtsTab } from './Arts'
 import { SessionCards } from './Sessions'
 import { GroupsTab } from './Groups'
 import { MinistryEventCard } from './MinistryEvents'
+import { DraftBar } from '../components/DraftBar'
 import { FillBar, fillOf } from './Agenda'
 
 export function Team() {
@@ -64,7 +65,7 @@ export function MinistryDetail({ id, initialTab, asTab }: { id: string; initialT
   const autoMonth = () => {
     const until = toISO(addDays(new Date(), 30))
     const n = actions.autoSchedule(events.filter((e) => e.date <= until).map((e) => e.id), ministry.id)
-    notify(n ? `Escala dos próximos 30 dias gerada: ${n} vagas preenchidas ✨` : 'Todas as vagas dos próximos 30 dias já estão preenchidas.')
+    notify(n ? `Rascunho dos próximos 30 dias pronto: ${n} vagas preenchidas ✨ Confira e publique.` : 'Todas as vagas dos próximos 30 dias já estão preenchidas.')
   }
 
   return (
@@ -97,6 +98,7 @@ export function MinistryDetail({ id, initialTab, asTab }: { id: string; initialT
 
       {tab === 'schedule' && (
         <>
+          {manage && <DraftBar ministry={ministry} />}
           {manage && <SessionCards ministry={ministry} />}
           {manage && <MinistryEventCard ministry={ministry} />}
           {manage && (
@@ -104,7 +106,7 @@ export function MinistryDetail({ id, initialTab, asTab }: { id: string; initialT
               <Sparkles size={22} />
               <div className="grow">
                 <strong>Escala automática</strong>
-                <span className="small">Preenche as vagas dos próximos 30 dias respeitando disponibilidade, outras escalas e rodízio.</span>
+                <span className="small">Monta um rascunho dos próximos 30 dias respeitando disponibilidade, outras escalas e rodízio. Você confere e publica.</span>
               </div>
               <button className="btn btn-primary btn-sm" onClick={autoMonth}>Gerar</button>
             </div>

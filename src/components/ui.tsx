@@ -57,7 +57,8 @@ export function Avatar({ name, size = 36 }: { name: string; size?: number }) {
 
 const STATUS_LABEL: Record<AssignmentStatus, string> = { pending: 'Pendente', confirmed: 'Confirmado', declined: 'Recusou' }
 
-export function StatusPill({ status, checkedIn }: { status: AssignmentStatus; checkedIn?: boolean }) {
+export function StatusPill({ status, checkedIn, draft }: { status: AssignmentStatus; checkedIn?: boolean; draft?: boolean }) {
+  if (draft) return <span className="pill pill-draft">Rascunho</span>
   if (checkedIn) return <span className="pill pill-checkin">Check-in ✓</span>
   return <span className={`pill pill-${status}`}>{STATUS_LABEL[status]}</span>
 }

@@ -177,6 +177,18 @@ export function levelFor(points: number): { name: string; next: number; base: nu
   return { name: levels[i].name, base: levels[i].base, next: levels[i + 1]?.base ?? levels[i].base }
 }
 
+/** O que cada pessoa enxerga: escalas em rascunho só aparecem para quem cuida do ministério */
+export function visibleTo(data: AppData, meId: string): AppData {
+  const me = data.members.find((m) => m.id === meId)
+  if (!me || !data.assignments.some((a) => a.draft)) return data
+  return { ...data, assignments: data.assignments.filter((a) => !a.draft || canManage(me, a.ministryId, data)) }
+}
+
+/** Rascunhos de um ministério (opcionalmente só de um evento) */
+export function draftsOf(data: AppData, ministryId: string, eventId?: string): Assignment[] {
+  return data.assignments.filter((a) => a.draft && a.ministryId === ministryId && (!eventId || a.eventId === eventId))
+}
+
 export const isPast = (ev: ChurchEvent) => ev.date < todayISO()
 export const isToday = (ev: ChurchEvent) => ev.date === todayISO()
 

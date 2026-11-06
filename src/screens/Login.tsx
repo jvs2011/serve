@@ -12,6 +12,7 @@ const demoMembers = createSeed().members
 export function Login() {
   const { actions } = useStore()
   const [available, setAvailable] = useState<boolean | null>(null)
+  const [showDemo, setShowDemo] = useState<boolean | null>(null)
   const [phone, setPhone] = useState('')
   // celular → (já tem PIN) digita o PIN | (primeiro acesso) cria o PIN → repete o PIN
   const [step, setStep] = useState<'phone' | 'pin' | 'create' | 'confirm'>('phone')
@@ -25,8 +26,8 @@ export function Login() {
   useEffect(() => {
     fetch('/api/status')
       .then((r) => (r.ok ? r.json() : { configured: false }))
-      .then((r: { configured?: boolean }) => setAvailable(!!r.configured))
-      .catch(() => setAvailable(false))
+      .then((r: { configured?: boolean; demo?: boolean }) => { setAvailable(!!r.configured); setShowDemo(!r.configured || r.demo !== false) })
+      .catch(() => { setAvailable(false); setShowDemo(true) })
   }, [])
 
   const restart = (msg = '') => { setStep('phone'); setSetupId(null); setPin(''); setNewPin(''); setError(msg) }
@@ -157,6 +158,7 @@ export function Login() {
           </>
         )}
 
+        {showDemo && <>
         <div className="divider"><span>ou explore a demonstração</span></div>
         <p className="muted small demo-hint">Fique à vontade para testar: as alterações são desfeitas 10 minutos depois.</p>
 
@@ -176,6 +178,7 @@ export function Login() {
             )
           })}
         </div>
+        </>}
       </div>
     </div>
   )

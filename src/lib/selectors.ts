@@ -19,12 +19,12 @@ export function join(data: AppData, list: Assignment[]): Joined[] {
 
 export function myUpcoming(data: AppData, memberId: string): Joined[] {
   const t = todayISO()
-  return join(data, data.assignments.filter((a) => a.memberId === memberId && a.status !== 'declined')).filter((x) => x.ev.date >= t)
+  return join(data, data.assignments.filter((a) => a.memberId === memberId && a.status !== 'declined' && !a.draft)).filter((x) => x.ev.date >= t)
 }
 
 export function myPast(data: AppData, memberId: string): Joined[] {
   const t = todayISO()
-  return join(data, data.assignments.filter((a) => a.memberId === memberId && a.status !== 'declined'))
+  return join(data, data.assignments.filter((a) => a.memberId === memberId && a.status !== 'declined' && !a.draft))
     .filter((x) => x.ev.date < t)
     .reverse()
 }

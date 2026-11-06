@@ -6,7 +6,7 @@ export type Tab = 'home' | 'agenda' | 'swaps' | 'team' | 'profile'
 
 export type Route =
   | { name: 'event'; id: string }
-  | { name: 'ministry'; id: string; tab?: 'schedule' | 'team' | 'notices' | 'arts' }
+  | { name: 'ministry'; id: string; tab?: 'schedule' | 'team' | 'groups' | 'notices' | 'arts' }
   | { name: 'availability' }
   | { name: 'dashboard' }
   | { name: 'history' }

@@ -11,7 +11,9 @@ npm run build      # gera /dist para publicar (Vercel, Netlify, Cloudflare Pages
 npm run build:single  # gera /dist-single/index.html, um arquivo único para prévia
 ```
 
-Na tela de entrada há três perfis de demonstração: **Voluntária** (Ana), **Líder** (Mariana, Louvor) e **Coordenação** (Lucas, todos os ministérios).
+Na tela de entrada há quatro perfis de demonstração: **Voluntária** (Ana), **Líder do Louvor** (Mariana: grupos de voz e rascunho),
+**Líder do Follow** (Rafaela: artes e Lagoinha News) e **Coordenação** (Lucas). Cada perfil mostra sugestões do que experimentar.
+O administrador esconde ou mostra a demonstração em **Perfil → Demonstração na tela de entrada**.
 
 ## Funcionalidades
 
@@ -25,7 +27,13 @@ Na tela de entrada há três perfis de demonstração: **Voluntária** (Ana), **
 - Repertório do culto com tom e link para a cifra
 - Avisos da igreja e do ministério
 
+Todo mundo vê um guia rápido no primeiro acesso (como confirmar, avisar indisponibilidade, pedir troca,
+ativar notificações e, para líderes, como publicar a escala). Dá para rever em **Perfil → Como usar o Serve**.
+
 **Líder / Coordenação**
+- Escala em **rascunho**: o que o líder escala (à mão, por grupo ou automática) só aparece para os líderes;
+  ao tocar em **Publicar** a equipe vê e recebe a notificação. Dá para descartar o rascunho.
+  Se faltar publicar algo dos próximos 3 dias, o líder recebe um lembrete às 18h
 - Escala automática (por culto ou para os próximos 30 dias) respeitando indisponibilidade,
   conflito com outras escalas, limite mensal e rodízio justo
 - Escalar manualmente com lista de candidatos ordenada e alertas de conflito
