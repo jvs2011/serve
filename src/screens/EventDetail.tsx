@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertTriangle, ExternalLink, Music2, Pencil, Plus, Sparkles, Trash2, UserPlus, Users, X } from 'lucide-react'
+import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Check, ExternalLink, Music2, Pencil, Plus, Sparkles, Trash2, UserPlus, Users, X } from 'lucide-react'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
 import { longDate, relativeDay, timeRange } from '../lib/dates'
@@ -216,6 +216,7 @@ function Setlist({ ev }: { ev: ChurchEvent }) {
   const canEdit = canEditSetlist(data, me, ev) && !isPast(ev)
   const [editing, setEditing] = useState<Song | 'new' | null>(null)
   const [confirmDel, setConfirmDel] = useState<string | null>(null)
+  const [reorder, setReorder] = useState(false)
   const q = (s: string) => encodeURIComponent(s)
 
   return (
@@ -230,6 +231,12 @@ function Setlist({ ev }: { ev: ChurchEvent }) {
               <span className="muted small">{s.artist}</span>
             </div>
             <span className="key">{s.key}</span>
+            {reorder ? (
+              <>
+                <button className="icon-btn sm move-btn" disabled={i === 0} onClick={() => actions.moveSong(ev.id, s.id, -1)} aria-label="Subir"><ArrowUp size={18} /></button>
+                <button className="icon-btn sm move-btn" disabled={i === ev.setlist.length - 1} onClick={() => actions.moveSong(ev.id, s.id, 1)} aria-label="Descer"><ArrowDown size={18} /></button>
+              </>
+            ) : (<>
             <a className="icon-btn sm" href={s.link || `https://www.cifraclub.com.br/?q=${q(`${s.title} ${s.artist}`)}`} target="_blank" rel="noreferrer" aria-label={s.link ? 'Abrir link' : 'Buscar cifra'}>
               <ExternalLink size={16} />
             </a>
@@ -239,10 +246,18 @@ function Setlist({ ev }: { ev: ChurchEvent }) {
             ) : (
               <button className="icon-btn sm" onClick={() => setConfirmDel(s.id)} aria-label="Remover"><Trash2 size={16} /></button>
             ))}
+            </>)}
           </li>
         ))}
       </ol>
-      {canEdit && <button className="btn btn-soft btn-block" onClick={() => setEditing('new')}><Plus size={16} /> Adicionar música</button>}
+      {canEdit && (reorder ? (
+        <button className="btn btn-primary btn-block" onClick={() => setReorder(false)}><Check size={16} /> Pronto</button>
+      ) : (
+        <div className="btn-row">
+          <button className="btn btn-soft" onClick={() => setEditing('new')}><Plus size={16} /> Adicionar música</button>
+          <button className="btn btn-ghost" disabled={ev.setlist.length < 2} onClick={() => { setReorder(true); setConfirmDel(null) }}><ArrowUpDown size={16} /> Reordenar</button>
+        </div>
+      ))}
       {!canEdit && !isPast(ev) && <p className="muted small setlist-hint">Quem está escalado no Louvor deste culto pode montar o repertório.</p>}
       <Sheet open={!!editing} onClose={() => setEditing(null)} title={editing === 'new' ? 'Adicionar música' : 'Editar música'}>
         {editing && <SongForm key={editing === 'new' ? 'new' : editing.id} song={editing === 'new' ? null : editing} onSave={(song) => {

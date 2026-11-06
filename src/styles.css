@@ -696,3 +696,7 @@ select:focus { border-color: var(--accent); }
 .tabbar button { flex-basis: 0; min-width: 0; }
 .setlist-hint { text-align: center; margin-top: 4px; }
 .setlist li .btn-sm { flex-shrink: 0; }
+.move-btn { width: 38px; height: 38px; background: var(--surface-2); color: var(--ink); }
+.move-btn:disabled { opacity: .3; }
+.coord-note { display: flex; align-items: center; gap: 8px; background: var(--info-soft); color: var(--info); border-radius: 12px; padding: 10px 12px; font-size: 13px; font-weight: 500; margin-bottom: 12px; }
+.coord-note svg { flex-shrink: 0; }

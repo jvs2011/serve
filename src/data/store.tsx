@@ -122,6 +122,7 @@ function makeActions(
     addSong: (eventId: string, song: Omit<Song, 'id'>) => { dispatch({ type: 'addSong', eventId, song }) },
     removeSong: (eventId: string, songId: string) => { dispatch({ type: 'removeSong', eventId, songId }) },
     editSong: (eventId: string, songId: string, song: Omit<Song, 'id'>) => { dispatch({ type: 'editSong', eventId, songId, song }) },
+    moveSong: (eventId: string, songId: string, dir: -1 | 1) => { dispatch({ type: 'moveSong', eventId, songId, dir }) },
     addEvent: (title: string, date: string, time: string, ministryIds: string[]) => { dispatch({ type: 'addEvent', title, date, time, ministryIds }) },
     setOpen: (open: boolean) => dispatchAsync({ type: 'setOpen', open }),
     saveTask: (task: TaskInput) => dispatchAsync({ type: 'saveTask', task }),

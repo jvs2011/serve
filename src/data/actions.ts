@@ -43,6 +43,7 @@ export type Action =
   | { type: 'addSong'; eventId: string; song: Omit<Song, 'id'> }
   | { type: 'removeSong'; eventId: string; songId: string }
   | { type: 'editSong'; eventId: string; songId: string; song: Omit<Song, 'id'> }
+  | { type: 'moveSong'; eventId: string; songId: string; dir: -1 | 1 }
   | { type: 'addEvent'; title: string; date: string; time: string; ministryIds: string[] }
   | { type: 'saveMember'; member: MemberInput }
   | { type: 'removeMember'; memberId: string }
@@ -181,6 +182,16 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
       if (!canEditSetlist(d, me, ev)) throw deny()
       const s = ev.setlist.find((x) => x.id === action.songId) ?? (() => { throw notFound() })()
       Object.assign(s, cleanSong(action.song))
+      return {}
+    }
+    case 'moveSong': {
+      const ev = findEv(action.eventId)
+      if (!canEditSetlist(d, me, ev)) throw deny()
+      const i = ev.setlist.findIndex((x) => x.id === action.songId)
+      if (i < 0) throw notFound()
+      const j = i + (action.dir < 0 ? -1 : 1)
+      if (j < 0 || j >= ev.setlist.length) return {}
+      ;[ev.setlist[i], ev.setlist[j]] = [ev.setlist[j], ev.setlist[i]]
       return {}
     }
     case 'removeSong': {
