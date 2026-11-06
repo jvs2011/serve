@@ -124,6 +124,9 @@ function makeActions(
     addEvent: (title: string, date: string, time: string, ministryIds: string[]) => { dispatch({ type: 'addEvent', title, date, time, ministryIds }) },
     setOpen: (open: boolean) => dispatchAsync({ type: 'setOpen', open }),
     saveTask: (task: TaskInput) => dispatchAsync({ type: 'saveTask', task }),
+    createTeamSession: (sessionId: string, date: string, time: string, place?: string, note?: string) =>
+      dispatchAsync({ type: 'createTeamSession', sessionId, date, time, place, note }),
+    removeEvent: (eventId: string) => dispatchAsync({ type: 'removeEvent', eventId }),
     removeTask: (taskId: string) => { dispatch({ type: 'removeTask', taskId }) },
     setTaskDone: (taskId: string, done: boolean, link?: string) => { dispatch({ type: 'setTaskDone', taskId, done, link }) },
     saveMember: (member: MemberInput) => dispatchAsync({ type: 'saveMember', member }),

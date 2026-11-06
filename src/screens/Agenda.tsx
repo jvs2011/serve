@@ -4,7 +4,7 @@ import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
 import { longDate, relativeDay, timeRange, todayISO } from '../lib/dates'
 import { myUpcoming } from '../lib/selectors'
-import { sortEvents } from '../lib/schedule'
+import { slotsFor, sortEvents } from '../lib/schedule'
 import { DateBlock, Empty, MinistryBadge, Sheet, StatusPill, TopBar } from '../components/ui'
 import type { AppData, ChurchEvent } from '../data/types'
 
@@ -13,9 +13,7 @@ export function fillOf(data: AppData, ev: ChurchEvent, ministryIds?: string[]) {
   let filled = 0
   for (const mid of ev.ministryIds) {
     if (ministryIds && !ministryIds.includes(mid)) continue
-    const m = data.ministries.find((x) => x.id === mid)
-    if (!m) continue
-    for (const r of m.roles) {
+    for (const r of slotsFor(data, ev, mid)) {
       total += r.count
       filled += Math.min(r.count, data.assignments.filter((a) => a.eventId === ev.id && a.ministryId === mid && a.role === r.name && a.status !== 'declined').length)
     }

@@ -42,7 +42,9 @@ export function notificationsFor(before: AppData, after: AppData, actorId: strin
     const top = lines[0]
     out.push({
       to: [memberId],
-      payload: list.length === 1
+      payload: list.length === 1 && top.e.slots
+        ? { title: `Convite: ${top.e.title} 🎬`, body: `${when(top.e)}${top.e.place ? ` · ${top.e.place}` : ''}\nVocê consegue participar? Toque para confirmar.`, tag: `escala-${top.a.id}` }
+        : list.length === 1
         ? { title: 'Você foi escalado 🙌', body: `${top.e.title} · ${when(top.e)}\n${min(top.a.ministryId)?.name} · ${top.a.role}. Toque para confirmar.`, tag: `escala-${top.a.id}` }
         : { title: `Você tem ${list.length} novas escalas`, body: lines.slice(0, 3).map((x) => `${x.e.title} · ${when(x.e)} (${x.a.role})`).join('\n') + (list.length > 3 ? '\n…' : ''), tag: 'escalas' },
     })

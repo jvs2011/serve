@@ -4,7 +4,7 @@ import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
 import { longDate, relativeDay, timeRange } from '../lib/dates'
 import { firstName, join, memberById } from '../lib/selectors'
-import { canManage, isPast, openSlots, rankCandidates } from '../lib/schedule'
+import { canManage, isPast, openSlots, rankCandidates, slotsFor } from '../lib/schedule'
 import { AssignmentActions } from '../components/AssignmentActions'
 import { Avatar, Empty, MinistryBadge, Sheet, StatusPill, TopBar } from '../components/ui'
 import type { ChurchEvent, Ministry } from '../data/types'
@@ -16,8 +16,11 @@ export function EventDetail({ id }: { id: string }) {
   const { back } = useNav()
   const ev = data.events.find((e) => e.id === id)
   const [tab, setTab] = useState<'team' | 'setlist'>('team')
+  const { actions, notify } = useStore()
+  const [confirmRemove, setConfirmRemove] = useState(false)
   if (!ev) return <div className="screen"><TopBar title="Evento" onBack={back} /><Empty icon={<X />} title="Evento não encontrado" /></div>
 
+  const canRemove = me.access === 'admin' || (!!ev.slots && ev.ministryIds.every((id) => canManage(me, id, data)))
   const mine = join(data, data.assignments.filter((a) => a.eventId === ev.id && a.memberId === me.id && a.status !== 'declined'))
   const hasLouvor = ev.ministryIds.includes('louvor')
   const { total, filled } = fillOf(data, ev)
@@ -30,7 +33,9 @@ export function EventDetail({ id }: { id: string }) {
   return (
     <div className="screen">
       <div className="event-hero">
-        <TopBar title="" onBack={back} />
+        <TopBar title="" onBack={back} right={canRemove && (
+          <button className="icon-btn hero-icon" aria-label="Cancelar evento" onClick={() => setConfirmRemove(true)}><Trash2 size={18} /></button>
+        )} />
         <span className="kicker light">{relativeDay(ev.date)} · {timeRange(ev)}</span>
         <h1>{ev.title}</h1>
         <p>{longDate(ev.date)} · {ev.place ?? 'Lagoinha Franca'}</p>
@@ -44,6 +49,21 @@ export function EventDetail({ id }: { id: string }) {
           </div>
         )}
       </div>
+
+      {confirmRemove && (
+        <div className="card confirm-box mb">
+          <p>Cancelar <b>{ev.title}</b> ({longDate(ev.date)})? As pessoas escaladas deixam de ver esse evento.</p>
+          <div className="btn-row">
+            <button className="btn btn-ghost" onClick={() => setConfirmRemove(false)}>Voltar</button>
+            <button className="btn btn-danger" onClick={async () => {
+              const r = await actions.removeEvent(ev.id)
+              if (!r.ok) return notify(r.error)
+              notify('Evento cancelado')
+              back()
+            }}>Cancelar evento</button>
+          </div>
+        </div>
+      )}
 
       {mine.map((x) => (
         <div key={x.a.id} className="card my-assignment">
@@ -105,7 +125,11 @@ function MinistryTeam({ ev, ministry }: { ev: ChurchEvent; ministry: Ministry })
           <button className="btn btn-soft btn-sm" onClick={auto}><Sparkles size={15} /> Automática</button>
         )}
       </div>
-      {ministry.roles.map((r) => {
+      {[
+        ...slotsFor(data, ev, ministry.id),
+        // funções sem vaga neste evento, mas com alguém escalado (ex.: escala antiga)
+        ...[...new Set(list.map((a) => a.role))].filter((role) => !slotsFor(data, ev, ministry.id).some((s) => s.name === role)).map((name) => ({ name, count: 0 })),
+      ].map((r) => {
         const people = list.filter((a) => a.role === r.name && a.status !== 'declined')
         const declined = list.filter((a) => a.role === r.name && a.status === 'declined')
         const missing = Math.max(0, r.count - people.length)

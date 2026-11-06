@@ -677,3 +677,15 @@ select:focus { border-color: var(--accent); }
 .arts-home-row .grow { display: grid; gap: 4px; justify-items: start; }
 .arts-home-title { font-weight: 600; font-size: 14px; }
 .mb { margin-bottom: 12px; }
+
+/* Encontros de equipe (ex.: gravação do News) */
+.session-card { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.session-card .grow { display: grid; gap: 2px; }
+.session-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex-shrink: 0; }
+.day-chips { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 12px; }
+.day-chip { height: auto; padding: 8px 0; display: grid; justify-items: center; gap: 2px; border-radius: 12px; }
+.day-chip b { font-size: 13px; }
+.day-chip span { font-size: 11px; opacity: .75; }
+.field.narrow-wide { flex: 0 0 120px; }
+.invite-box { display: grid; gap: 4px; background: var(--surface-2); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+.hero-icon { color: rgba(255,255,255,.85); }

@@ -4,7 +4,7 @@ import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
 import { addDays, daysBetween, toISO, todayISO } from '../lib/dates'
 import { managedMinistries, ministryMembers } from '../lib/selectors'
-import { openSlots } from '../lib/schedule'
+import { openSlots, slotsFor } from '../lib/schedule'
 import { Avatar, MinistryBadge, Section, TopBar } from '../components/ui'
 
 export function Dashboard() {
@@ -26,7 +26,7 @@ export function Dashboard() {
   let total = 0
   for (const ev of upcoming) for (const m of scope) if (ev.ministryIds.includes(m.id)) {
     open += openSlots(data, ev.id, m.id).reduce((s, x) => s + x.missing, 0)
-    total += m.roles.reduce((s, r) => s + r.count, 0)
+    total += slotsFor(data, ev, m.id).reduce((s, r) => s + r.count, 0)
   }
   const confirmed = upA.filter((a) => a.status === 'confirmed').length
   const pending = upA.filter((a) => a.status === 'pending').length
@@ -84,7 +84,7 @@ export function Dashboard() {
               let t = 0
               let o = 0
               for (const ev of upcoming) if (ev.ministryIds.includes(m.id)) {
-                t += m.roles.reduce((s, r) => s + r.count, 0)
+                t += slotsFor(data, ev, m.id).reduce((s, r) => s + r.count, 0)
                 o += openSlots(data, ev.id, m.id).reduce((s, x) => s + x.missing, 0)
               }
               const p = t ? Math.round(((t - o) / t) * 100) : 0

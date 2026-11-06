@@ -8,6 +8,7 @@ import { canManage, levelFor, pointsFor, sortEvents } from '../lib/schedule'
 import { Avatar, Empty, MinistryBadge, Section, Sheet, TopBar } from '../components/ui'
 import type { Ministry } from '../data/types'
 import { ARTS_MINISTRIES, ArtsTab } from './Arts'
+import { SessionCards } from './Sessions'
 import { fillOf } from './Agenda'
 
 export function Team() {
@@ -90,6 +91,7 @@ export function MinistryDetail({ id, initialTab }: { id: string; initialTab?: 's
 
       {tab === 'schedule' && (
         <>
+          {manage && <SessionCards ministry={ministry} />}
           {manage && (
             <div className="card auto-card">
               <Sparkles size={22} />

@@ -38,11 +38,20 @@ export function availabilityFor(data: AppData, member: Member, event: ChurchEven
   return { unavailable, recurring, conflict, sameDay, monthCount, overLimit: monthCount >= member.maxPerMonth }
 }
 
+/**
+ * Vagas de um ministério num evento: as vagas próprias do evento, se houver;
+ * senão as vagas padrão do ministério (funções com 0 não entram nos cultos).
+ */
+export function slotsFor(data: AppData, ev: ChurchEvent | undefined, ministryId: string): { name: string; count: number }[] {
+  if (ev?.slots) return ev.slots.filter((s) => s.ministryId === ministryId).map((s) => ({ name: s.role, count: s.count }))
+  const ministry = data.ministries.find((m) => m.id === ministryId)
+  return (ministry?.roles ?? []).filter((r) => r.count > 0)
+}
+
 /** Vagas abertas (função ainda sem gente suficiente) de um ministério num evento */
 export function openSlots(data: AppData, eventId: string, ministryId: string): { role: string; missing: number }[] {
-  const ministry = data.ministries.find((m) => m.id === ministryId)
-  if (!ministry) return []
-  return ministry.roles
+  const ev = data.events.find((e) => e.id === eventId)
+  return slotsFor(data, ev, ministryId)
     .map((r) => {
       const filled = data.assignments.filter(
         (a) => a.eventId === eventId && a.ministryId === ministryId && a.role === r.name && a.status !== 'declined',

@@ -58,7 +58,9 @@ function prepare(d: AppData): boolean {
     }
     // equipes novas no código entram no fim da lista (as existentes não são alteradas nem removidas)
     for (const r of base.roles) {
-      if (!m.roles.some((x) => x.name === r.name)) { m.roles.push({ ...r }); changed = true }
+      const cur = m.roles.find((x) => x.name === r.name)
+      if (!cur) { m.roles.push({ ...r }); changed = true }
+      else if (cur.count !== r.count) { cur.count = r.count; changed = true }
     }
   }
 

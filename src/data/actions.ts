@@ -4,7 +4,8 @@
  * e o servidor confere as permissões de quem está pedindo a alteração.
  */
 import type { AppData, AssignmentStatus, Member, Song } from './types.js'
-import { autoFill, canManage, uid } from '../lib/schedule.js'
+import { autoFill, canManage, isOff, uid } from '../lib/schedule.js'
+import { TEAM_SESSIONS } from './sessions.js'
 import { isValidPhone, normalizePhone, tidyName } from '../lib/people.js'
 
 export interface MemberInput {
@@ -46,6 +47,8 @@ export type Action =
   | { type: 'removeMember'; memberId: string }
   | { type: 'setOpen'; open: boolean }
   | { type: 'saveTask'; task: TaskInput }
+  | { type: 'createTeamSession'; sessionId: string; date: string; time: string; place?: string; note?: string }
+  | { type: 'removeEvent'; eventId: string }
   | { type: 'removeTask'; taskId: string }
   | { type: 'setTaskDone'; taskId: string; done: boolean; link?: string }
 
@@ -185,6 +188,37 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
     case 'saveMember':
       if (!isAdmin) throw deny()
       return { memberId: saveMember(d, action.member, me.id) }
+    case 'createTeamSession': {
+      const cfg = TEAM_SESSIONS.find((s) => s.id === action.sessionId) ?? (() => { throw notFound() })()
+      manage(cfg.ministryId)
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(action.date)) throw new ActionError('Escolha o dia.')
+      if (!/^\d{2}:\d{2}$/.test(action.time)) throw new ActionError('Escolha o horário.')
+      const note = action.note?.trim().slice(0, 200)
+      const ev = {
+        id: uid(), title: cfg.title, date: action.date, time: action.time, ministryIds: [cfg.ministryId], setlist: [],
+        activity: note ? `${cfg.activity} · ${note}` : cfg.activity, place: action.place?.trim().slice(0, 80) || undefined,
+        slots: [{ ministryId: cfg.ministryId, role: cfg.role, count: 1 }],
+      }
+      // convida toda a equipe (menos quem marcou indisponibilidade nesse dia/horário)
+      const team = d.members.filter((m) => m.ministries.some((mm) => mm.ministryId === cfg.ministryId && mm.roles.includes(cfg.role)))
+      const invited = team.filter((m) => !isOff(d, m, ev))
+      ev.slots[0].count = Math.max(1, invited.length)
+      d.events.push(ev)
+      d.events.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+      for (const m of invited) d.assignments.push({ id: uid(), eventId: ev.id, ministryId: cfg.ministryId, role: cfg.role, memberId: m.id, status: 'pending' })
+      return { created: invited.length }
+    }
+    case 'removeEvent': {
+      const ev = findEv(action.eventId)
+      // líder só cancela encontros de equipe dos ministérios que lidera; admin cancela qualquer evento
+      if (!isAdmin && !(ev.slots && ev.ministryIds.every((id) => canManage(me, id, d)))) throw deny()
+      const gone = new Set(d.assignments.filter((a) => a.eventId === ev.id).map((a) => a.id))
+      d.assignments = d.assignments.filter((a) => !gone.has(a.id))
+      d.swaps = d.swaps.filter((s) => !gone.has(s.assignmentId))
+      d.events = d.events.filter((e) => e.id !== ev.id)
+      for (const t of d.tasks ?? []) if (t.eventId === ev.id) t.eventId = undefined
+      return {}
+    }
     case 'saveTask': {
       const t = action.task
       manage(t.ministryId)

@@ -58,6 +58,8 @@ export interface ChurchEvent {
   activity?: string // ex.: "Curso", "GC", "Ensaio"
   responsible?: string // ex.: "Pr. Alexandre"
   ministryIds: string[] // ministérios que servem neste evento (pode ser vazio)
+  /** Vagas próprias deste evento (substituem as vagas padrão dos ministérios). Ex.: gravação do News */
+  slots?: { ministryId: string; role: string; count: number }[]
   setlist: Song[] // repertório (Louvor)
 }
 
