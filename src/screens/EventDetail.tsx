@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Check, ExternalLink, Music2, Pencil, Plus, Send, Sparkles, Trash2, UserPlus, Users, X } from 'lucide-react'
+import { AlertTriangle, ArrowDown, ArrowLeft, Lightbulb, ArrowUp, ArrowUpDown, Check, ExternalLink, Music2, Pencil, Plus, Send, Sparkles, Trash2, UserPlus, Users, X } from 'lucide-react'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
 import { longDate, relativeDay, timeRange } from '../lib/dates'
@@ -8,6 +8,7 @@ import { canEditSetlist, canManage, isPast, openSlots, rankCandidates, rankGroup
 import { AssignmentActions } from '../components/AssignmentActions'
 import { DraftBar } from '../components/DraftBar'
 import { EventEditForm } from './MinistryEvents'
+import { SongLibrary } from './SongLibrary'
 import { Avatar, Empty, MinistryBadge, Sheet, StatusPill, TopBar } from '../components/ui'
 import type { Assignment, ChurchEvent, Ministry, Song } from '../data/types'
 import { FillBar, fillOf } from './Agenda'
@@ -344,8 +345,8 @@ function Setlist({ ev }: { ev: ChurchEvent }) {
       )}
       {!canEdit && !isPast(ev) && <p className="muted small setlist-hint">Quem está escalado no Louvor deste culto pode montar o repertório.</p>}
       <Sheet open={!!editing} onClose={() => setEditing(null)} title={editing === 'new' ? 'Adicionar música' : 'Editar música'}>
-        {editing && <SongForm key={editing === 'new' ? 'new' : editing.id} song={editing === 'new' ? null : editing} onSave={(song) => {
-          if (editing === 'new') { actions.addSong(ev.id, song); notify('Música adicionada') }
+        {editing && <SongForm key={editing === 'new' ? 'new' : editing.id} song={editing === 'new' ? null : editing} ev={ev} onSave={(song) => {
+          if (editing === 'new') { actions.addSong(ev.id, song); notify(`${song.title} adicionada ao repertório 🎶`) }
           else { actions.editSong(ev.id, editing.id, song); notify('Música atualizada') }
           setEditing(null)
         }} />}
@@ -354,13 +355,25 @@ function Setlist({ ev }: { ev: ChurchEvent }) {
   )
 }
 
-function SongForm({ song, onSave }: { song: Song | null; onSave: (s: Omit<Song, 'id'>) => void }) {
+function SongForm({ song, ev, onSave }: { song: Song | null; ev: ChurchEvent; onSave: (s: Omit<Song, 'id'>) => void }) {
+  const [browse, setBrowse] = useState(false)
   const [title, setTitle] = useState(song?.title ?? '')
   const [artist, setArtist] = useState(song?.artist ?? '')
   const [key, setKey] = useState(song && song.key !== '—' ? song.key : '')
   const [link, setLink] = useState(song?.link ?? '')
+  if (browse) {
+    return (
+      <>
+        <button className="link back-link" onClick={() => setBrowse(false)}><ArrowLeft size={16} /> Digitar outra música</button>
+        <SongLibrary ev={ev} onPick={onSave} />
+      </>
+    )
+  }
   return (
     <>
+      {!song && (
+        <button className="btn btn-soft btn-block ideas-btn" onClick={() => setBrowse(true)}><Lightbulb size={18} /> Sem ideias? Veja as músicas que já tocamos</button>
+      )}
       <label className="field"><span>Música</span><input id="song-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex.: Bondade de Deus" /></label>
       <div className="field-row">
         <label className="field"><span>Artista</span><input id="song-artist" value={artist} onChange={(e) => setArtist(e.target.value)} /></label>

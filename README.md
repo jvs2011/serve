@@ -49,6 +49,8 @@ ativar notificações e, para líderes, como publicar a escala). Dá para rever 
 - **Editar evento** (lápis no evento): a coordenação edita qualquer evento (num culto fixo, muda só aquele dia);
   o líder edita os eventos do próprio ministério. Quem está escalado é avisado se mudar dia, horário ou local
 - Repertório: botão **Avisar a equipe** manda as músicas para quem está escalado no Louvor
+- Ao adicionar música: **Sem ideias? Veja as músicas que já tocamos** lista o repertório da igreja (`src/data/repertoire.ts`)
+  e o que já foi colocado no app (com artista, tom e link); as mais tocadas aparecem primeiro e um toque adiciona
 
 **Eventos do ministério**
 - O líder cria eventos do próprio ministério (ex.: ações internas e externas do We Care) na aba Escalas:

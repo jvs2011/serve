@@ -779,3 +779,15 @@ select:focus { border-color: var(--accent); }
 .months-pick .chips { margin-top: 8px; }
 .hero-actions { display: flex; gap: 8px; }
 .setlist-send { display: grid; gap: 6px; margin-top: 12px; text-align: center; }
+.ideas-btn { margin-bottom: 14px; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px; color: var(--accent-strong); font-weight: 600; }
+.song-library { display: grid; gap: 8px; }
+.song-library .search { margin: 0 0 4px; }
+.song-list { display: grid; }
+.song-pick { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px 2px; border-bottom: 1px solid var(--line); }
+.song-pick .grow { display: grid; gap: 2px; min-width: 0; }
+.song-pick strong { font-weight: 600; font-size: 15px; }
+.song-pick > svg { color: var(--accent-strong); flex: none; }
+.song-pick.has { opacity: .55; }
+.song-pick.has > svg { color: var(--ok); }
+.song-letter { font-size: 12px; font-weight: 700; color: var(--muted); padding: 14px 2px 4px; letter-spacing: .04em; }
