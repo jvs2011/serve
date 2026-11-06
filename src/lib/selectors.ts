@@ -66,3 +66,8 @@ export function ministryMembers(data: AppData, ministryId: string): Member[] {
 export function firstName(name: string) {
   return name.split(' ')[0]
 }
+
+/** Ministérios em que a pessoa está marcada como líder (para a aba do líder) */
+export function ledMinistries(data: AppData, me: Member): Ministry[] {
+  return data.ministries.filter((m) => m.leaderIds.includes(me.id))
+}

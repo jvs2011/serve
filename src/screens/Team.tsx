@@ -3,7 +3,7 @@ import { ChevronRight, Megaphone, Sparkles, Trophy, Users } from 'lucide-react'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
 import { addDays, relativeDay, timeAgo, timeRange, toISO, todayISO } from '../lib/dates'
-import { memberById, ministryMembers, myMinistries } from '../lib/selectors'
+import { ledMinistries, memberById, ministryMembers, myMinistries } from '../lib/selectors'
 import { canManage, levelFor, pointsFor, sortEvents } from '../lib/schedule'
 import { Avatar, Empty, MinistryBadge, Section, Sheet, TopBar } from '../components/ui'
 import type { Ministry } from '../data/types'
@@ -44,7 +44,7 @@ export function Team() {
   )
 }
 
-export function MinistryDetail({ id, initialTab }: { id: string; initialTab?: 'schedule' | 'team' | 'notices' | 'arts' }) {
+export function MinistryDetail({ id, initialTab, asTab }: { id: string; initialTab?: 'schedule' | 'team' | 'notices' | 'arts'; asTab?: boolean }) {
   const { data, actions, notify } = useStore()
   const me = useMe()
   const { back, push } = useNav()
@@ -68,7 +68,7 @@ export function MinistryDetail({ id, initialTab }: { id: string; initialTab?: 's
   return (
     <div className="screen">
       <div className="ministry-hero" style={{ background: ministry.color }}>
-        <TopBar title="" onBack={back} />
+        <TopBar title="" onBack={asTab ? undefined : back} />
         <h1>{ministry.name}</h1>
         <p>{ministry.description}</p>
         <div className="hero-stats">
@@ -190,5 +190,27 @@ export function MinistryDetail({ id, initialTab }: { id: string; initialTab?: 's
         }}>Publicar</button>
       </Sheet>
     </div>
+  )
+}
+
+/** Aba do líder: o(s) ministério(s) que ele lidera, direto na gestão da escala */
+export function LeaderMinistryTab() {
+  const { data } = useStore()
+  const me = useMe()
+  const led = ledMinistries(data, me)
+  const [current, setCurrent] = useState(led[0]?.id)
+  const id = led.some((m) => m.id === current) ? current! : led[0]?.id
+  if (!id) return <Team />
+  return (
+    <>
+      {led.length > 1 && (
+        <div className="leader-switch">
+          {led.map((m) => (
+            <button key={m.id} className={`chip${m.id === id ? ' on' : ''}`} onClick={() => setCurrent(m.id)}>{m.name}</button>
+          ))}
+        </div>
+      )}
+      <MinistryDetail key={id} id={id} asTab />
+    </>
   )
 }

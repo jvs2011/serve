@@ -3,7 +3,7 @@ import { CalendarX2, Plus } from 'lucide-react'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
 import { longDate, relativeDay, timeRange, todayISO } from '../lib/dates'
-import { myUpcoming } from '../lib/selectors'
+import { ledMinistries, myUpcoming } from '../lib/selectors'
 import { slotsFor, sortEvents } from '../lib/schedule'
 import { DateBlock, Empty, MinistryBadge, Sheet, StatusPill, TopBar } from '../components/ui'
 import type { AppData, ChurchEvent } from '../data/types'
@@ -39,7 +39,7 @@ export function Agenda() {
   return (
     <div className="screen">
       <TopBar
-        title="Escalas"
+        title={ledMinistries(data, me).length ? 'Escala pessoal' : 'Escalas'}
         right={me.access === 'admin' && (
           <button className="icon-btn filled" onClick={() => setNewOpen(true)} aria-label="Novo evento"><Plus size={20} /></button>
         )}

@@ -1,12 +1,13 @@
 import { CalendarDays, Home as HomeIcon, Repeat, User, Users } from 'lucide-react'
 import { StoreProvider, useStore } from './data/store'
 import { NavProvider, useNav, type Tab } from './nav'
-import { swapsICanCover, myUpcoming } from './lib/selectors'
+import { ledMinistries, swapsICanCover, myUpcoming } from './lib/selectors'
+import { MinistryIcon } from './components/ui'
 import { Login } from './screens/Login'
 import { Home } from './screens/Home'
 import { Agenda } from './screens/Agenda'
 import { Swaps } from './screens/Swaps'
-import { Team, MinistryDetail } from './screens/Team'
+import { Team, MinistryDetail, LeaderMinistryTab } from './screens/Team'
 import { Profile } from './screens/Profile'
 import { EventDetail } from './screens/EventDetail'
 import { Availability } from './screens/Availability'
@@ -65,7 +66,7 @@ function Main() {
       case 'person': screen = <PersonForm key={top.id ?? 'new'} id={top.id} />; break
     }
   } else {
-    screen = { home: <Home />, agenda: <Agenda />, swaps: <Swaps />, team: <Team />, profile: <Profile /> }[tab]
+    screen = { home: <Home />, agenda: <Agenda />, swaps: <Swaps />, team: <LeaderOrTeam />, profile: <Profile /> }[tab]
   }
   return (
     <>
@@ -80,21 +81,31 @@ function TabBar() {
   const { data, me } = useStore()
   const swaps = me ? swapsICanCover(data, me).length : 0
   const pending = me ? myUpcoming(data, me.id).filter((x) => x.a.status === 'pending').length : 0
+  const led = me ? ledMinistries(data, me) : []
   const items: { id: Tab; label: string; icon: JSX.Element; badge?: number }[] = [
     { id: 'home', label: 'Início', icon: <HomeIcon size={22} />, badge: pending },
-    { id: 'agenda', label: 'Escalas', icon: <CalendarDays size={22} /> },
+    { id: 'agenda', label: led.length ? 'Escala pessoal' : 'Escalas', icon: <CalendarDays size={22} /> },
     { id: 'swaps', label: 'Trocas', icon: <Repeat size={22} />, badge: swaps },
-    { id: 'team', label: 'Ministérios', icon: <Users size={22} /> },
+    led.length
+      ? { id: 'team', label: led.length === 1 ? led[0].name : 'Meus ministérios', icon: led.length === 1 ? <MinistryIcon ministry={led[0]} size={22} /> : <Users size={22} /> }
+      : { id: 'team', label: 'Ministérios', icon: <Users size={22} /> },
     { id: 'profile', label: 'Perfil', icon: <User size={22} /> },
   ]
   return (
     <nav className="tabbar">
       {items.map((it) => (
-        <button key={it.id} className={tab === it.id && !stack.length ? 'on' : ''} onClick={() => setTab(it.id)}>
+        <button key={it.id} className={tab === it.id && !stack.length ? 'on' : ''} onClick={() => setTab(it.id)}
+          style={{ flexGrow: it.label.length > 10 ? 1.5 : it.label.length > 8 ? 1.2 : 1 }}>
           <span className="tab-icon">{it.icon}{!!it.badge && <i className="badge">{it.badge}</i>}</span>
           <span>{it.label}</span>
         </button>
       ))}
     </nav>
   )
+}
+
+/** Aba de ministérios: o líder vai direto para o(s) ministério(s) dele */
+function LeaderOrTeam() {
+  const { data, me } = useStore()
+  return me && ledMinistries(data, me).length ? <LeaderMinistryTab /> : <Team />
 }
