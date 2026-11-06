@@ -1,4 +1,5 @@
 import { scrollToTop } from './lib/scroll'
+import { isDesktop } from './lib/desktop'
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 
 export type Tab = 'home' | 'agenda' | 'swaps' | 'team' | 'profile'
@@ -25,10 +26,36 @@ const Ctx = createContext<Nav | null>(null)
 // Na prévia de arquivo único (frame restrito) não mexemos no histórico do navegador
 const USE_HISTORY = import.meta.env.MODE !== 'single'
 
+const NAV_KEY = 'serve:nav'
+interface SavedNav { scope: string; tab: Tab; stack: Route[] }
+
+/** No computador, ao recarregar a página, volta para a mesma aba/tela (mesma conta) */
+function restore(scope: string): SavedNav | null {
+  if (!isDesktop()) return null
+  try {
+    const s = JSON.parse(sessionStorage.getItem(NAV_KEY) ?? 'null') as SavedNav | null
+    return s && s.scope === scope ? s : null
+  } catch { return null }
+}
+
 /** Navegação em pilha simples, integrada ao botão "voltar" do celular */
-export function NavProvider({ children }: { children: ReactNode }) {
-  const [tab, setTabState] = useState<Tab>('home')
-  const [stack, setStack] = useState<Route[]>([])
+export function NavProvider({ children, scope }: { children: ReactNode; scope: string }) {
+  const [saved] = useState(() => restore(scope))
+  const [tab, setTabState] = useState<Tab>(saved?.tab ?? 'home')
+  const [stack, setStack] = useState<Route[]>(saved?.stack ?? [])
+
+  // telas restauradas: recria as entradas do histórico para o "voltar" continuar funcionando
+  const rebuilt = useRef(false)
+  useEffect(() => {
+    if (!USE_HISTORY || !saved?.stack.length || rebuilt.current) return
+    rebuilt.current = true
+    for (let i = 0; i < saved.stack.length; i++) { try { history.pushState({ serve: true }, '') } catch { /* ignore */ } }
+  }, [saved])
+
+  useEffect(() => {
+    if (!isDesktop()) return
+    try { sessionStorage.setItem(NAV_KEY, JSON.stringify({ scope, tab, stack } satisfies SavedNav)) } catch { /* ignore */ }
+  }, [scope, tab, stack])
 
   const skipPops = useRef(0)
 

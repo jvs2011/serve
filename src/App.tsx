@@ -41,7 +41,7 @@ function Shell() {
         ) : <div className="spinner" aria-label="Carregando" />}
       </div>
     )
-  } else body = me ? <NavProvider><Main /></NavProvider> : <Login />
+  } else body = me ? <NavProvider scope={`${mode}:${me.id}`}><Main /></NavProvider> : <Login />
   return (
     <>
       {body}

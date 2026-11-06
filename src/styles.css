@@ -627,3 +627,15 @@ body:has(.signup) { background: transparent; }
 .home-head-actions { display: flex; align-items: center; gap: 6px; }
 .theme-toggle { color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); }
 .theme-toggle:active { transform: scale(.94); }
+
+/* Botão de recarregar ao lado do celular simulado (computador) */
+.device-refresh {
+  position: absolute; left: calc(100% + 22px); top: 50%; transform: translateY(-50%);
+  display: grid; justify-items: center; gap: 8px; color: rgba(255, 255, 255, .8); font-size: 12px; font-weight: 600;
+}
+.device-refresh svg {
+  box-sizing: content-box; padding: 13px; border-radius: 50%; background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(255, 255, 255, .16); transition: transform .4s ease, background .15s;
+}
+.device-refresh:hover svg { background: rgba(255, 255, 255, .16); transform: rotate(180deg); }
+.device-refresh:focus-visible svg { outline: 2px solid #E57A47; outline-offset: 2px; }

@@ -1,5 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { RotateCw } from 'lucide-react'
 import { Logo } from './Logo'
+import { DESKTOP_QUERY } from '../lib/desktop'
 
 /** Tamanho da tela simulada (pontos de um iPhone Pro Max) e da borda do aparelho */
 const SCREEN_W = 440
@@ -8,7 +10,7 @@ const BEZEL = 13
 const PHONE_W = SCREEN_W + BEZEL * 2
 const PHONE_H = SCREEN_H + BEZEL * 2
 
-const DESKTOP = '(min-width: 900px) and (hover: hover) and (pointer: fine)'
+const DESKTOP = DESKTOP_QUERY
 
 function useDesktop() {
   const [on, setOn] = useState(() => typeof window !== 'undefined' && window.matchMedia(DESKTOP).matches)
@@ -87,6 +89,10 @@ export function DeviceFrame({ children, kind }: { children: ReactNode; kind: 'ap
       </aside>
 
       <div className="device-slot" style={{ width: PHONE_W * scale, height: PHONE_H * scale }}>
+        <button className="device-refresh" onClick={() => location.reload()} title="Recarregar o app (continua na mesma tela)">
+          <RotateCw size={20} />
+          <span>Recarregar</span>
+        </button>
         <div className="phone" style={{ width: PHONE_W, height: PHONE_H, transform: `scale(${scale})` }}>
           <span className="phone-btn phone-btn-action" />
           <span className="phone-btn phone-btn-vol-up" />
