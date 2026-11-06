@@ -611,3 +611,15 @@ html:has(.signup), body:has(.signup) { background: #0B0B0D; }
   transform: translateY(-1px) rotate(-45deg);
 }
 .signup-consent input:focus-visible { outline: 2px solid var(--m); outline-offset: 2px; }
+/* vidro mais fosco/claro */
+.signup { --glass-line: rgba(255, 255, 255, .22); }
+.signup .card.signup-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .17), rgba(255, 255, 255, .11));
+  backdrop-filter: blur(30px) saturate(170%); -webkit-backdrop-filter: blur(30px) saturate(170%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .18) inset, 0 20px 60px rgba(0, 0, 0, .35);
+}
+.signup input:not([type="checkbox"]) { background: rgba(255, 255, 255, .09); }
+.signup input:not([type="checkbox"]):focus { background: rgba(255, 255, 255, .14); }
+.signup-team { background: rgba(255, 255, 255, .08); }
+.signup .muted { color: rgba(255, 255, 255, .62); }
+.signup-news { background: rgba(255, 255, 255, .12); }
