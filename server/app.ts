@@ -4,7 +4,7 @@
  */
 import { createHash, createHmac, randomBytes } from 'node:crypto'
 import type { AppData, Member } from '../src/data/types.js'
-import { ActionError, applyAction, type Action } from '../src/data/actions.js'
+import { ActionError, applyAction, selfRegister, type Action } from '../src/data/actions.js'
 import { buildAgenda, ministryList } from '../src/data/seed.js'
 import { addDays, fromISO, toISO } from '../src/lib/dates.js'
 import { decoyInitials, initialsOf, isValidPhone, normalizePhone, seededRandom } from '../src/lib/people.js'
@@ -129,7 +129,7 @@ async function sessionMember(store: Store, auth: string | undefined): Promise<st
   return store.get(`serve:sess:${sha(token)}`)
 }
 
-export async function route(name: string, method: string, body: any, auth: string | undefined): Promise<Reply> {
+export async function route(name: string, method: string, body: any, auth: string | undefined, ip = 'unknown', query: Record<string, string> = {}): Promise<Reply> {
   const store = getStore()
   if (name === 'status') return ok({ configured: !!store })
   if (!store) return fail(503, 'O servidor do Serve ainda não foi configurado.')
@@ -203,6 +203,27 @@ export async function route(name: string, method: string, body: any, auth: strin
           try { await deliver(store, notificationsFor(before, data, meId, brToday())) } catch (e) { console.error('notificações', e) }
         }
         return ok({ data: viewFor(data, meId), meId, result })
+      }
+
+      case 'signup-info': {
+        // público: só o nome, a descrição e as equipes do ministério (nenhum dado pessoal)
+        const { data } = await withData(store)
+        const m = data.ministries.find((x) => x.id === String(query.m ?? body?.m ?? ''))
+        if (!m) return fail(404, 'Formulário não encontrado.')
+        return ok({ id: m.id, name: m.name, description: m.description, color: m.color, teams: m.roles.map((r) => r.name) })
+      }
+
+      case 'signup': {
+        if (method !== 'POST') return fail(405, 'Método não permitido')
+        if (body?.website) return ok({ status: 'created' }) // armadilha para robôs: finge sucesso
+        if (body?.consent !== true) return fail(400, 'Para continuar, marque a autorização de uso dos dados.')
+        const n = await store.incr(`serve:signup-ip:${sha(ip)}`, 3600)
+        if (n > 15) return fail(429, 'Muitos cadastros feitos desta conexão. Tente de novo mais tarde.')
+        let status: 'created' | 'exists' = 'created'
+        await withData(store, (d) => {
+          status = selfRegister(d, { ministryId: String(body?.ministryId ?? ''), name: String(body?.name ?? ''), phone: String(body?.phone ?? ''), roles: Array.isArray(body?.roles) ? body.roles.map(String) : [], interests: Array.isArray(body?.interests) ? body.interests.map(String) : [] }).status
+        })
+        return ok({ status })
       }
 
       case 'push-key':

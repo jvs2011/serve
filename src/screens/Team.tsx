@@ -139,6 +139,9 @@ export function MinistryDetail({ id }: { id: string }) {
                     <div className="grow">
                       <strong>{m.name}{ministry.leaderIds.includes(m.id) && <em className="best">líder</em>}</strong>
                       <span className="muted small">{roles.join(' · ')}</span>
+                      {manage && (m.interests?.find((i) => i.ministryId === ministry.id)?.roles.length ?? 0) > 0 && (
+                        <span className="small interest-line">Interesse: {m.interests!.find((i) => i.ministryId === ministry.id)!.roles.join(', ')}</span>
+                      )}
                     </div>
                     {manage && m.phone && <a className="link small" href={`https://wa.me/55${m.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">WhatsApp</a>}
                   </div>

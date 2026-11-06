@@ -75,6 +75,14 @@ ministérios, funções em cada ministério e se é líder.
    - `AUTH_SECRET` (opcional): um texto aleatório longo
 3. **Deployments → Redeploy** para as variáveis valerem.
 
+### Formulário público de cadastro
+
+`/cadastro/<ministério>` (ex.: **serve.lagoinhafranca.com/cadastro/follow**) é uma página só de formulário,
+para mandar no grupo do WhatsApp: nome completo, celular, equipes em que serve, equipes em que tem
+interesse (opcional) e autorização de uso dos dados. O usuário é criado na hora (marcado como
+"formulário" em Pessoas). Um número já cadastrado nunca é alterado por ali. Limite de 15 envios
+por hora por conexão e um campo invisível contra robôs.
+
 ### Notificações no celular
 
 Cada pessoa ativa em **Perfil → Notificações** (ou no convite da tela Início). Ela recebe:

@@ -28,6 +28,11 @@ export interface Member {
   ministries: MemberMinistry[]
   /** Preferência do voluntário: quantas vezes no máximo quer servir por mês */
   maxPerMonth: number
+  /** 'form' = a própria pessoa se cadastrou pelo formulário público */
+  source?: 'form'
+  /** Equipes em que a pessoa tem interesse em servir (ainda não serve) */
+  interests?: MemberMinistry[]
+  createdAt?: string
 }
 
 export interface Song {

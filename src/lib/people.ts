@@ -68,3 +68,14 @@ export function seededRandom(seed: number): () => number {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296
   }
 }
+
+/** "joão VICTOR DA silva" → "João Victor da Silva" */
+export function tidyName(raw: string): string {
+  return raw
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase()
+    .split(' ')
+    .map((w, i) => (i > 0 && CONNECTORS.has(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)))
+    .join(' ')
+}

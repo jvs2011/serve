@@ -23,7 +23,10 @@ function safeJson(s: string) {
 /** Adaptador HTTP comum às funções da Vercel (/api) e ao servidor de desenvolvimento */
 export async function handle(name: string, req: Req, res: ServerResponse) {
   const body = await readBody(req)
-  const reply = await route(name, req.method ?? 'GET', body, req.headers.authorization)
+  const fwd = String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim()
+  const ip = fwd || String(req.headers['x-real-ip'] ?? '') || req.socket?.remoteAddress || 'unknown'
+  const query = Object.fromEntries(new URL(req.url ?? '/', 'http://x').searchParams)
+  const reply = await route(name, req.method ?? 'GET', body, req.headers.authorization, ip, query)
   res.statusCode = reply.status
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
   res.setHeader('Cache-Control', 'no-store')

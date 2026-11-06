@@ -5,7 +5,7 @@
  */
 import type { AppData, AssignmentStatus, Member, Song } from './types.js'
 import { autoFill, canManage, uid } from '../lib/schedule.js'
-import { isValidPhone, normalizePhone } from '../lib/people.js'
+import { isValidPhone, normalizePhone, tidyName } from '../lib/people.js'
 
 export interface MemberInput {
   id?: string
@@ -220,4 +220,37 @@ function removeMember(d: AppData, memberId: string) {
   d.members = d.members.filter((m) => m.id !== memberId)
   for (const m of d.ministries) m.leaderIds = m.leaderIds.filter((x) => x !== memberId)
   delete d.unavailability[memberId]
+}
+
+export interface SelfSignup {
+  ministryId: string
+  name: string
+  phone: string
+  roles: string[]
+  interests?: string[]
+}
+
+/**
+ * Cadastro pelo formulário público. Nunca altera quem já existe
+ * (assim ninguém consegue mudar o nome — e as iniciais — de outra pessoa).
+ */
+export function selfRegister(d: AppData, input: SelfSignup): { status: 'created' | 'exists'; memberId: string } {
+  const ministry = d.ministries.find((m) => m.id === input.ministryId)
+  if (!ministry) throw new ActionError('Ministério não encontrado.', 404)
+  const name = tidyName(input.name).slice(0, 80)
+  if (name.split(' ').length < 2) throw new ActionError('Informe o nome completo (nome e sobrenome).')
+  if (!isValidPhone(input.phone)) throw new ActionError('Informe um celular válido com DDD.')
+  const roles = [...new Set(input.roles)].filter((r) => ministry.roles.some((x) => x.name === r))
+  if (!roles.length) throw new ActionError('Selecione pelo menos uma equipe.')
+  const interests = [...new Set(input.interests ?? [])].filter((r) => !roles.includes(r) && ministry.roles.some((x) => x.name === r))
+  const phone = normalizePhone(input.phone)
+  const existing = d.members.find((m) => normalizePhone(m.phone) === phone)
+  if (existing) return { status: 'exists', memberId: existing.id }
+  const member: Member = {
+    id: uid(), name, phone, access: 'volunteer', maxPerMonth: 4,
+    ministries: [{ ministryId: ministry.id, roles }], source: 'form', createdAt: new Date().toISOString(),
+    ...(interests.length ? { interests: [{ ministryId: ministry.id, roles: interests }] } : {}),
+  }
+  d.members.push(member)
+  return { status: 'created', memberId: member.id }
 }

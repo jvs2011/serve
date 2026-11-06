@@ -48,10 +48,14 @@ export function People() {
                     {m.name}
                     {m.access === 'admin' && <em className="best">admin</em>}
                     {m.access !== 'admin' && leads.length > 0 && <em className="best">líder</em>}
+                    {m.source === 'form' && <em className="best tag-form">formulário</em>}
                   </strong>
                   <span className="muted small">
                     {m.ministries.map((mm) => data.ministries.find((x) => x.id === mm.ministryId)?.name).filter(Boolean).join(' · ') || 'Sem ministério'}
                   </span>
+                  {m.interests?.some((i) => i.roles.length) && (
+                    <span className="small interest-line">Interesse: {m.interests.flatMap((i) => i.roles).join(', ')}</span>
+                  )}
                 </div>
                 <ChevronRight size={18} className="muted" />
               </button>
@@ -136,6 +140,16 @@ export function PersonForm({ id }: { id?: string }) {
           </div>
         )}
       </div>
+
+      {existing?.interests?.some((i) => i.roles.length) && (
+        <div className="card interest-card mt">
+          <strong>Tem interesse em participar</strong>
+          {existing.interests.filter((i) => i.roles.length).map((i) => (
+            <span key={i.ministryId} className="small">{data.ministries.find((m) => m.id === i.ministryId)?.name}: {i.roles.join(', ')}</span>
+          ))}
+          <span className="muted small">Informado no formulário de cadastro{existing.createdAt ? ` em ${new Date(existing.createdAt).toLocaleDateString('pt-BR')}` : ''}.</span>
+        </div>
+      )}
 
       <h3 className="form-title">Ministérios</h3>
       <p className="muted small form-help">Marque os ministérios em que a pessoa serve, as funções que exerce e se é líder.</p>
