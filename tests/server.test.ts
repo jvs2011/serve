@@ -4,6 +4,8 @@ import { applyAction } from '../src/data/actions'
 import { addDays, fromISO, toISO, todayISO } from '../src/lib/dates'
 import type { AppData } from '../src/data/types'
 
+// os testes nunca usam o banco real, mesmo se as variáveis do Upstash existirem (ex.: no build da Vercel)
+for (const k of ['KV_REST_API_URL', 'KV_REST_API_TOKEN', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN', 'CRON_SECRET']) delete process.env[k]
 process.env.SERVE_MEMORY_DB = '1'
 process.env.ADMIN_PHONE = '16991234567'
 process.env.ADMIN_NAME = 'Admin Teste'

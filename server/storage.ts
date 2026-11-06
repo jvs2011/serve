@@ -114,8 +114,9 @@ let memory: MemoryStore | null = null
 
 /** null = servidor ainda sem banco configurado */
 export function getStore(): Store | null {
+  // testes e desenvolvimento: memória sempre vence (nunca encostar no banco real por engano)
+  if (process.env.SERVE_MEMORY_DB === '1' || process.env.VITEST) return (memory ??= new MemoryStore())
   const env = upstashEnv()
   if (env) return new UpstashStore(env.url, env.token)
-  if (process.env.SERVE_MEMORY_DB === '1') return (memory ??= new MemoryStore())
   return null
 }
