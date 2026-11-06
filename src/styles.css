@@ -744,7 +744,7 @@ select:focus { border-color: var(--accent); }
 .count-list { display: grid; gap: 6px; }
 .count-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
 .stepper button:disabled { opacity: .4; }
-.draft-bar { display: grid; gap: 12px; border: 1.5px solid var(--info); background: var(--info-soft); color: var(--ink); }
+.draft-bar { display: grid; gap: 12px; margin-bottom: 14px; border: 1.5px solid var(--info); background: var(--info-soft); color: var(--ink); }
 .draft-text { display: flex; gap: 10px; align-items: flex-start; }
 .draft-text > svg { color: var(--info); flex: none; margin-top: 2px; }
 .draft-text .grow { display: grid; gap: 2px; }
@@ -762,9 +762,11 @@ select:focus { border-color: var(--accent); }
 .guide-actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; }
 @keyframes guide-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .guide-body { animation: none; } }
-.demo-tips { display: grid; gap: 2px; padding: 12px 14px; }
+.demo-tips { display: grid; gap: 2px; padding: 12px 14px; margin-bottom: 14px; }
 .demo-tips-head { display: flex; align-items: center; gap: 8px; color: var(--accent-strong); margin-bottom: 4px; }
 .demo-tips-head strong { color: var(--ink); font-size: 15px; }
 .demo-tip { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 9px 0; border-top: 1px solid var(--line); font-size: 14px; color: var(--ink-2); }
 .demo-tip svg { color: var(--muted); flex: none; }
 .demo-tip.static { color: var(--ink); font-weight: 600; }
+/* botão de ação no topo de uma aba (ex.: Novo aviso) não encosta no que vem embaixo */
+.screen > .btn-block + .list, .screen > .btn-block + .card, .screen > .btn-block + .empty { margin-top: 14px; }
