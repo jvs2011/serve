@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { AppData, AssignmentStatus, Member, Song } from './types'
 import { createSeed, DATA_VERSION } from './seed'
 import { ActionError, applyAction, type Action, type ActionResult, type MemberInput } from './actions'
+import { disablePush, resyncPush } from '../lib/push'
 
 /*
  * Dois modos:
@@ -77,6 +78,8 @@ interface Toast { id: number; text: string }
 
 interface Store {
   mode: 'demo' | 'live' | null
+  /** token da sessão real (para notificações) */
+  token: string | null
   data: AppData
   me: Member | null
   loading: boolean
@@ -260,7 +263,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     enterDemo: (id) => setSession({ mode: 'demo', userId: id }),
     logout: () => {
       const s = sessionRef.current
-      if (s?.mode === 'live') api('logout', { method: 'POST', token: s.token }).catch(() => {})
+      if (s?.mode === 'live') {
+        // este aparelho deixa de receber as notificações dessa conta
+        disablePush(s.token).catch(() => {}).finally(() => api('logout', { method: 'POST', token: s.token }).catch(() => {}))
+      }
       setSession(null)
     },
     resetDemo: () => replaceDemo(createSeed()),
@@ -268,6 +274,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     verifyLogin: async (challengeId, answer) => {
       const r = await api<{ token: string }>('verify', { body: { challengeId, answer } })
       setSession({ mode: 'live', token: r.token })
+      resyncPush(r.token).catch(() => {})
     },
   }), [dispatch, dispatchAsync, setSession, replaceDemo])
 
@@ -282,7 +289,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [mode, me, liveData, setSession])
 
   return (
-    <Ctx.Provider value={{ mode, data, me, loading, loadError, toast, notify, reload: fetchLive, actions }}>
+    <Ctx.Provider value={{ mode, token: session?.mode === 'live' ? session.token : null, data, me, loading, loadError, toast, notify, reload: fetchLive, actions }}>
       {children}
     </Ctx.Provider>
   )

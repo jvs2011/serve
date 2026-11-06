@@ -9,6 +9,20 @@ import { viteSingleFile } from 'vite-plugin-singlefile'
 function devApi(): Plugin {
   return {
     name: 'serve-dev-api',
+    // `vite preview` (build de produção local) também atende /api, para testar o app instalado
+    async configurePreviewServer(server) {
+      process.env.SERVE_MEMORY_DB ??= '1'
+      process.env.ADMIN_PHONE ??= '16999990000'
+      process.env.ADMIN_NAME ??= 'Administrador Teste'
+      const { createServer } = await import('vite')
+      const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' })
+      server.middlewares.use(async (req, res, next) => {
+        const path = req.url?.split('?')[0] ?? ''
+        if (!path.startsWith('/api/')) return next()
+        const { handle } = await vite.ssrLoadModule('/server/http.ts')
+        await handle(path.slice(5), req, res)
+      })
+    },
     configureServer(server) {
       process.env.SERVE_MEMORY_DB ??= '1'
       if (!process.env.ADMIN_PHONE) {

@@ -10,6 +10,8 @@ import { addDays, fromISO, toISO } from '../src/lib/dates.js'
 import { decoyInitials, initialsOf, isValidPhone, normalizePhone, seededRandom } from '../src/lib/people.js'
 import { canManage } from '../src/lib/schedule.js'
 import { getStore, storageSecret, type Store } from './storage.js'
+import { addSub, isValidSub, removeSub, sendPush, vapidKeys } from './push.js'
+import { notificationsFor, remindersFor, type Outgoing } from './notify.js'
 
 const LIVE_VERSION = 1
 const SESSION_TTL = 180 * 24 * 3600 // 180 dias
@@ -99,6 +101,13 @@ function viewFor(d: AppData, meId: string): AppData {
   }
 }
 
+/** Envia as notificações sem deixar a resposta esperar mais que alguns segundos */
+async function deliver(store: Store, list: Outgoing[]) {
+  if (!list.length) return
+  const work = Promise.allSettled(list.map((o) => sendPush(store, o.to, o.payload)))
+  await Promise.race([work, new Promise((r) => setTimeout(r, 8000))])
+}
+
 const sha = (s: string) => createHash('sha256').update(s).digest('hex')
 
 function optionsFor(phone: string, member: Member | undefined): { correct: string; options: string[] } {
@@ -185,8 +194,49 @@ export async function route(name: string, method: string, body: any, auth: strin
         if (!meId) return fail(401, 'Sua sessão expirou. Entre novamente.')
         const action = body?.action as Action
         if (!action?.type) return fail(400, 'Pedido inválido.')
-        const { data, result } = await withData(store, (d) => applyAction(d, action, meId))
+        let before: AppData | null = null
+        const { data, result } = await withData(store, (d) => {
+          before = structuredClone(d)
+          return applyAction(d, action, meId)
+        })
+        if (before) {
+          try { await deliver(store, notificationsFor(before, data, meId, brToday())) } catch (e) { console.error('notificações', e) }
+        }
         return ok({ data: viewFor(data, meId), meId, result })
+      }
+
+      case 'push-key':
+        return ok({ publicKey: (await vapidKeys(store)).publicKey })
+
+      case 'push-subscribe':
+      case 'push-unsubscribe':
+      case 'push-test': {
+        if (method !== 'POST') return fail(405, 'Método não permitido')
+        const meId = await sessionMember(store, auth)
+        if (!meId) return fail(401, 'Sua sessão expirou. Entre novamente.')
+        if (name === 'push-test') {
+          const sent = await sendPush(store, [meId], { title: 'Serve 🔔', body: 'Tudo certo! Você vai receber os avisos das suas escalas aqui.', tag: 'teste' })
+          return sent ? ok({ sent }) : fail(404, 'Nenhum aparelho com notificações ativas foi encontrado. Ative de novo e tente outra vez.')
+        }
+        if (name === 'push-unsubscribe') {
+          if (typeof body?.endpoint === 'string') await removeSub(store, meId, body.endpoint)
+          return ok({ ok: true })
+        }
+        if (!isValidSub(body?.subscription)) return fail(400, 'Inscrição de notificação inválida.')
+        await addSub(store, meId, body.subscription)
+        return ok({ ok: true })
+      }
+
+      case 'cron-reminders': {
+        // chamado pela Vercel uma vez por dia (vercel.json → crons); se CRON_SECRET existir, é exigido
+        const secret = process.env.CRON_SECRET
+        if (secret && auth !== `Bearer ${secret}`) return fail(401, 'Não autorizado')
+        const tomorrow = toISO(addDays(fromISO(brToday()), 1))
+        if (!(await store.setNX(`serve:reminded:${tomorrow}`, '1', 3 * 24 * 3600))) return ok({ skipped: true, tomorrow })
+        const { data } = await withData(store)
+        const list = remindersFor(data, tomorrow)
+        await deliver(store, list)
+        return ok({ tomorrow, people: list.length })
       }
     }
     return fail(404, 'Rota não encontrada')

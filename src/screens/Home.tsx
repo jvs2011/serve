@@ -8,6 +8,7 @@ import { openSlots } from '../lib/schedule'
 import { AssignmentActions } from '../components/AssignmentActions'
 import { Avatar, DateBlock, Empty, MinistryBadge, Section, StatusPill } from '../components/ui'
 import { Logo } from '../components/Logo'
+import { NotificationsPrompt } from '../components/Notifications'
 
 export function Home() {
   const { data, actions, notify, mode } = useStore()
@@ -64,6 +65,8 @@ export function Home() {
           <span>Demonstração: suas alterações serão desfeitas às <b>{demoUntil}</b></span>
         </div>
       )}
+
+      <NotificationsPrompt />
 
       {next ? (
         <div className="hero-card" onClick={() => push({ name: 'event', id: next.ev.id })}>

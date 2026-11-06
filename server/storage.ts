@@ -8,6 +8,8 @@ export interface Store {
   get(key: string): Promise<string | null>
   set(key: string, value: string, ttlSeconds?: number): Promise<void>
   del(key: string): Promise<void>
+  /** Grava só se a chave ainda não existir; retorna true se gravou */
+  setNX(key: string, value: string, ttlSeconds?: number): Promise<boolean>
   /** Incrementa um contador; aplica o prazo de expiração na primeira vez */
   incr(key: string, ttlSeconds: number): Promise<number>
   /** Documento principal (todos os dados) e sua versão */
@@ -51,6 +53,9 @@ class UpstashStore implements Store {
   async get(key: string) { return (await this.cmd('GET', key)) as string | null }
   async set(key: string, value: string, ttl?: number) { await (ttl ? this.cmd('SET', key, value, 'EX', ttl) : this.cmd('SET', key, value)) }
   async del(key: string) { await this.cmd('DEL', key) }
+  async setNX(key: string, value: string, ttl?: number) {
+    return (await (ttl ? this.cmd('SET', key, value, 'NX', 'EX', ttl) : this.cmd('SET', key, value, 'NX'))) === 'OK'
+  }
   async incr(key: string, ttl: number) {
     const r = await this.call<{ result?: number; error?: string }[]>('/pipeline', [['INCR', key], ['EXPIRE', key, ttl, 'NX']])
     return Number(r[0]?.result ?? 0)
@@ -81,6 +86,11 @@ class MemoryStore implements Store {
   async get(key: string) { return this.live(key)?.value ?? null }
   async set(key: string, value: string, ttl?: number) { this.map.set(key, { value, exp: ttl ? Date.now() + ttl * 1000 : undefined }) }
   async del(key: string) { this.map.delete(key) }
+  async setNX(key: string, value: string, ttl?: number) {
+    if (this.live(key)) return false
+    await this.set(key, value, ttl)
+    return true
+  }
   async incr(key: string, ttl: number) {
     const e = this.live(key)
     const n = Number(e?.value ?? 0) + 1

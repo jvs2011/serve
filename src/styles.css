@@ -472,3 +472,14 @@ input:focus, textarea:focus { border-color: var(--accent); }
 .loading-screen { min-height: 100dvh; display: grid; place-items: center; align-content: center; gap: 16px; padding: 24px; text-align: center; }
 .spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent); animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============ Notificações ============ */
+.push-card { margin-bottom: 14px; }
+.push-box { display: grid; gap: 10px; }
+.push-status { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--ink-2); }
+.push-status.on { color: var(--ok); }
+.push-prompt { display: flex; gap: 12px; margin-bottom: 14px; border-color: var(--accent); }
+.push-prompt-icon { width: 40px; height: 40px; border-radius: 12px; background: var(--accent-soft); color: var(--accent-strong); display: grid; place-items: center; flex-shrink: 0; }
+.push-prompt .grow { display: grid; gap: 4px; }
+.push-prompt-actions { display: flex; gap: 8px; margin-top: 6px; }
+.form-title + .push-card { margin-top: 10px; }

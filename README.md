@@ -75,6 +75,18 @@ ministérios, funções em cada ministério e se é líder.
    - `AUTH_SECRET` (opcional): um texto aleatório longo
 3. **Deployments → Redeploy** para as variáveis valerem.
 
+### Notificações no celular
+
+Cada pessoa ativa em **Perfil → Notificações** (ou no convite da tela Início). Ela recebe:
+
+- nova escala (à mão ou automática) e lembrete na véspera, por volta das 18h (agendamento diário da Vercel em `vercel.json`);
+- pedido de troca, se tiver a mesma função e estiver livre; troca resolvida, para quem pediu;
+- escala recusada, para os líderes do ministério; avisos do ministério ou da igreja.
+
+As chaves de segurança das notificações (VAPID) são criadas sozinhas e guardadas no banco.
+No iPhone (iOS 16.4 ou mais novo), as notificações só funcionam com o Serve instalado na tela inicial.
+Opcional: `CRON_SECRET` na Vercel protege a rota do lembrete diário.
+
 ### Desenvolvimento local
 
 `npm run dev` já atende as rotas `/api` com um banco em memória (apagado ao reiniciar).
@@ -82,6 +94,6 @@ O administrador de teste é **(16) 99999-0000**, iniciais **A T**.
 
 ## Próximos passos para produção
 
-1. **Notificações**: lembrete de escala e pedidos de troca via WhatsApp (API oficial) e/ou push do PWA.
+1. **Notificações por WhatsApp** (API oficial), além das notificações no celular.
 2. **Cadastro de ministérios, funções e eventos** pela coordenação dentro do app.
 3. **Privacidade (LGPD)**: termo de consentimento no primeiro acesso e página de política de privacidade.

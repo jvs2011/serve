@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BarChart3, CalendarOff, ChevronRight, History, LogOut, Minus, Plus, RotateCcw, Smartphone, Users } from 'lucide-react'
 import { formatPhone } from '../lib/people'
+import { NotificationSettings } from '../components/Notifications'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
 import { levelFor, pointsFor } from '../lib/schedule'
@@ -84,6 +85,11 @@ export function Profile() {
             <button aria-label="Mais" onClick={() => actions.setMaxPerMonth(Math.min(12, me.maxPerMonth + 1))}><Plus size={16} /></button>
           </div>
         </div>
+      </div>
+
+      <h3 className="form-title">Notificações</h3>
+      <div className="card push-card">
+        <NotificationSettings />
       </div>
 
       <div className="card menu">
