@@ -3,23 +3,24 @@ import { addDays, toISO, fromISO, todayISO } from '../lib/dates.js'
 import { autoFill } from '../lib/schedule.js'
 
 /** Versão do formato dos dados. Mude para forçar recriação dos dados de exemplo. */
-export const DATA_VERSION = 13
+export const DATA_VERSION = 14
 
 /*
  * Ministérios da Lagoinha Franca.
  * As funções (roles) e vagas por evento são uma sugestão inicial — ajuste com cada líder.
  * `people` é só para gerar voluntários de exemplo suficientes para o rodízio.
  */
-type MinistrySeed = Omit<Ministry, 'roles' | 'leaderIds'> & { roles: { name: string; count: number; people: number }[] }
+type MinistrySeed = Omit<Ministry, 'roles' | 'leaderIds'> & { roles: { name: string; count: number; people: number; group?: boolean; hint?: string }[] }
 
 const ministrySeeds: MinistrySeed[] = [
   {
     id: 'louvor', name: 'Louvor', color: '#E57A47', icon: 'music',
     description: 'Conduz a congregação na adoração a Deus por meio da música e da arte, com ensaios, treinamentos e eventos especiais.',
     roles: [
-      { name: 'Ministro', count: 1, people: 3 }, { name: 'Vocal', count: 2, people: 6 }, { name: 'Violão', count: 1, people: 3 },
-      { name: 'Teclado', count: 1, people: 3 }, { name: 'Guitarra', count: 1, people: 3 }, { name: 'Baixo', count: 1, people: 3 },
-      { name: 'Bateria', count: 1, people: 3 }, { name: 'Mesa de som', count: 1, people: 3 },
+      // "Voz" é ocupada por um grupo de voz inteiro (o líder monta os grupos na aba Grupos)
+      { name: 'Voz', count: 1, people: 9, group: true, hint: 'grupo de voz' },
+      { name: 'Teclado', count: 1, people: 3 }, { name: 'Violão', count: 1, people: 3 }, { name: 'Guitarra', count: 1, people: 3 },
+      { name: 'Baixo', count: 1, people: 3 }, { name: 'Bateria', count: 1, people: 3 }, { name: 'Mesa de som', count: 1, people: 3 },
     ],
   },
   {
@@ -46,16 +47,16 @@ const ministrySeeds: MinistrySeed[] = [
     id: 'centurioes', name: 'Centuriões', color: '#8B5E3C', icon: 'shield',
     description: 'Cuida da segurança da parte externa do templo durante os cultos.',
     roles: [
-      { name: 'Portão', count: 2, people: 6 }, { name: 'Estacionamento', count: 2, people: 6 },
-      { name: 'Ronda externa', count: 1, people: 3 },
+      { name: 'Estacionamento', count: 1, people: 4 },
     ],
   },
   {
     id: 'kids', name: 'KIDS', color: '#D98E04', icon: 'baby',
     description: 'Ministério de crianças: um ambiente seguro e acolhedor para as crianças crescerem na fé.',
     roles: [
-      { name: 'Professor', count: 2, people: 4 }, { name: 'Auxiliar', count: 2, people: 4 },
-      { name: 'Berçário', count: 1, people: 2 }, { name: 'Check-in Kids', count: 1, people: 2 },
+      { name: 'Berçário', count: 1, people: 2, hint: '0 a 3 anos' },
+      { name: 'Professor', count: 2, people: 4, hint: '4 a 10 anos' }, { name: 'Auxiliar', count: 2, people: 4, hint: '4 a 10 anos' },
+      { name: 'Check-in Kids', count: 1, people: 2, hint: '4 a 10 anos' },
     ],
   },
   {
@@ -122,8 +123,8 @@ const LAST = ['Souza', 'Martins', 'Henrique', 'Mendes', 'Lima', 'Duarte', 'Alves
 function buildPeople() {
   const members: Member[] = [
     { id: 'm-lucas', name: 'Lucas Andrade', access: 'admin', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: ['Transmissão'] }] },
-    { id: 'm-mariana', name: 'Mariana Costa', access: 'leader', maxPerMonth: 6, phone: '', ministries: [{ ministryId: 'louvor', roles: ['Ministro', 'Vocal'] }] },
-    { id: 'm-ana', name: 'Ana Ribeiro', access: 'volunteer', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'louvor', roles: ['Vocal'] }, { ministryId: 'diaconato', roles: ['Acolhimento'] }] },
+    { id: 'm-mariana', name: 'Mariana Costa', access: 'leader', maxPerMonth: 6, phone: '', ministries: [{ ministryId: 'louvor', roles: ['Voz'] }] },
+    { id: 'm-ana', name: 'Ana Ribeiro', access: 'volunteer', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'louvor', roles: ['Voz'] }, { ministryId: 'diaconato', roles: ['Acolhimento'] }] },
   ]
   const used = new Set(members.map((m) => m.name))
   let n = 0
@@ -142,8 +143,7 @@ function buildPeople() {
     for (const role of ms.roles) {
       // a Mariana e a Ana já ocupam vagas no Louvor
       let people = role.people
-      if (ms.id === 'louvor' && role.name === 'Ministro') people -= 1
-      if (ms.id === 'louvor' && role.name === 'Vocal') people -= 2
+      if (ms.id === 'louvor' && role.name === 'Voz') people -= 2
       for (let i = 0; i < people; i++) {
         const name = nextName(ms.id === 'shine')
         const m: Member = {
@@ -165,7 +165,7 @@ function buildPeople() {
     m.phone = `(16) 9${String(8100 + i * 37).padStart(4, '0')}-${String(1000 + i * 211).slice(-4)}`
   })
   const ministries: Ministry[] = ministrySeeds.map((ms) => ({
-    ...ms, leaderIds: leaders[ms.id] ?? [], roles: ms.roles.map(({ name, count }) => ({ name, count })),
+    ...ms, leaderIds: leaders[ms.id] ?? [], roles: ms.roles.map(({ people: _p, ...r }) => r),
   }))
   return { members, ministries }
 }
@@ -213,13 +213,12 @@ export interface RecurringSlot { key: string; day: string; time: string; title: 
 const TEMPLO = ['louvor', 'follow', 'diaconato', 'centurioes', 'intercessao', 'consolidacao']
 export const RECURRING_SLOTS: RecurringSlot[] = [
   { key: '0-09:30', day: 'Domingo', time: '9h30', title: 'Culto da manhã', ministryIds: [...TEMPLO, 'kids'] },
-  { key: '0-18:30', day: 'Domingo', time: '18h30', title: 'Culto da noite', ministryIds: [...TEMPLO, 'kids', 'dna'] },
+  { key: '0-18:30', day: 'Domingo', time: '18h30', title: 'Culto da noite', ministryIds: [...TEMPLO, 'kids'] },
   { key: '3-20:00', day: 'Quarta', time: '20h', title: 'Culto Fé', ministryIds: [...TEMPLO, 'geracoes', 'carisma', 'shine'] },
   { key: '1-20:00', day: 'Segunda', time: '20h', title: 'Carisma', ministryIds: ['carisma'] },
   { key: '2-19:30', day: 'Terça', time: '19h30', title: 'Link (GC)', ministryIds: ['link'] },
   { key: '4-19:30', day: 'Quinta', time: '19h30', title: 'Shine', ministryIds: ['shine'] },
   { key: '5-20:00', day: 'Sexta', time: '20h', title: 'Sala de Adoração (quinzenal)', ministryIds: ['louvor'] },
-  { key: '6-08:30', day: 'Sábado', time: '8h30', title: 'Ensaio DNA', ministryIds: ['dna'] },
   { key: '6-19:00', day: 'Sábado', time: '19h', title: 'Culto Rocket', ministryIds: ['rocket'] },
   { key: '6-19:30', day: 'Sábado', time: '19h30', title: 'Culto Legacy', ministryIds: ['legacy'] },
 ]
@@ -252,7 +251,7 @@ export function buildAgenda(fromDate: string, toDate: string): ChurchEvent[] {
     switch (d.getDay()) {
       case 0: // Domingo
         ev(d, nth === 2 ? 'Culto de Ceia' : 'Culto de Celebração', '09:30', domingo, T)
-        ev(d, nth === 1 ? 'Culto de Ceia' : 'Culto de Celebração', '18:30', [...domingo, 'dna'], T)
+        ev(d, nth === 1 ? 'Culto de Ceia' : 'Culto de Celebração', '18:30', domingo, T)
         break
       case 1: // Segunda
         ev(d, 'Carisma', '20:00', ['carisma'], { endTime: '21:30', place: 'Templo e sala "Carisma"', activity: 'Curso' })
@@ -281,7 +280,8 @@ export function buildAgenda(fromDate: string, toDate: string): ChurchEvent[] {
         }
         break
       case 6: // Sábado
-        ev(d, 'Ensaio DNA', '08:30', ['dna'], { endTime: '11:00', place: 'Templo', activity: 'Ensaio' })
+        // DNA está parado por enquanto: o ensaio fica na agenda, sem escala
+        ev(d, 'Ensaio DNA', '08:30', [], { endTime: '11:00', place: 'Templo', activity: 'Ensaio' })
         ev(d, 'Culto Rocket', '19:00', ['rocket'], { endTime: '20:00', place: 'Templo', activity: 'Culto' })
         ev(d, 'Culto Legacy', '19:30', ['legacy'], { endTime: '21:30', place: 'Prédio Kids', activity: 'Culto' })
         break
@@ -313,7 +313,7 @@ export function buildAgenda(fromDate: string, toDate: string): ChurchEvent[] {
 
 /** Ministérios da igreja, sem líderes (para começar os dados reais) */
 export function ministryList(): Ministry[] {
-  return ministrySeeds.map((ms) => ({ ...ms, leaderIds: [], roles: ms.roles.map(({ name, count }) => ({ name, count })) }))
+  return ministrySeeds.map((ms) => ({ ...ms, leaderIds: [], roles: ms.roles.map(({ people: _p, ...r }) => r) }))
 }
 
 export function createSeed(): AppData {
@@ -344,6 +344,14 @@ export function createSeed(): AppData {
   for (const m of members) {
     if (rand() < 0.3) data.unavailability[m.id] = [future[Math.floor(rand() * future.length)].date]
   }
+
+  // grupos de voz do Louvor (exemplo): 3 grupos com quem canta
+  const voices = members.filter((m) => m.ministries.some((mm) => mm.ministryId === 'louvor' && mm.roles.includes('Voz')))
+  const louvor = data.ministries.find((m) => m.id === 'louvor')!
+  louvor.groups = [0, 1, 2].map((g) => ({
+    id: `g${g + 1}`, name: `Grupo ${['Ágape', 'Shalom', 'Hosana'][g]}`,
+    memberIds: voices.filter((_, i) => i % 3 === g).map((m) => m.id),
+  }))
 
   // escalas geradas automaticamente: passado (até hoje) + próximas 2 semanas
   const horizon = toISO(addDays(today, 14))
@@ -388,7 +396,7 @@ export function createSeed(): AppData {
       })
     }
   }
-  openSwap('louvor', 'Vocal', 'Vou viajar com a família nesse fim de semana 🙏', 5)
+  openSwap('louvor', 'Voz', 'Vou viajar com a família nesse fim de semana 🙏', 5)
   openSwap('diaconato', 'Acolhimento', 'Plantão no trabalho, não consigo chegar a tempo.', 26)
   openSwap('louvor', 'Bateria', 'Prova na faculdade no dia seguinte.', 50)
 
@@ -443,4 +451,13 @@ export function createSeed(): AppData {
   })
 
   return data
+}
+
+/**
+ * Funções que mudaram de nome ou saíram: usado para atualizar os dados reais.
+ * null = a função deixou de existir (sai do cadastro das pessoas).
+ */
+export const ROLE_RENAMES: Record<string, Record<string, string | null>> = {
+  louvor: { Ministro: 'Voz', Vocal: 'Voz' },
+  centurioes: { 'Portão': 'Estacionamento', 'Ronda externa': 'Estacionamento' },
 }

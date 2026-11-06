@@ -9,6 +9,7 @@ import { Avatar, Empty, MinistryBadge, Section, Sheet, TopBar } from '../compone
 import type { Ministry } from '../data/types'
 import { ARTS_MINISTRIES, ArtsTab } from './Arts'
 import { SessionCards } from './Sessions'
+import { GroupsTab } from './Groups'
 import { FillBar, fillOf } from './Agenda'
 
 export function Team() {
@@ -44,11 +45,11 @@ export function Team() {
   )
 }
 
-export function MinistryDetail({ id, initialTab, asTab }: { id: string; initialTab?: 'schedule' | 'team' | 'notices' | 'arts'; asTab?: boolean }) {
+export function MinistryDetail({ id, initialTab, asTab }: { id: string; initialTab?: 'schedule' | 'team' | 'groups' | 'notices' | 'arts'; asTab?: boolean }) {
   const { data, actions, notify } = useStore()
   const me = useMe()
   const { back, push } = useNav()
-  const [tab, setTab] = useState<'schedule' | 'team' | 'notices' | 'arts'>(initialTab ?? 'schedule')
+  const [tab, setTab] = useState<'schedule' | 'team' | 'groups' | 'notices' | 'arts'>(initialTab ?? 'schedule')
   const [noticeOpen, setNoticeOpen] = useState(false)
   const [notice, setNotice] = useState({ title: '', body: '' })
   const ministry = data.ministries.find((m) => m.id === id)
@@ -81,6 +82,9 @@ export function MinistryDetail({ id, initialTab, asTab }: { id: string; initialT
       <div className="segmented">
         <button className={tab === 'schedule' ? 'on' : ''} onClick={() => setTab('schedule')}>Escalas</button>
         <button className={tab === 'team' ? 'on' : ''} onClick={() => setTab('team')}>Equipe</button>
+        {ministry.roles.some((r) => r.group) && (
+          <button className={tab === 'groups' ? 'on' : ''} onClick={() => setTab('groups')}>Grupos</button>
+        )}
         <button className={tab === 'notices' ? 'on' : ''} onClick={() => setTab('notices')}>Avisos</button>
         {ARTS_MINISTRIES.includes(ministry.id) && (
           <button className={tab === 'arts' ? 'on' : ''} onClick={() => setTab('arts')}>Artes</button>
@@ -88,6 +92,7 @@ export function MinistryDetail({ id, initialTab, asTab }: { id: string; initialT
       </div>
 
       {tab === 'arts' && <ArtsTab ministry={ministry} />}
+      {tab === 'groups' && <GroupsTab ministry={ministry} />}
 
       {tab === 'schedule' && (
         <>

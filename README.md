@@ -35,6 +35,13 @@ Na tela de entrada há três perfis de demonstração: **Voluntária** (Ana), **
 - Ranking de dedicação, equipe com atalho para WhatsApp, avisos e repertório
 - Criar eventos (coordenação)
 
+**Grupos de voz (Louvor)**
+- O líder monta os grupos na aba **Grupos** do Louvor (nome + quem tem a função Voz)
+- No culto, a vaga de Voz é ocupada por um grupo inteiro: "Escolher grupo" mostra quantos estão
+  disponíveis em cada grupo e quantas vezes o grupo serviu nos últimos 45 dias
+- Quem estiver indisponível ou já escalado em outro ministério fica de fora; cada pessoa confirma a sua parte
+- A escala automática faz rodízio entre os grupos; dá para escalar uma pessoa avulsa na vaga de Voz
+
 **Artes (Follow)**
 - Líder do Follow (ou admin) pede uma arte na aba **Artes** do ministério: escolhe um dos próximos
   cultos/eventos da agenda (título e prazo se preenchem) ou "Outro evento ou arte", detalhes,

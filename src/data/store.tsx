@@ -123,6 +123,10 @@ function makeActions(
     acceptSwap: (swapId: string) => { dispatch({ type: 'acceptSwap', swapId }) },
     assign: (eventId: string, ministryId: string, role: string, memberId: string) => { dispatch({ type: 'assign', eventId, ministryId, role, memberId }) },
     unassign: (assignmentId: string) => { dispatch({ type: 'unassign', assignmentId }) },
+    saveGroup: (ministryId: string, group: { id?: string; name: string; memberIds: string[] }) => dispatchAsync({ type: 'saveGroup', ministryId, group }),
+    removeGroup: (ministryId: string, groupId: string) => { dispatch({ type: 'removeGroup', ministryId, groupId }) },
+    assignGroup: (eventId: string, ministryId: string, role: string, groupId: string) => dispatchAsync({ type: 'assignGroup', eventId, ministryId, role, groupId }),
+    unassignGroup: (eventId: string, groupId: string) => { dispatch({ type: 'unassignGroup', eventId, groupId }) },
     /** Gera a escala automática; retorna quantas vagas preencheu */
     autoSchedule: (eventIds: string[], ministryId: string): number => dispatch({ type: 'autoSchedule', eventIds, ministryId })?.created ?? 0,
     addNotice: (ministryId: string | null, title: string, body: string) => { dispatch({ type: 'addNotice', ministryId, title, body }) },

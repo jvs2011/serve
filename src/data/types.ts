@@ -1,8 +1,19 @@
 export type Access = 'admin' | 'leader' | 'volunteer'
 
 export interface RoleSlot {
-  name: string // ex.: "Vocal", "Bateria"
+  name: string // ex.: "Voz", "Bateria"
   count: number // vagas por evento
+  /** a vaga é ocupada por um grupo inteiro (ex.: grupo de voz do Louvor) */
+  group?: boolean
+  /** complemento mostrado junto do nome (ex.: "0 a 3 anos") */
+  hint?: string
+}
+
+/** Grupo fixo de pessoas que entra junto na escala (ex.: grupo de voz) */
+export interface MemberGroup {
+  id: string
+  name: string
+  memberIds: string[]
 }
 
 export interface Ministry {
@@ -13,6 +24,7 @@ export interface Ministry {
   roles: RoleSlot[] // funções do ministério e quantas pessoas cada uma precisa por culto
   leaderIds: string[]
   description: string
+  groups?: MemberGroup[]
 }
 
 export interface MemberMinistry {
@@ -76,6 +88,8 @@ export interface Assignment {
   role: string
   memberId: string
   status: AssignmentStatus
+  /** escalado como parte de um grupo (ex.: grupo de voz) */
+  groupId?: string
   checkedIn?: boolean
   feedback?: { rating: number; comment: string }
 }
@@ -126,6 +140,8 @@ export interface AppData {
   }
   /** Dados reais: até que data a agenda fixa já foi gerada (YYYY-MM-DD) */
   generatedUntil?: string
+  /** Dados reais: versão da estrutura do código já aplicada (funções renomeadas etc.) */
+  codeVersion?: number
   ministries: Ministry[]
   members: Member[]
   events: ChurchEvent[]

@@ -5,7 +5,7 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
 import type { AppData } from '../src/data/types.js'
 import { ActionError, applyAction, selfRegister, type Action } from '../src/data/actions.js'
-import { buildAgenda, ministryList } from '../src/data/seed.js'
+import { buildAgenda, DATA_VERSION, ministryList, ROLE_RENAMES } from '../src/data/seed.js'
 import { addDays, fromISO, toISO } from '../src/lib/dates.js'
 import { isValidPhone, normalizePhone } from '../src/lib/people.js'
 import { canManage } from '../src/lib/schedule.js'
@@ -32,6 +32,52 @@ function emptyData(): AppData {
   }
 }
 
+/**
+ * Acompanha mudanças de estrutura feitas no código:
+ * - funções renomeadas (ex.: Ministro/Vocal → Voz) nos cadastros, interesses e escalas futuras;
+ * - funções que deixaram de existir saem dos cadastros e das escalas futuras;
+ * - cultos fixos futuros passam a ter os ministérios definidos no código (ex.: DNA fora dos cultos).
+ */
+function syncStructure(d: AppData, today: string) {
+  const rename = (mid: string, role: string): string | null => {
+    const map = ROLE_RENAMES[mid]
+    return map && role in map ? map[role] : role
+  }
+  const fixRoles = (list: { ministryId: string; roles: string[] }[] | undefined) =>
+    list?.forEach((mm) => {
+      const valid = new Set(d.ministries.find((x) => x.id === mm.ministryId)?.roles.map((r) => r.name) ?? [])
+      mm.roles = [...new Set(mm.roles.map((r) => rename(mm.ministryId, r)).filter((r): r is string => !!r && valid.has(r)))]
+    })
+  for (const m of d.members) { fixRoles(m.ministries); fixRoles(m.interests) }
+
+  // cultos fixos futuros: ministérios conforme o código
+  const generated = new Map(buildAgenda(today, d.generatedUntil ?? today).map((e) => [e.id, e]))
+  const events = new Map(d.events.map((e) => [e.id, e]))
+  for (const e of d.events) {
+    const g = generated.get(e.id)
+    if (g && e.date >= today && JSON.stringify(g.ministryIds) !== JSON.stringify(e.ministryIds)) e.ministryIds = g.ministryIds
+  }
+
+  // escalas futuras: renomeia a função ou tira a escala que não cabe mais
+  const gone = new Set<string>()
+  const seen = new Set<string>()
+  for (const a of d.assignments) {
+    const ev = events.get(a.eventId)
+    if (!ev || ev.date < today) continue
+    const role = rename(a.ministryId, a.role)
+    const custom = ev.slots?.some((s) => s.ministryId === a.ministryId && s.role === role)
+    const exists = custom || !!d.ministries.find((x) => x.id === a.ministryId)?.roles.some((r) => r.name === role)
+    // duas funções que viraram uma só (ex.: Portão e Ronda → Estacionamento) não duplicam a pessoa
+    const key = `${a.eventId}|${a.ministryId}|${role}|${a.memberId}`
+    if (!role || !exists || !ev.ministryIds.includes(a.ministryId) || seen.has(key)) gone.add(a.id)
+    else { a.role = role; seen.add(key) }
+  }
+  if (gone.size) {
+    d.assignments = d.assignments.filter((a) => !gone.has(a.id))
+    d.swaps = d.swaps.filter((s) => !gone.has(s.assignmentId))
+  }
+}
+
 /** Garante administrador, agenda gerada para as próximas semanas e limpeza de dados antigos */
 function prepare(d: AppData): boolean {
   let changed = false
@@ -53,12 +99,16 @@ function prepare(d: AppData): boolean {
     for (const k of ['name', 'description', 'color', 'icon'] as const) {
       if (m[k] !== base[k]) { m[k] = base[k]; changed = true }
     }
-    // equipes novas no código entram no fim da lista (as existentes não são alteradas nem removidas)
-    for (const r of base.roles) {
-      const cur = m.roles.find((x) => x.name === r.name)
-      if (!cur) { m.roles.push({ ...r }); changed = true }
-      else if (cur.count !== r.count) { cur.count = r.count; changed = true }
-    }
+    // funções seguem o código: ordem, vagas, grupo e complemento (as removidas do código saem)
+    const roles = base.roles.map((r) => ({ ...r }))
+    if (JSON.stringify(roles) !== JSON.stringify(m.roles)) { m.roles = roles; changed = true }
+  }
+
+  // mudanças de estrutura do código (funções renomeadas, ministérios fora dos cultos): roda uma vez por versão
+  if (d.codeVersion !== DATA_VERSION) {
+    syncStructure(d, brToday())
+    d.codeVersion = DATA_VERSION
+    changed = true
   }
 
   // agenda fixa: gera o que falta até 10 semanas à frente (ids estáveis, sem duplicar)

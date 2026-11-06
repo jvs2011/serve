@@ -4,7 +4,7 @@
  * e o servidor confere as permissões de quem está pedindo a alteração.
  */
 import type { AppData, AssignmentStatus, Member, Song } from './types.js'
-import { autoFill, canEditSetlist, canManage, isOff, uid } from '../lib/schedule.js'
+import { autoFill, canEditSetlist, canManage, groupAssignments, isOff, uid } from '../lib/schedule.js'
 import { TEAM_SESSIONS } from './sessions.js'
 import { isValidPhone, normalizePhone, tidyName } from '../lib/people.js'
 
@@ -38,6 +38,10 @@ export type Action =
   | { type: 'acceptSwap'; swapId: string }
   | { type: 'assign'; eventId: string; ministryId: string; role: string; memberId: string }
   | { type: 'unassign'; assignmentId: string }
+  | { type: 'saveGroup'; ministryId: string; group: { id?: string; name: string; memberIds: string[] } }
+  | { type: 'removeGroup'; ministryId: string; groupId: string }
+  | { type: 'assignGroup'; eventId: string; ministryId: string; role: string; groupId: string }
+  | { type: 'unassignGroup'; eventId: string; groupId: string }
   | { type: 'autoSchedule'; eventIds: string[]; ministryId: string }
   | { type: 'addNotice'; ministryId: string | null; title: string; body: string }
   | { type: 'addSong'; eventId: string; song: Omit<Song, 'id'> }
@@ -153,6 +157,48 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
       manage(a.ministryId)
       d.assignments = d.assignments.filter((x) => x.id !== a.id)
       d.swaps = d.swaps.filter((s) => s.assignmentId !== a.id)
+      return {}
+    }
+    case 'saveGroup': {
+      manage(action.ministryId)
+      const ministry = d.ministries.find((m) => m.id === action.ministryId) ?? (() => { throw notFound() })()
+      const name = action.group.name.trim().replace(/\s+/g, ' ').slice(0, 40)
+      if (!name) throw new ActionError('Dê um nome para o grupo.')
+      ministry.groups ??= []
+      const existing = action.group.id ? ministry.groups.find((g) => g.id === action.group.id) : undefined
+      if (action.group.id && !existing) throw notFound()
+      if (ministry.groups.some((g) => g.id !== existing?.id && g.name.toLowerCase() === name.toLowerCase())) throw new ActionError('Já existe um grupo com esse nome.')
+      const allowed = new Set(groupPeople(d, ministry.id).map((m) => m.id))
+      const memberIds = [...new Set(action.group.memberIds)].filter((id) => allowed.has(id))
+      if (!memberIds.length) throw new ActionError('Escolha quem faz parte do grupo.')
+      if (existing) Object.assign(existing, { name, memberIds })
+      else ministry.groups.push({ id: uid(), name, memberIds })
+      return {}
+    }
+    case 'removeGroup': {
+      manage(action.ministryId)
+      const ministry = d.ministries.find((m) => m.id === action.ministryId) ?? (() => { throw notFound() })()
+      ministry.groups = (ministry.groups ?? []).filter((g) => g.id !== action.groupId)
+      return {}
+    }
+    case 'assignGroup': {
+      manage(action.ministryId)
+      const ev = findEv(action.eventId)
+      const ministry = d.ministries.find((m) => m.id === action.ministryId)
+      if (!ministry?.groups?.some((g) => g.id === action.groupId)) throw notFound()
+      if (d.assignments.some((a) => a.eventId === ev.id && a.groupId === action.groupId)) throw new ActionError('Esse grupo já está nesse culto.', 409)
+      const add = groupAssignments(d, ev, action.ministryId, action.role, action.groupId)
+      if (!add.length) throw new ActionError('Ninguém desse grupo está disponível nesse dia.')
+      d.assignments.push(...add)
+      return { created: add.length }
+    }
+    case 'unassignGroup': {
+      const list = d.assignments.filter((a) => a.eventId === action.eventId && a.groupId === action.groupId)
+      if (!list.length) return {}
+      manage(list[0].ministryId)
+      const gone = new Set(list.map((a) => a.id))
+      d.assignments = d.assignments.filter((a) => !gone.has(a.id))
+      d.swaps = d.swaps.filter((s) => !gone.has(s.assignmentId))
       return {}
     }
     case 'autoSchedule': {
@@ -330,7 +376,23 @@ function saveMember(d: AppData, input: MemberInput, actorId: string): string {
     if (leads && !has) m.leaderIds.push(member.id)
     if (!leads && has) m.leaderIds = m.leaderIds.filter((x) => x !== member.id)
   }
+  pruneGroups(d)
   return member.id
+}
+
+/** Quem pode entrar nos grupos de um ministério (tem alguma função de grupo, ex.: Voz) */
+export function groupPeople(d: AppData, ministryId: string): Member[] {
+  const roles = new Set(d.ministries.find((m) => m.id === ministryId)?.roles.filter((r) => r.group).map((r) => r.name))
+  return d.members.filter((m) => m.ministries.some((mm) => mm.ministryId === ministryId && mm.roles.some((r) => roles.has(r))))
+}
+
+/** Tira dos grupos quem saiu do ministério ou da função */
+function pruneGroups(d: AppData) {
+  for (const m of d.ministries) {
+    if (!m.groups?.length) continue
+    const allowed = new Set(groupPeople(d, m.id).map((x) => x.id))
+    for (const g of m.groups) g.memberIds = g.memberIds.filter((id) => allowed.has(id))
+  }
 }
 
 function removeMember(d: AppData, memberId: string) {
@@ -342,6 +404,7 @@ function removeMember(d: AppData, memberId: string) {
   d.members = d.members.filter((m) => m.id !== memberId)
   for (const m of d.ministries) m.leaderIds = m.leaderIds.filter((x) => x !== memberId)
   delete d.unavailability[memberId]
+  pruneGroups(d)
 }
 
 export interface SelfSignup {

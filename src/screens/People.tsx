@@ -183,7 +183,7 @@ export function PersonForm({ id }: { id?: string }) {
                       return (
                         <button key={r.name} className={`chip${on ? ' on' : ''}`}
                           onClick={() => update(m.id, (x) => ({ ...x, roles: on ? x.roles.filter((y) => y !== r.name) : [...x.roles, r.name] }))}>
-                          {r.name}
+                          {r.name}{r.hint && <small className="chip-hint"> · {r.hint}</small>}
                         </button>
                       )
                     })}

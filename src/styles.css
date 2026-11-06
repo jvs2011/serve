@@ -299,6 +299,19 @@ input:focus, textarea:focus { border-color: var(--accent); }
 .role { display: grid; gap: 6px; padding: 10px 0; border-top: 1px solid var(--line); }
 .role-name { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
 .role-people { display: grid; gap: 6px; min-width: 0; }
+.role-hint { margin-left: 6px; font-weight: 500; text-transform: none; letter-spacing: 0; opacity: .8; }
+.role-hint::before { content: '· '; }
+.group-block { display: grid; gap: 6px; padding: 8px; border-radius: 12px; background: var(--surface-2); }
+.group-head { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink); padding: 0 2px; }
+.group-card { display: grid; gap: 10px; }
+.group-people { display: flex; flex-wrap: wrap; gap: 6px; }
+.group-person { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border-radius: 999px; background: var(--surface-2); font-size: 13px; }
+.group-person.me { background: var(--accent-soft); }
+.group-form { display: grid; gap: 12px; }
+.pick-list { display: grid; gap: 4px; max-height: 45vh; overflow-y: auto; }
+.pick-row { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 12px; width: 100%; text-align: left; }
+.pick-row.on { background: var(--accent-soft); }
+.group-icon { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--accent-soft); color: var(--accent-strong); }
 .person { display: flex; align-items: center; gap: 8px; font-size: 14px; min-width: 0; }
 .person .grow { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .person.me .grow { font-weight: 700; }
@@ -726,3 +739,4 @@ select:focus { border-color: var(--accent); }
 .pin-gate h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; margin-top: 6px; }
 .pin-gate .closed-icon { margin-top: 24px; }
 .pin-status { display: flex; align-items: center; gap: 8px; background: var(--surface-2); border-radius: 12px; padding: 10px 12px; font-size: 13px; color: var(--ink-2); }
+.chip-hint { font-weight: 500; opacity: .75; }

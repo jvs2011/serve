@@ -16,10 +16,17 @@ export function fillOf(data: AppData, ev: ChurchEvent, ministryIds?: string[]) {
     if (ministryIds && !ministryIds.includes(mid)) continue
     for (const r of slotsFor(data, ev, mid)) {
       const list = data.assignments.filter((a) => a.eventId === ev.id && a.ministryId === mid && a.role === r.name && a.status !== 'declined')
-      const c = Math.min(r.count, list.filter((a) => a.status === 'confirmed').length)
+      // vaga de grupo: o grupo conta como uma vaga, confirmada quando todos dele confirmaram
+      const units = new Map<string, boolean>()
+      for (const a of list) {
+        const key = r.group ? a.groupId ?? a.id : a.id
+        units.set(key, (units.get(key) ?? true) && a.status === 'confirmed')
+      }
+      const done = [...units.values()].filter(Boolean).length
+      const c = Math.min(r.count, done)
       total += r.count
       confirmed += c
-      pending += Math.min(r.count - c, list.filter((a) => a.status === 'pending').length)
+      pending += Math.min(r.count - c, units.size - done)
     }
   }
   return { total, confirmed, pending, open: total - confirmed - pending, filled: confirmed + pending }

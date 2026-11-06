@@ -4,10 +4,10 @@ import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
 import { longDate, relativeDay, timeRange } from '../lib/dates'
 import { firstName, join, memberById } from '../lib/selectors'
-import { canEditSetlist, canManage, isPast, openSlots, rankCandidates, slotsFor } from '../lib/schedule'
+import { canEditSetlist, canManage, isPast, openSlots, rankCandidates, rankGroups, slotsFor } from '../lib/schedule'
 import { AssignmentActions } from '../components/AssignmentActions'
 import { Avatar, Empty, MinistryBadge, Sheet, StatusPill, TopBar } from '../components/ui'
-import type { ChurchEvent, Ministry, Song } from '../data/types'
+import type { Assignment, ChurchEvent, Ministry, Song } from '../data/types'
 import { FillBar, fillOf } from './Agenda'
 
 export function EventDetail({ id }: { id: string }) {
@@ -99,6 +99,7 @@ function MinistryTeam({ ev, ministry }: { ev: ChurchEvent; ministry: Ministry })
   const me = useMe()
   const manage = canManage(me, ministry.id, data) && !isPast(ev)
   const [picker, setPicker] = useState<string | null>(null)
+  const [groupPicker, setGroupPicker] = useState<string | null>(null)
   const list = data.assignments.filter((a) => a.eventId === ev.id && a.ministryId === ministry.id)
 
   const auto = () => {
@@ -125,40 +126,58 @@ function MinistryTeam({ ev, ministry }: { ev: ChurchEvent; ministry: Ministry })
       {[
         ...slotsFor(data, ev, ministry.id),
         // funções sem vaga neste evento, mas com alguém escalado (ex.: escala antiga)
-        ...[...new Set(list.map((a) => a.role))].filter((role) => !slotsFor(data, ev, ministry.id).some((s) => s.name === role)).map((name) => ({ name, count: 0 })),
+        ...[...new Set(list.map((a) => a.role))].filter((role) => !slotsFor(data, ev, ministry.id).some((s) => s.name === role)).map((name) => ({ name, count: 0, group: false, hint: undefined })),
       ].map((r) => {
-        const people = list.filter((a) => a.role === r.name && a.status !== 'declined')
-        const declined = list.filter((a) => a.role === r.name && a.status === 'declined')
-        const missing = Math.max(0, r.count - people.length)
+        const roleList = list.filter((a) => a.role === r.name)
+        const people = roleList.filter((a) => a.status !== 'declined' && !(r.group && a.groupId))
+        const declined = roleList.filter((a) => a.status === 'declined' && !(r.group && a.groupId))
+        // vaga de grupo: cada grupo aparece junto, com as pessoas dele
+        const groupIds = r.group ? [...new Set(roleList.filter((a) => a.groupId).map((a) => a.groupId!))] : []
+        const activeGroups = groupIds.filter((g) => roleList.some((a) => a.groupId === g && a.status !== 'declined'))
+        const missing = Math.max(0, r.count - people.length - activeGroups.length)
+        const row = (a: Assignment) => {
+          const m = memberById(data, a.memberId)
+          const swap = data.swaps.find((s) => s.assignmentId === a.id && s.status === 'open')
+          return (
+            <div key={a.id} className={`person${a.memberId === me.id ? ' me' : ''}${a.status === 'declined' ? ' declined' : ''}`}>
+              <Avatar name={m?.name ?? '?'} size={28} />
+              <span className="grow">{m ? (a.memberId === me.id ? 'Você' : m.name) : '—'}{swap && <em className="swap-tag">troca</em>}</span>
+              <StatusPill status={a.status} checkedIn={a.checkedIn} />
+              {manage && (
+                <button className="icon-btn sm" aria-label="Remover" onClick={() => actions.unassign(a.id)}><X size={16} /></button>
+              )}
+            </div>
+          )
+        }
         return (
           <div key={r.name} className="role">
-            <span className="role-name">{r.name}</span>
+            <span className="role-name">{r.name}{r.hint && <span className="role-hint">{r.hint}</span>}</span>
             <div className="role-people">
-              {people.map((a) => {
-                const m = memberById(data, a.memberId)
-                const swap = data.swaps.find((s) => s.assignmentId === a.id && s.status === 'open')
+              {groupIds.map((gid) => {
+                const g = ministry.groups?.find((x) => x.id === gid)
                 return (
-                  <div key={a.id} className={`person${a.memberId === me.id ? ' me' : ''}`}>
-                    <Avatar name={m?.name ?? '?'} size={28} />
-                    <span className="grow">{m ? (a.memberId === me.id ? 'Você' : m.name) : '—'}{swap && <em className="swap-tag">troca</em>}</span>
-                    <StatusPill status={a.status} checkedIn={a.checkedIn} />
-                    {manage && (
-                      <button className="icon-btn sm" aria-label="Remover" onClick={() => actions.unassign(a.id)}><X size={16} /></button>
-                    )}
+                  <div key={gid} className="group-block">
+                    <div className="group-head">
+                      <Users size={15} />
+                      <strong className="grow">{g?.name ?? 'Grupo'}</strong>
+                      {manage && (
+                        <button className="icon-btn sm" aria-label="Tirar o grupo" onClick={() => {
+                          actions.unassignGroup(ev.id, gid)
+                          notify(`${g?.name ?? 'Grupo'} saiu da escala`)
+                        }}><X size={16} /></button>
+                      )}
+                    </div>
+                    {roleList.filter((a) => a.groupId === gid).map(row)}
                   </div>
                 )
               })}
-              {declined.map((a) => (
-                <div key={a.id} className="person declined">
-                  <Avatar name={memberById(data, a.memberId)?.name ?? '?'} size={28} />
-                  <span className="grow">{memberById(data, a.memberId)?.name}</span>
-                  <StatusPill status="declined" />
-                  {manage && <button className="icon-btn sm" aria-label="Remover" onClick={() => actions.unassign(a.id)}><X size={16} /></button>}
-                </div>
-              ))}
+              {people.map(row)}
+              {declined.map(row)}
               {Array.from({ length: missing }).map((_, i) =>
                 manage ? (
-                  <button key={i} className="slot-empty" onClick={() => setPicker(r.name)}><UserPlus size={16} /> Escalar alguém</button>
+                  <button key={i} className="slot-empty" onClick={() => r.group ? setGroupPicker(r.name) : setPicker(r.name)}>
+                    {r.group ? <><Users size={16} /> Escolher grupo</> : <><UserPlus size={16} /> Escalar alguém</>}
+                  </button>
                 ) : (
                   <div key={i} className="slot-empty static">Vaga aberta</div>
                 ),
@@ -168,6 +187,15 @@ function MinistryTeam({ ev, ministry }: { ev: ChurchEvent; ministry: Ministry })
         )
       })}
 
+      <Sheet open={!!groupPicker} onClose={() => setGroupPicker(null)} title={`Escalar · ${groupPicker ?? ''}`}>
+        {groupPicker && <GroupPicker ev={ev} ministry={ministry} onSingle={() => { setPicker(groupPicker); setGroupPicker(null) }} onPick={async (groupId) => {
+          const role = groupPicker
+          setGroupPicker(null)
+          const r = await actions.assignGroup(ev.id, ministry.id, role, groupId)
+          const name = ministry.groups?.find((g) => g.id === groupId)?.name ?? 'Grupo'
+          notify(r.ok ? `${name} foi escalado. Aguardando confirmação de cada pessoa.` : r.error)
+        }} />}
+      </Sheet>
       <Sheet open={!!picker} onClose={() => setPicker(null)} title={`Escalar · ${picker ?? ''}`}>
         {picker && <CandidatePicker ev={ev} ministry={ministry} role={picker} onPick={(memberId) => {
           actions.assign(ev.id, ministry.id, picker, memberId)
@@ -175,6 +203,43 @@ function MinistryTeam({ ev, ministry }: { ev: ChurchEvent; ministry: Ministry })
           setPicker(null)
         }} />}
       </Sheet>
+    </div>
+  )
+}
+
+function GroupPicker({ ev, ministry, onPick, onSingle }: { ev: ChurchEvent; ministry: Ministry; onPick: (groupId: string) => void; onSingle: () => void }) {
+  const { data } = useStore()
+  const inEvent = new Set(data.assignments.filter((a) => a.eventId === ev.id && a.groupId).map((a) => a.groupId))
+  const ranked = rankGroups(data, ev, ministry.id)
+  return (
+    <div className="candidates">
+      {ranked.length === 0 ? (
+        <Empty icon={<Users />} title="Nenhum grupo criado" text={`Os líderes criam os grupos na aba Grupos do ${ministry.name}.`} />
+      ) : (
+        <p className="muted small">Quem estiver indisponível ou já escalado fica de fora. Grupos que serviram menos aparecem primeiro.</p>
+      )}
+      {ranked.map(({ group, people, status, free, recent, blocked }, i) => {
+        const here = inEvent.has(group.id)
+        const out = status.filter((s) => s.av.unavailable || s.av.conflict)
+        return (
+          <button key={group.id} className="candidate" disabled={blocked || here} onClick={() => onPick(group.id)}>
+            <span className="group-icon"><Users size={18} /></span>
+            <div className="grow">
+              <strong>{group.name}{i === 0 && !blocked && !here && <em className="best">sugerido</em>}</strong>
+              <span className="muted small">{people.map((p) => firstName(p.name)).join(', ') || 'Sem pessoas'}</span>
+              <span className="tags">
+                {here && <span className="tag">Já está neste culto</span>}
+                {!here && <span className={`tag${blocked ? ' bad' : ''}`}>{free.length}/{people.length} disponíveis</span>}
+                {out.map((s) => (
+                  <span key={s.member.id} className="tag bad">{firstName(s.member.name)}: {s.av.conflict ? `já em ${data.ministries.find((m) => m.id === s.av.conflict!.ministryId)?.name}` : 'indisponível'}</span>
+                ))}
+                {recent > 0 && <span className="tag">{recent}× nos últimos 45 dias</span>}
+              </span>
+            </div>
+          </button>
+        )
+      })}
+      <button className="btn btn-ghost btn-block" onClick={onSingle}><UserPlus size={18} /> Escalar uma pessoa avulsa</button>
     </div>
   )
 }

@@ -35,6 +35,10 @@ export function notificationsFor(before: AppData, after: AppData, actorId: strin
     // troca assumida também muda o dono, mas é tratada abaixo
     fresh.set(a.memberId, [...(fresh.get(a.memberId) ?? []), a])
   }
+  const groupName = (a: Assignment) => {
+    const g = a.groupId && min(a.ministryId)?.groups?.find((x) => x.id === a.groupId)
+    return g ? ` (${g.name})` : ''
+  }
   for (const [memberId, list] of fresh) {
     const lines = list
       .map((a) => ({ a, e: ev(a.eventId)! }))
@@ -45,7 +49,7 @@ export function notificationsFor(before: AppData, after: AppData, actorId: strin
       payload: list.length === 1 && top.e.slots
         ? { title: `Convite: ${top.e.title} 🎬`, body: `${when(top.e)}${top.e.place ? ` · ${top.e.place}` : ''}\nVocê consegue participar? Toque para confirmar.`, tag: `escala-${top.a.id}` }
         : list.length === 1
-        ? { title: 'Você foi escalado 🙌', body: `${top.e.title} · ${when(top.e)}\n${min(top.a.ministryId)?.name} · ${top.a.role}. Toque para confirmar.`, tag: `escala-${top.a.id}` }
+        ? { title: 'Você foi escalado 🙌', body: `${top.e.title} · ${when(top.e)}\n${min(top.a.ministryId)?.name} · ${top.a.role}${groupName(top.a)}. Toque para confirmar.`, tag: `escala-${top.a.id}` }
         : { title: `Você tem ${list.length} novas escalas`, body: lines.slice(0, 3).map((x) => `${x.e.title} · ${when(x.e)} (${x.a.role})`).join('\n') + (list.length > 3 ? '\n…' : ''), tag: 'escalas' },
     })
   }

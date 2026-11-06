@@ -42,23 +42,55 @@ export function availabilityFor(data: AppData, member: Member, event: ChurchEven
  * Vagas de um ministério num evento: as vagas próprias do evento, se houver;
  * senão as vagas padrão do ministério (funções com 0 não entram nos cultos).
  */
-export function slotsFor(data: AppData, ev: ChurchEvent | undefined, ministryId: string): { name: string; count: number }[] {
+export function slotsFor(data: AppData, ev: ChurchEvent | undefined, ministryId: string): { name: string; count: number; group?: boolean; hint?: string }[] {
   if (ev?.slots) return ev.slots.filter((s) => s.ministryId === ministryId).map((s) => ({ name: s.role, count: s.count }))
   const ministry = data.ministries.find((m) => m.id === ministryId)
   return (ministry?.roles ?? []).filter((r) => r.count > 0)
 }
 
 /** Vagas abertas (função ainda sem gente suficiente) de um ministério num evento */
-export function openSlots(data: AppData, eventId: string, ministryId: string): { role: string; missing: number }[] {
+export function openSlots(data: AppData, eventId: string, ministryId: string): { role: string; missing: number; group: boolean }[] {
   const ev = data.events.find((e) => e.id === eventId)
   return slotsFor(data, ev, ministryId)
     .map((r) => {
-      const filled = data.assignments.filter(
+      const list = data.assignments.filter(
         (a) => a.eventId === eventId && a.ministryId === ministryId && a.role === r.name && a.status !== 'declined',
-      ).length
-      return { role: r.name, missing: Math.max(0, r.count - filled) }
+      )
+      // vaga de grupo: cada grupo (ou pessoa avulsa) ocupa uma vaga
+      const filled = r.group ? new Set(list.map((a) => a.groupId ?? a.id)).size : list.length
+      return { role: r.name, missing: Math.max(0, r.count - filled), group: !!r.group }
     })
     .filter((s) => s.missing > 0)
+}
+
+/** Grupos de um ministério com a situação de cada um para um evento, do mais indicado ao menos indicado */
+export function rankGroups(data: AppData, event: ChurchEvent, ministryId: string) {
+  const ministry = data.ministries.find((m) => m.id === ministryId)
+  return (ministry?.groups ?? [])
+    .map((group) => {
+      const people = group.memberIds.map((id) => data.members.find((m) => m.id === id)).filter((m): m is Member => !!m)
+      const status = people.map((member) => ({ member, av: availabilityFor(data, member, event) }))
+      const free = status.filter((s) => !s.av.unavailable && !s.av.conflict)
+      // quantas vezes o grupo serviu nos 45 dias anteriores (rodízio entre grupos)
+      const used = new Set(data.assignments.filter((a) => a.groupId === group.id && a.status !== 'declined').map((a) => a.eventId))
+      const recent = [...used].filter((id) => {
+        const ev = data.events.find((e) => e.id === id)
+        if (!ev) return false
+        const d = daysBetween(ev.date, event.date)
+        return d >= 0 && d <= 45
+      }).length
+      const busy = people.length - free.length
+      const score = (free.length === 0 ? 1000 : 0) + busy * 20 + recent * 3
+      return { group, people, status, free, recent, score, blocked: free.length === 0 }
+    })
+    .sort((a, b) => a.score - b.score || a.group.name.localeCompare(b.group.name))
+}
+
+/** Escala um grupo inteiro (quem estiver indisponível ou já escalado no evento fica de fora) */
+export function groupAssignments(data: AppData, event: ChurchEvent, ministryId: string, role: string, groupId: string, status: Assignment['status'] = 'pending'): Assignment[] {
+  const ranked = rankGroups(data, event, ministryId).find((g) => g.group.id === groupId)
+  if (!ranked) return []
+  return ranked.free.map(({ member }) => ({ id: uid(), eventId: event.id, ministryId, role, memberId: member.id, status, groupId }))
 }
 
 /** Candidatos para uma função, do mais indicado para o menos indicado */
@@ -93,6 +125,16 @@ export function autoFill(data: AppData, eventId: string, ministryId: string, sta
   const created: Assignment[] = []
   const working: AppData = { ...data, assignments: [...data.assignments] }
   for (const slot of openSlots(working, eventId, ministryId)) {
+    if (slot.group) {
+      // vaga de grupo: escolhe os grupos mais indicados que ainda não estão neste evento
+      const inEvent = new Set(working.assignments.filter((a) => a.eventId === eventId && a.groupId).map((a) => a.groupId))
+      for (const g of rankGroups(working, event, ministryId).filter((g) => !g.blocked && !inEvent.has(g.group.id)).slice(0, slot.missing)) {
+        const add = groupAssignments(working, event, ministryId, slot.role, g.group.id, status)
+        working.assignments.push(...add)
+        created.push(...add)
+      }
+      continue
+    }
     for (let i = 0; i < slot.missing; i++) {
       const pick = rankCandidates(working, event, ministryId, slot.role).find((c) => !c.blocked && !c.av.overLimit)
       if (!pick) break
