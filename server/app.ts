@@ -56,6 +56,10 @@ function prepare(d: AppData): boolean {
     for (const k of ['name', 'description', 'color', 'icon'] as const) {
       if (m[k] !== base[k]) { m[k] = base[k]; changed = true }
     }
+    // equipes novas no código entram no fim da lista (as existentes não são alteradas nem removidas)
+    for (const r of base.roles) {
+      if (!m.roles.some((x) => x.name === r.name)) { m.roles.push({ ...r }); changed = true }
+    }
   }
 
   // agenda fixa: gera o que falta até 10 semanas à frente (ids estáveis, sem duplicar)
