@@ -56,7 +56,11 @@ export function Profile() {
       <div className="card menu">
         <button className="menu-item" onClick={() => push({ name: 'availability' })}>
           <CalendarOff size={20} /><span className="grow">Minha disponibilidade</span>
-          {unavailable > 0 && <span className="pill pill-pending">{unavailable} {unavailable === 1 ? 'dia' : 'dias'}</span>}
+          {(unavailable > 0 || (me.recurringOff?.length ?? 0) > 0) && (
+            <span className="pill pill-pending">
+              {[unavailable > 0 && `${unavailable} ${unavailable === 1 ? 'dia' : 'dias'}`, (me.recurringOff?.length ?? 0) > 0 && `${me.recurringOff!.length} ${me.recurringOff!.length === 1 ? 'culto fixo' : 'cultos fixos'}`].filter(Boolean).join(' · ')}
+            </span>
+          )}
           <ChevronRight size={18} className="muted" />
         </button>
         <button className="menu-item" onClick={() => push({ name: 'history' })}>

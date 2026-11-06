@@ -173,7 +173,7 @@ function CandidatePicker({ ev, ministry, role, onPick }: { ev: ChurchEvent; mini
             <div className="grow">
               <strong>{member.name}{i === 0 && !blocked && <em className="best">sugerido</em>}</strong>
               <span className="tags">
-                {av.unavailable && <span className="tag bad">Indisponível</span>}
+                {av.unavailable && <span className="tag bad">{av.recurring ? 'Indisponível neste horário fixo' : 'Indisponível'}</span>}
                 {av.conflict && <span className="tag bad"><AlertTriangle size={11} /> Já escalado em {otherMinistry?.name} ({av.conflict.role})</span>}
                 {av.sameDay && <span className="tag warn">Serve em outro culto no dia</span>}
                 <span className={`tag${av.overLimit ? ' warn' : ''}`}>{av.monthCount}/{member.maxPerMonth} no mês</span>

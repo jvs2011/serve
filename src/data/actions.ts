@@ -20,6 +20,7 @@ export type Action =
   | { type: 'checkIn'; assignmentId: string }
   | { type: 'feedback'; assignmentId: string; rating: number; comment: string }
   | { type: 'toggleUnavailable'; date: string }
+  | { type: 'toggleRecurringOff'; key: string }
   | { type: 'setMaxPerMonth'; n: number }
   | { type: 'requestSwap'; assignmentId: string; reason: string }
   | { type: 'cancelSwap'; swapId: string }
@@ -82,6 +83,12 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
     case 'toggleUnavailable': {
       const list = d.unavailability[me.id] ?? []
       d.unavailability[me.id] = list.includes(action.date) ? list.filter((x) => x !== action.date) : [...list, action.date].sort()
+      return {}
+    }
+    case 'toggleRecurringOff': {
+      if (!/^[0-6]-\d{2}:\d{2}$/.test(action.key)) throw new ActionError('Horário inválido.')
+      const list = me.recurringOff ?? []
+      me.recurringOff = list.includes(action.key) ? list.filter((k) => k !== action.key) : [...list, action.key].sort()
       return {}
     }
     case 'setMaxPerMonth':

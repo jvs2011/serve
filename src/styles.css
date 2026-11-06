@@ -639,3 +639,11 @@ body:has(.signup) { background: transparent; }
 }
 .device-refresh:hover svg { background: rgba(255, 255, 255, .16); transform: rotate(180deg); }
 .device-refresh:focus-visible svg { outline: 2px solid #E57A47; outline-offset: 2px; }
+
+/* Disponibilidade: cultos fixos da semana */
+.form-title.first { margin-top: 4px; }
+.slot-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 0; border-bottom: 1px solid var(--line); text-align: left; }
+.slot-row:last-child { border-bottom: 0; }
+.slot-row .grow { display: grid; gap: 1px; }
+.slot-row .pill { min-width: 98px; justify-content: center; }
+.slots { margin-bottom: 4px; }

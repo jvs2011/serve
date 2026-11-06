@@ -30,6 +30,8 @@ export interface Member {
   maxPerMonth: number
   /** 'form' = a própria pessoa se cadastrou pelo formulário público */
   source?: 'form'
+  /** Cultos fixos da semana em que a pessoa não pode servir (chave "diaDaSemana-HH:MM", ex.: "0-09:30") */
+  recurringOff?: string[]
   /** Equipes em que a pessoa tem interesse em servir (ainda não serve) */
   interests?: MemberMinistry[]
   createdAt?: string

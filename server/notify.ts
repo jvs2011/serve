@@ -4,6 +4,7 @@
  */
 import type { AppData, Assignment, ChurchEvent } from '../src/data/types.js'
 import type { PushPayload } from './push.js'
+import { isOff } from '../src/lib/schedule.js'
 
 export interface Outgoing { to: string[]; payload: PushPayload }
 
@@ -71,7 +72,7 @@ export function notificationsFor(before: AppData, after: AppData, actorId: strin
       const to = after.members
         .filter((m) => m.id !== s.fromMemberId && !busy.has(m.id))
         .filter((m) => m.ministries.some((mm) => mm.ministryId === a.ministryId && mm.roles.includes(a.role)))
-        .filter((m) => !(after.unavailability[m.id] ?? []).includes(e.date))
+        .filter((m) => !isOff(after, m, e))
         .map((m) => m.id)
       out.push({
         to,

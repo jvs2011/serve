@@ -3,8 +3,21 @@ import { daysBetween, todayISO } from './dates.js'
 
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4)
 
+/** Chave do culto fixo de um evento: dia da semana + horário (ex.: "0-09:30") */
+export function recurringKey(ev: { date: string; time: string }): string {
+  const [y, m, d] = ev.date.split('-').map(Number)
+  return `${new Date(y, m - 1, d).getDay()}-${ev.time}`
+}
+
+/** A pessoa marcou que não pode nesse dia (data específica ou culto fixo da semana)? */
+export function isOff(data: AppData, member: Member, ev: ChurchEvent): boolean {
+  return (data.unavailability[member.id] ?? []).includes(ev.date) || (!!ev.time && (member.recurringOff ?? []).includes(recurringKey(ev)))
+}
+
 export interface Availability {
   unavailable: boolean
+  /** indisponível por ser um culto fixo que a pessoa marcou */
+  recurring: boolean
   /** Já está escalado neste mesmo evento (em qualquer ministério) */
   conflict: Assignment | null
   /** Já serve em outro evento no mesmo dia */
@@ -14,14 +27,15 @@ export interface Availability {
 }
 
 export function availabilityFor(data: AppData, member: Member, event: ChurchEvent): Availability {
-  const unavailable = (data.unavailability[member.id] ?? []).includes(event.date)
+  const recurring = !!event.time && (member.recurringOff ?? []).includes(recurringKey(event))
+  const unavailable = recurring || (data.unavailability[member.id] ?? []).includes(event.date)
   const eventsById = new Map(data.events.map((e) => [e.id, e]))
   const mine = data.assignments.filter((a) => a.memberId === member.id && a.status !== 'declined')
   const conflict = mine.find((a) => a.eventId === event.id) ?? null
   const sameDay = mine.some((a) => a.eventId !== event.id && eventsById.get(a.eventId)?.date === event.date)
   const month = event.date.slice(0, 7)
   const monthCount = mine.filter((a) => eventsById.get(a.eventId)?.date.slice(0, 7) === month).length
-  return { unavailable, conflict, sameDay, monthCount, overLimit: monthCount >= member.maxPerMonth }
+  return { unavailable, recurring, conflict, sameDay, monthCount, overLimit: monthCount >= member.maxPerMonth }
 }
 
 /** Vagas abertas (função ainda sem gente suficiente) de um ministério num evento */

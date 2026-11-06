@@ -5,6 +5,7 @@ import { useNav } from '../nav'
 import { dayNum, longDate, monthLong, monthMatrix, todayISO } from '../lib/dates'
 import { myUpcoming } from '../lib/selectors'
 import { TopBar } from '../components/ui'
+import { RECURRING_SLOTS } from '../data/seed'
 
 export function Availability() {
   const { data, actions } = useStore()
@@ -19,10 +20,35 @@ export function Availability() {
   const eventDays = new Set(data.events.map((e) => e.date))
   const today = todayISO()
   const futureOff = [...off].filter((d) => d >= today).sort()
+  // cultos fixos que fazem sentido para a pessoa (pelos ministérios dela)
+  const mine = new Set(me.ministries.map((m) => m.ministryId))
+  const slots = RECURRING_SLOTS.filter((s) => s.ministryIds.some((id) => mine.has(id)))
+  const shownSlots = slots.length ? slots : RECURRING_SLOTS.slice(0, 3)
+  const recurringOff = new Set(me.recurringOff ?? [])
 
   return (
     <div className="screen">
-      <TopBar title="Disponibilidade" subtitle="Toque nos dias em que você NÃO pode servir" onBack={back} />
+      <TopBar title="Disponibilidade" subtitle="Quando você não pode servir" onBack={back} />
+
+      <h3 className="form-title first">Cultos da semana</h3>
+      <p className="muted small form-help">Tem algum culto fixo em que você não consegue servir? Toque para marcar e a escala não vai te colocar nesse horário.</p>
+      <div className="card list-card slots">
+        {shownSlots.map((s) => {
+          const no = recurringOff.has(s.key)
+          return (
+            <button key={s.key} className="slot-row" aria-pressed={no} onClick={() => actions.toggleRecurringOff(s.key)}>
+              <div className="grow">
+                <strong>{s.day} · {s.time}</strong>
+                <span className="muted small">{s.title}</span>
+              </div>
+              <span className={`pill ${no ? 'pill-declined' : 'pill-confirmed'}`}>{no ? 'Não posso' : 'Posso servir'}</span>
+            </button>
+          )
+        })}
+      </div>
+
+      <h3 className="form-title">Datas específicas</h3>
+      <p className="muted small form-help">Viagem, compromisso ou outro motivo: toque nos dias em que você não pode servir.</p>
       <div className="card calendar">
         <div className="cal-head">
           <button className="icon-btn" disabled={offset <= 0} onClick={() => setOffset(offset - 1)} aria-label="Mês anterior"><ChevronLeft size={20} /></button>

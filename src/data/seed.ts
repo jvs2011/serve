@@ -207,6 +207,22 @@ function nextDow(from: Date, dow: number) {
   return d
 }
 
+/** Cultos e encontros fixos da semana (para a pessoa marcar os que não consegue servir) */
+export interface RecurringSlot { key: string; day: string; time: string; title: string; ministryIds: string[] }
+const TEMPLO = ['louvor', 'follow', 'diaconato', 'centurioes', 'intercessao', 'consolidacao']
+export const RECURRING_SLOTS: RecurringSlot[] = [
+  { key: '0-09:30', day: 'Domingo', time: '9h30', title: 'Culto da manhã', ministryIds: [...TEMPLO, 'kids'] },
+  { key: '0-18:30', day: 'Domingo', time: '18h30', title: 'Culto da noite', ministryIds: [...TEMPLO, 'kids', 'dna'] },
+  { key: '3-20:00', day: 'Quarta', time: '20h', title: 'Culto Fé', ministryIds: [...TEMPLO, 'geracoes', 'carisma', 'shine'] },
+  { key: '1-20:00', day: 'Segunda', time: '20h', title: 'Carisma', ministryIds: ['carisma'] },
+  { key: '2-19:30', day: 'Terça', time: '19h30', title: 'Link (GC)', ministryIds: ['link'] },
+  { key: '4-19:30', day: 'Quinta', time: '19h30', title: 'Shine', ministryIds: ['shine'] },
+  { key: '5-20:00', day: 'Sexta', time: '20h', title: 'Sala de Adoração (quinzenal)', ministryIds: ['louvor'] },
+  { key: '6-08:30', day: 'Sábado', time: '8h30', title: 'Ensaio DNA', ministryIds: ['dna'] },
+  { key: '6-19:00', day: 'Sábado', time: '19h', title: 'Culto Rocket', ministryIds: ['rocket'] },
+  { key: '6-19:30', day: 'Sábado', time: '19h30', title: 'Culto Legacy', ministryIds: ['legacy'] },
+]
+
 /**
  * Agenda da igreja entre duas datas (YYYY-MM-DD, inclusivas): cultos fixos, uso contínuo
  * dos espaços e eventos especiais. Os ids são estáveis (data + horário + título), então

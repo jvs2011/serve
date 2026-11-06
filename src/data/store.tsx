@@ -109,6 +109,7 @@ function makeActions(
     checkIn: (assignmentId: string) => { dispatch({ type: 'checkIn', assignmentId }) },
     feedback: (assignmentId: string, rating: number, comment: string) => { dispatch({ type: 'feedback', assignmentId, rating, comment }) },
     toggleUnavailable: (date: string) => { dispatch({ type: 'toggleUnavailable', date }) },
+    toggleRecurringOff: (key: string) => { dispatch({ type: 'toggleRecurringOff', key }) },
     setMaxPerMonth: (n: number) => { dispatch({ type: 'setMaxPerMonth', n }) },
     requestSwap: (assignmentId: string, reason: string) => { dispatch({ type: 'requestSwap', assignmentId, reason }) },
     cancelSwap: (swapId: string) => { dispatch({ type: 'cancelSwap', swapId }) },
