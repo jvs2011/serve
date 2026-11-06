@@ -557,3 +557,57 @@ input:focus, textarea:focus { border-color: var(--accent); }
 .closed-box h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
 .closed-box p { color: var(--ink-2); }
 .closed-news { background: var(--surface-2); border-radius: 14px; padding: 14px; color: var(--ink) !important; font-weight: 500; line-height: 1.45; margin: 6px 0 8px; }
+
+/* ============ Formulário de cadastro: fundo escuro inteiro + vidro fosco ============ */
+html:has(.signup), body:has(.signup) { background: #0B0B0D; }
+.signup {
+  --m: var(--accent);
+  position: relative; isolation: isolate; color: #fff; background: #0B0B0D;
+  --glass: rgba(255, 255, 255, .07); --glass-strong: rgba(255, 255, 255, .11); --glass-line: rgba(255, 255, 255, .14);
+  --text-soft: rgba(255, 255, 255, .72); --text-faint: rgba(255, 255, 255, .5);
+}
+/* brilhos fixos atrás de tudo (na cor do ministério), visíveis através do vidro */
+.signup::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(75% 40% at 100% 0%, color-mix(in srgb, var(--m) 75%, transparent), transparent 70%),
+    radial-gradient(55% 35% at 0% 48%, color-mix(in srgb, var(--m) 55%, transparent), transparent 72%),
+    radial-gradient(50% 30% at 100% 62%, color-mix(in srgb, var(--m) 30%, transparent), transparent 72%),
+    radial-gradient(70% 40% at 80% 100%, rgba(229, 122, 71, .38), transparent 70%),
+    #0B0B0D;
+}
+.signup-hero { background: none !important; padding-bottom: 28px; }
+.signup-body { margin-top: 0; }
+.signup .card.signup-card {
+  background: var(--glass); border: 1px solid var(--glass-line); box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+  backdrop-filter: blur(22px) saturate(160%); -webkit-backdrop-filter: blur(22px) saturate(160%); color: #fff;
+}
+.signup .field span, .signup .signup-teams legend { color: #fff; }
+.signup .muted { color: var(--text-faint); }
+.signup input:not([type="checkbox"]) {
+  background: rgba(255, 255, 255, .06); border-color: var(--glass-line); color: #fff;
+}
+.signup input::placeholder { color: var(--text-faint); }
+.signup input:not([type="checkbox"]):focus { border-color: var(--m); background: rgba(255, 255, 255, .1); }
+.signup-team { background: rgba(255, 255, 255, .05); border-color: var(--glass-line); color: #fff; }
+.signup-team.on { background: color-mix(in srgb, var(--m) 22%, transparent); }
+.signup-check { border-color: rgba(255, 255, 255, .35); }
+.signup-consent { color: var(--text-soft); }
+.signup-consent input { accent-color: var(--m); }
+.signup .error { color: #FF8C86; }
+.signup-done h2 { color: #fff; }
+.signup-done p { color: var(--text-soft); }
+.signup-news { background: rgba(255, 255, 255, .08); color: #fff !important; border: 1px solid var(--glass-line); }
+.signup-done .link { color: #fff; opacity: .85; }
+.signup-foot { color: var(--text-faint); }
+.signup .spinner { border-color: rgba(255, 255, 255, .2); border-top-color: var(--m); }
+.signup-consent input {
+  appearance: none; -webkit-appearance: none; width: 22px; height: 22px; border-radius: 7px; cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, .35); background: rgba(255, 255, 255, .05); display: grid; place-content: center;
+}
+.signup-consent input:checked { background: var(--m); border-color: var(--m); }
+.signup-consent input:checked::after {
+  content: ''; width: 10px; height: 5px; border-left: 2.5px solid #fff; border-bottom: 2.5px solid #fff;
+  transform: translateY(-1px) rotate(-45deg);
+}
+.signup-consent input:focus-visible { outline: 2px solid var(--m); outline-offset: 2px; }

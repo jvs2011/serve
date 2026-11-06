@@ -74,8 +74,8 @@ export function Signup({ ministryId }: { ministryId: string }) {
   const color = info?.color ?? 'var(--accent)'
 
   return (
-    <div className="signup">
-      <header className="signup-hero" style={{ ['--m' as string]: color }}>
+    <div className="signup" style={{ ['--m' as string]: info?.color ?? '#E57A47' }}>
+      <header className="signup-hero">
         <div className="signup-brand">
           <Logo size={30} light />
           <img className="signup-church" src="/lagoinha-franca.png" alt="Lagoinha Franca" width={645} height={164} />
