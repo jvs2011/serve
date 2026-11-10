@@ -22,6 +22,8 @@ export interface Availability {
   conflict: Assignment | null
   /** Já serve em outro evento no mesmo dia */
   sameDay: boolean
+  /** Recusou este mesmo evento (não volta a ser escalado nele) */
+  declinedHere: boolean
   monthCount: number
   overLimit: boolean
 }
@@ -32,10 +34,11 @@ export function availabilityFor(data: AppData, member: Member, event: ChurchEven
   const eventsById = new Map(data.events.map((e) => [e.id, e]))
   const mine = data.assignments.filter((a) => a.memberId === member.id && a.status !== 'declined')
   const conflict = mine.find((a) => a.eventId === event.id) ?? null
+  const declinedHere = data.assignments.some((a) => a.memberId === member.id && a.eventId === event.id && a.status === 'declined')
   const sameDay = mine.some((a) => a.eventId !== event.id && eventsById.get(a.eventId)?.date === event.date)
   const month = event.date.slice(0, 7)
   const monthCount = mine.filter((a) => eventsById.get(a.eventId)?.date.slice(0, 7) === month).length
-  return { unavailable, recurring, conflict, sameDay, monthCount, overLimit: monthCount >= member.maxPerMonth }
+  return { unavailable, recurring, conflict, sameDay, declinedHere, monthCount, overLimit: monthCount >= member.maxPerMonth }
 }
 
 /**
@@ -75,7 +78,7 @@ export function rankGroups(data: AppData, event: ChurchEvent, ministryId: string
     .map((group) => {
       const people = group.memberIds.map((id) => data.members.find((m) => m.id === id)).filter((m): m is Member => !!m)
       const status = people.map((member) => ({ member, av: availabilityFor(data, member, event) }))
-      const free = status.filter((s) => !s.av.unavailable && !s.av.conflict)
+      const free = status.filter((s) => !s.av.unavailable && !s.av.conflict && !s.av.declinedHere)
       // quantas vezes o grupo serviu nos 45 dias anteriores (rodízio entre grupos)
       const used = new Set(data.assignments.filter((a) => a.groupId === group.id && a.status !== 'declined').map((a) => a.eventId))
       const recent = [...used].filter((id) => {
@@ -113,7 +116,7 @@ export function rankCandidates(data: AppData, event: ChurchEvent, ministryId: st
         const d = daysBetween(ev.date, recentFrom)
         return d >= 0 && d <= 45
       }).length
-      const blocked = av.unavailable || !!av.conflict
+      const blocked = av.unavailable || !!av.conflict || av.declinedHere
       const score = (blocked ? 1000 : 0) + (av.overLimit ? 100 : 0) + (av.sameDay ? 5 : 0) + recent * 3 + av.monthCount * 2
       return { member, av, score, blocked }
     })

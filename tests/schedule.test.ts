@@ -116,3 +116,17 @@ describe('permissões', () => {
     expect(d.members.find((m) => m.name === 'Novo Líder')?.ministries[0].roles).toEqual(['Secretário', 'Professor'])
   })
 })
+
+describe('recusa', () => {
+  it('quem recusou o culto não volta a ser escalado nele (automática nem sugestão)', () => {
+    const d = createSeed()
+    const ev = clearLouvor(d)
+    const tec = d.members.filter((m) => m.ministries.some((mm) => mm.ministryId === 'louvor' && mm.roles.includes('Teclado')))
+    // todo mundo do Teclado menos um recusou este culto
+    tec.slice(1).forEach((m, i) => d.assignments.push({ id: `dec${i}`, eventId: ev.id, ministryId: 'louvor', role: 'Teclado', memberId: m.id, status: 'declined' }))
+    const ranked = rankCandidates(d, ev, 'louvor', 'Teclado')
+    for (const m of tec.slice(1)) expect(ranked.find((r) => r.member.id === m.id)?.blocked).toBe(true)
+    const made = autoFill(d, ev.id, 'louvor').filter((a) => a.role === 'Teclado')
+    expect(made.every((a) => a.memberId === tec[0].id)).toBe(true)
+  })
+})

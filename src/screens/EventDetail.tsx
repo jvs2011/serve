@@ -245,7 +245,7 @@ function GroupPicker({ ev, ministry, onPick, onSingle }: { ev: ChurchEvent; mini
       )}
       {ranked.map(({ group, people, status, free, recent, blocked }, i) => {
         const here = inEvent.has(group.id)
-        const out = status.filter((s) => s.av.unavailable || s.av.conflict)
+        const out = status.filter((s) => s.av.unavailable || s.av.conflict || s.av.declinedHere)
         return (
           <button key={group.id} className="candidate" disabled={blocked || here} onClick={() => onPick(group.id)}>
             <span className="group-icon"><Users size={18} /></span>
@@ -256,7 +256,7 @@ function GroupPicker({ ev, ministry, onPick, onSingle }: { ev: ChurchEvent; mini
                 {here && <span className="tag">Já está neste culto</span>}
                 {!here && <span className={`tag${blocked ? ' bad' : ''}`}>{free.length}/{people.length} disponíveis</span>}
                 {out.map((s) => (
-                  <span key={s.member.id} className="tag bad">{firstName(s.member.name)}: {s.av.conflict ? `já em ${data.ministries.find((m) => m.id === s.av.conflict!.ministryId)?.name}` : 'indisponível'}</span>
+                  <span key={s.member.id} className="tag bad">{firstName(s.member.name)}: {s.av.conflict ? `já em ${data.ministries.find((m) => m.id === s.av.conflict!.ministryId)?.name}` : s.av.declinedHere ? 'recusou este culto' : 'indisponível'}</span>
                 ))}
                 {recent > 0 && <span className="tag">{recent}× nos últimos 45 dias</span>}
               </span>
@@ -284,6 +284,7 @@ function CandidatePicker({ ev, ministry, role, onPick }: { ev: ChurchEvent; mini
             <div className="grow">
               <strong>{member.name}{i === 0 && !blocked && <em className="best">sugerido</em>}</strong>
               <span className="tags">
+                {av.declinedHere && <span className="tag bad">Recusou este culto</span>}
                 {av.unavailable && <span className="tag bad">{av.recurring ? 'Indisponível neste horário fixo' : 'Indisponível'}</span>}
                 {av.conflict && <span className="tag bad"><AlertTriangle size={11} /> Já escalado em {otherMinistry?.name} ({av.conflict.role})</span>}
                 {av.sameDay && <span className="tag warn">Serve em outro culto no dia</span>}
