@@ -27,6 +27,10 @@ export interface TaskInput {
   details: string
   assigneeId: string
   dueDate: string
+  /** 'news' = vídeo do Lagoinha News (sempre vai para a projeção) */
+  kind?: 'news'
+  /** a arte vai para a projeção */
+  projection?: boolean
 }
 
 /** Evento criado pelo líder para o próprio ministério (ex.: ação externa do We Care) */
@@ -449,9 +453,14 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
     case 'saveTask': {
       const t = action.task
       manage(t.ministryId)
+      const news = t.kind === 'news'
       const title = t.title.trim().slice(0, 120)
-      if (!title) throw new ActionError('Diga qual arte precisa.')
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(t.dueDate)) throw new ActionError('Escolha até quando precisa da arte.')
+      if (!title) throw new ActionError(news ? 'Escolha em qual culto o vídeo vai passar.' : 'Diga qual arte precisa.')
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(t.dueDate)) throw new ActionError(news ? 'Escolha até quando precisa do vídeo.' : 'Escolha até quando precisa da arte.')
+      const eventId = t.eventId && d.events.some((e) => e.id === t.eventId) ? t.eventId : undefined
+      const projection = news || !!t.projection
+      // o que vai para a projeção aparece na escala do culto: precisa saber qual é
+      if (projection && !eventId) throw new ActionError('Escolha o culto em que vai para a projeção.')
       const assignee = d.members.find((m) => m.id === t.assigneeId)
       if (!assignee) throw new ActionError('Escolha quem vai ficar responsável.')
       d.tasks ??= []
@@ -459,11 +468,15 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
       if (t.id && !existing) throw notFound()
       if (existing && existing.ministryId !== t.ministryId) throw deny()
       const data = {
-        title, eventId: t.eventId && d.events.some((e) => e.id === t.eventId) ? t.eventId : undefined,
-        details: t.details.trim().slice(0, 1500), assigneeId: assignee.id, dueDate: t.dueDate,
+        title, eventId, details: t.details.trim().slice(0, 1500), assigneeId: assignee.id, dueDate: t.dueDate,
+        kind: news ? ('news' as const) : undefined, projection: projection || undefined,
       }
-      if (existing) Object.assign(existing, data)
-      else d.tasks.unshift({ id: uid(), ministryId: t.ministryId, status: 'open', createdBy: me.id, createdAt: new Date().toISOString(), ...data })
+      if (existing) {
+        Object.assign(existing, data)
+        for (const k of ['kind', 'projection', 'eventId'] as const) if (existing[k] === undefined) delete existing[k]
+      } else {
+        d.tasks.unshift({ id: uid(), ministryId: t.ministryId, status: 'open', createdBy: me.id, createdAt: new Date().toISOString(), ...data })
+      }
       return {}
     }
     case 'removeTask': {

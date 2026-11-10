@@ -150,7 +150,11 @@ export interface Task {
   assigneeId: string
   dueDate: string // YYYY-MM-DD
   status: 'open' | 'done'
-  link?: string // link da arte entregue (Drive, Canva…)
+  link?: string // link entregue (Drive, Canva, YouTube…)
+  /** 'news' = vídeo do Lagoinha News editado; sem valor = arte */
+  kind?: 'news'
+  /** vai para a projeção: a Projeção recebe o link na escala do culto (`eventId`) */
+  projection?: boolean
   createdBy: string
   createdAt: string
   doneAt?: string

@@ -791,3 +791,24 @@ select:focus { border-color: var(--accent); }
 .song-pick.has { opacity: .55; }
 .song-pick.has > svg { color: var(--ok); }
 .song-letter { font-size: 12px; font-weight: 700; color: var(--muted); padding: 14px 2px 4px; letter-spacing: .04em; }
+.proj-card { display: grid; gap: 4px; margin-bottom: 14px; border: 1.5px solid var(--accent-soft); }
+.proj-head { display: flex; gap: 10px; align-items: flex-start; padding-bottom: 8px; }
+.proj-head > svg { color: var(--accent-strong); flex: none; margin-top: 2px; }
+.proj-head .grow { display: grid; gap: 2px; }
+.proj-head .small { color: var(--muted); }
+.proj-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+.proj-item .grow { display: grid; gap: 2px; min-width: 0; }
+.proj-item strong { font-size: 15px; }
+.proj-icon { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex: none; background: var(--accent-soft); color: var(--accent-strong); }
+.proj-icon.news { background: var(--info-soft); color: var(--info); }
+.proj-songs { display: grid; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+.proj-label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; }
+.proj-song { display: flex; align-items: center; gap: 10px; font-size: 15px; min-height: 36px; }
+.proj-song .grow { min-width: 0; }
+.proj-n { width: 22px; flex: none; color: var(--muted); font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
+.hero-proj { margin-top: 6px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255,255,255,.8); }
+.task-proj { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--accent-strong); }
+.kind-chips .chip { display: inline-flex; align-items: center; gap: 6px; }
+.proj-switch { margin-bottom: 14px; }
+.proj-switch svg { vertical-align: -3px; margin-right: 4px; color: var(--accent-strong); }
+.proj-item a.btn { text-decoration: none; }

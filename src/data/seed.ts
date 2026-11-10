@@ -4,7 +4,7 @@ import { autoFill } from '../lib/schedule.js'
 import { DEFAULT_WEEKLY, eventId, weeklyEvents } from './agenda.js'
 
 /** Versão do formato dos dados. Mude para forçar recriação dos dados de exemplo. */
-export const DATA_VERSION = 18
+export const DATA_VERSION = 19
 
 /*
  * Ministérios da Lagoinha Franca.
@@ -376,8 +376,9 @@ export function createSeed(): AppData {
     assigneeId: 'm-julia', dueDate: toISO(addDays(today, 2)), status: 'open', createdBy: 'm-rafaela', createdAt: new Date(now.getTime() - 86_400_000).toISOString(),
   })
   if (e2 && artists[0]) data.tasks.push({
-    id: 't2', ministryId: 'follow', title: `Arte · ${e2.title} (${dd(e2.date)})`, eventId: e2.id, details: 'Versão para o telão (16:9).',
+    id: 't2', ministryId: 'follow', title: `Arte · ${e2.title} (${dd(e2.date)})`, eventId: e2.id, details: 'Versão para a projeção (16:9).',
     assigneeId: artists[0].id, dueDate: toISO(addDays(today, -1)), status: 'open', createdBy: 'm-rafaela', createdAt: new Date(now.getTime() - 3 * 86_400_000).toISOString(),
+    projection: true,
   })
   data.tasks.push({
     id: 't3', ministryId: 'follow', title: 'Arte · Reunião Follow', details: 'Convite para os stories.', assigneeId: 'm-julia',
@@ -425,6 +426,27 @@ export function createSeed(): AppData {
   const davi = data.assignments.find((a) => a.eventId === 'e-demo-news' && a.memberId === 'm-davi')
   if (davi) davi.status = 'pending'
   const other = nextOf('Projeção').find((a) => a.memberId !== 'm-bruno' && !data.assignments.some((b) => b.eventId === a.eventId && b.memberId === 'm-bruno'))
+  // projeção: no próximo culto do Bruno já tem a arte e o vídeo do News entregues (e o repertório do Louvor)
+  const brunoNext = nextOf('Projeção').find((a) => a.memberId === 'm-bruno')
+  const projEv = brunoNext && evById.get(brunoNext.eventId)
+  if (projEv) {
+    const ago = (h: number) => new Date(now.getTime() - h * 3600_000).toISOString()
+    data.tasks!.push(
+      { id: 't-proj-arte', ministryId: 'follow', title: `Arte · ${projEv.title} (${dd(projEv.date)})`, eventId: projEv.id, details: 'Abertura do culto, 16:9.',
+        assigneeId: 'm-julia', dueDate: toISO(addDays(fromISO(projEv.date), -2)), status: 'done', link: 'https://www.canva.com/', projection: true,
+        createdBy: 'm-rafaela', createdAt: ago(72), doneAt: ago(20) },
+      { id: 't-proj-news', ministryId: 'follow', kind: 'news', title: `Vídeo do News · ${projEv.title} (${dd(projEv.date)})`, eventId: projEv.id, details: 'Episódio da semana, 3 minutos.',
+        assigneeId: 'm-davi', dueDate: toISO(addDays(fromISO(projEv.date), -1)), status: 'done', link: 'https://www.youtube.com/', projection: true,
+        createdBy: 'm-rafaela', createdAt: ago(96), doneAt: ago(6) },
+    )
+    if (projEv.ministryIds.includes('louvor') && projEv.setlist.length) projEv.setlistSentAt = ago(26)
+  }
+  // o Davi edita o próximo episódio (ainda em aberto)
+  const later = data.events.filter((e) => e.slotId && e.ministryIds.includes('follow') && e.date > (projEv?.date ?? todayISO())).sort((a, b) => a.date.localeCompare(b.date))[1]
+  if (later) data.tasks!.push({ id: 't-news-2', ministryId: 'follow', kind: 'news', title: `Vídeo do News · ${later.title} (${dd(later.date)})`, eventId: later.id,
+    details: 'Gravação de sábado. Até 3 minutos.', assigneeId: 'm-davi', dueDate: toISO(addDays(fromISO(later.date), -1)), status: 'open', projection: true,
+    createdBy: 'm-rafaela', createdAt: new Date(now.getTime() - 5 * 3600_000).toISOString() })
+
   if (other) {
     other.status = 'confirmed'
     data.swaps.unshift({ id: 'sw-projecao', assignmentId: other.id, fromMemberId: other.memberId, reason: 'Vou estar viajando nesse fim de semana 🙏', createdAt: new Date(now.getTime() - 3 * 3600_000).toISOString(), status: 'open' })

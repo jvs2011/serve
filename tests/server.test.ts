@@ -106,8 +106,9 @@ describe('notificações', () => {
     const out = notify.notificationsFor(b, d, 'm-mariana', today)
     expect(out).toHaveLength(1)
     expect(out[0].payload.title).toMatch(/Repertório/)
-    const louvor = new Set(d.assignments.filter((a) => a.eventId === ev.id && a.ministryId === 'louvor' && a.status !== 'declined' && a.memberId !== 'm-mariana').map((a) => a.memberId))
-    expect(new Set(out[0].to)).toEqual(louvor)
+    const team = new Set(d.assignments.filter((a) => a.eventId === ev.id && !a.draft && a.status !== 'declined' && a.memberId !== 'm-mariana' &&
+      (a.ministryId === 'louvor' || (a.ministryId === 'follow' && a.role === 'Projeção'))).map((a) => a.memberId))
+    expect(new Set(out[0].to)).toEqual(team)
   })
 
   it('líder recebe as vagas abertas dos próximos dias; voluntário, o lembrete de confirmar', () => {

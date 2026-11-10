@@ -74,6 +74,13 @@ ativar notificações e, para líderes, como publicar a escala). Dá para rever 
   e marca como entregue com o link (Drive, Canva…)
 - Notificações: nova arte → responsável; entregue → líderes; véspera do prazo → responsável
 
+**Projeção**
+- No pedido, a arte pode ser marcada como **Vai para a projeção**; o **Vídeo do Lagoinha News** é um tipo de pedido
+  (quem edita entrega o link) e sempre vai para a projeção
+- Dentro da escala do culto, a Projeção (e os líderes do Follow) vê o quadro **Para a projeção**: vídeo do News,
+  artes com o link para abrir e as músicas do Louvor; na tela Início aparece o resumo ("4 músicas · 1 arte · vídeo do News")
+- Avisos: entregue com link → a Projeção escalada naquele culto; repertório enviado pelo Louvor → Louvor e Projeção do culto
+
 ## Estrutura
 
 ```

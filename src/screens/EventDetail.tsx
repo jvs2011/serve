@@ -9,6 +9,7 @@ import { AssignmentActions } from '../components/AssignmentActions'
 import { DraftBar } from '../components/DraftBar'
 import { EventEditForm } from './MinistryEvents'
 import { SongLibrary } from './SongLibrary'
+import { ProjectionCard } from '../components/ProjectionCard'
 import { Avatar, Empty, MinistryBadge, Sheet, StatusPill, TopBar } from '../components/ui'
 import type { Assignment, ChurchEvent, Ministry, Song } from '../data/types'
 import { FillBar, fillOf } from './Agenda'
@@ -86,6 +87,8 @@ export function EventDetail({ id }: { id: string }) {
           <AssignmentActions item={x} />
         </div>
       ))}
+
+      <ProjectionCard ev={ev} />
 
       {hasLouvor && (
         <div className="segmented">

@@ -5,6 +5,7 @@
 import type { AppData, Assignment, ChurchEvent } from '../src/data/types.js'
 import type { PushPayload } from './push.js'
 import { isOff, openSlots } from '../src/lib/schedule.js'
+import { projectionTeam } from '../src/lib/projection.js'
 
 export interface Outgoing { to: string[]; payload: PushPayload }
 
@@ -118,14 +119,22 @@ export function notificationsFor(before: AppData, after: AppData, actorId: strin
     if ((!p || p.assigneeId !== t.assigneeId) && t.status === 'open' && t.assigneeId !== actorId) {
       out.push({
         to: [t.assigneeId],
-        payload: { title: `Nova arte para você 🎨`, body: `${t.title}\n${dueText(t.dueDate, today)}. Toque para ver os detalhes.`, tag: `arte-${t.id}` },
+        payload: { title: t.kind === 'news' ? 'Vídeo do News para editar 🎬' : `Nova arte para você 🎨`, body: `${t.title}\n${dueText(t.dueDate, today)}. Toque para ver os detalhes.`, tag: `arte-${t.id}` },
       })
     }
     if (p && p.status !== 'done' && t.status === 'done') {
       out.push({
         to: (m?.leaderIds ?? []).filter((id) => id !== actorId),
-        payload: { title: 'Arte entregue ✅', body: `${member(t.assigneeId)?.name ?? 'Alguém'} entregou: ${t.title}`, tag: `arte-${t.id}` },
+        payload: { title: t.kind === 'news' ? 'Vídeo do News entregue ✅' : 'Arte entregue ✅', body: `${member(t.assigneeId)?.name ?? 'Alguém'} entregou: ${t.title}`, tag: `arte-${t.id}` },
       })
+      // vai para a projeção: a equipe escalada no culto recebe o link
+      const e = t.projection && t.eventId ? ev(t.eventId) : undefined
+      if (e && e.date >= today) {
+        out.push({
+          to: projectionTeam(after, e.id).filter((id) => id !== actorId && !(m?.leaderIds ?? []).includes(id)),
+          payload: { title: 'Para a projeção 🎬', body: `${t.kind === 'news' ? 'O vídeo do Lagoinha News' : t.title} já está na escala do ${e.title} (${when(e)}). Toque para abrir.`, tag: `projecao-${t.id}` },
+        })
+      }
     }
   }
 
@@ -161,7 +170,11 @@ export function notificationsFor(before: AppData, after: AppData, actorId: strin
   const beforeEvents = new Map(before.events.map((e) => [e.id, e]))
   for (const e of after.events) {
     if (!e.setlistSentAt || beforeEvents.get(e.id)?.setlistSentAt === e.setlistSentAt) continue
-    const to = [...new Set(after.assignments.filter((a) => a.eventId === e.id && a.ministryId === 'louvor' && !a.draft && a.status !== 'declined' && a.memberId !== actorId).map((a) => a.memberId))]
+    // Louvor e a Projeção escalados no culto
+    const to = [...new Set([
+      ...after.assignments.filter((a) => a.eventId === e.id && a.ministryId === 'louvor' && !a.draft && a.status !== 'declined').map((a) => a.memberId),
+      ...projectionTeam(after, e.id),
+    ])].filter((id) => id !== actorId)
     out.push({
       to,
       payload: {
@@ -239,7 +252,7 @@ export function taskRemindersFor(data: AppData, tomorrow: string): Outgoing[] {
   return [...by].map(([memberId, titles]) => ({
     to: [memberId],
     payload: {
-      title: titles.length === 1 ? 'Arte para amanhã 🎨' : `${titles.length} artes para amanhã 🎨`,
+      title: titles.length === 1 ? (titles[0].startsWith('Vídeo do News') ? 'Vídeo do News para amanhã 🎬' : 'Arte para amanhã 🎨') : `${titles.length} entregas para amanhã`,
       body: titles.join('\n') + '\nQuando terminar, marque como entregue no app.',
       tag: `arte-lembrete-${tomorrow}`,
     },

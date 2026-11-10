@@ -23,7 +23,8 @@ describe('demonstração do Follow', () => {
   })
   it('Artes: um pedido em aberto e um entregue', () => {
     const t = (d.tasks ?? []).filter((x) => x.assigneeId === 'm-julia')
-    expect(t.map((x) => x.status).sort()).toEqual(['done', 'open'])
+    expect(t.some((x) => x.status === 'open')).toBe(true)
+    expect(t.some((x) => x.status === 'done' && x.link)).toBe(true)
   })
   it('News: convite de gravação esperando resposta', () => {
     expect(d.assignments.find((a) => a.eventId === 'e-demo-news' && a.memberId === 'm-davi')?.status).toBe('pending')
