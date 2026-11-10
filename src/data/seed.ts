@@ -5,7 +5,7 @@ import { DEFAULT_WEEKLY, eventId, weeklyEvents } from './agenda.js'
 import { NEWS_SESSION_ROLES } from './sessions.js'
 
 /** Versão do formato dos dados. Mude para forçar recriação dos dados de exemplo. */
-export const DATA_VERSION = 20
+export const DATA_VERSION = 21
 
 /*
  * Ministérios da Lagoinha Franca.
@@ -443,7 +443,7 @@ export function createSeed(): AppData {
         assigneeId: 'm-julia', dueDate: toISO(addDays(fromISO(projEv.date), -2)), status: 'done', link: 'https://www.canva.com/', projection: true,
         createdBy: 'm-rafaela', createdAt: ago(72), doneAt: ago(20) },
       { id: 't-proj-news', ministryId: 'follow', kind: 'news', title: `Vídeo do News · ${projEv.title} (${dd(projEv.date)})`, eventId: projEv.id, details: 'Episódio da semana, 3 minutos.',
-        assigneeId: 'm-davi', dueDate: toISO(addDays(fromISO(projEv.date), -1)), status: 'done', link: 'https://www.youtube.com/', projection: true, social: true,
+        assigneeId: 'm-davi', dueDate: toISO(addDays(fromISO(projEv.date), -1)), status: 'done', link: 'https://www.youtube.com/', projection: true,
         createdBy: 'm-rafaela', createdAt: ago(96), doneAt: ago(6) },
     )
     if (projEv.ministryIds.includes('louvor') && projEv.setlist.length) projEv.setlistSentAt = ago(26)

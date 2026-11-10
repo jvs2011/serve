@@ -6,6 +6,7 @@
 import type { AppData, AssignmentStatus, ChurchEvent, Member, Song, WeeklySlot } from './types.js'
 import { applyWeekly } from './agenda.js'
 import { deliveryLabel } from '../lib/delivery.js'
+import { REQUEST_KINDS } from '../lib/requests.js'
 import { todayISO } from '../lib/dates.js'
 import { autoFill, canEditSetlist, canManage, groupAssignments, isOff, uid } from '../lib/schedule.js'
 import { sessionRole, TEAM_SESSIONS } from './sessions.js'
@@ -28,9 +29,9 @@ export interface TaskInput {
   details: string
   assigneeId: string
   dueDate: string
-  /** 'news' = vídeo do Lagoinha News */
-  kind?: 'news'
-  /** vai para a projeção (o vídeo do News vai, se não disser o contrário) */
+  /** 'video' = edição de vídeo; 'news' = vídeo do Lagoinha News (só projeção) */
+  kind?: 'video' | 'news'
+  /** vai para a projeção (o vídeo do News sempre vai) */
   projection?: boolean
   /** vai para as mídias sociais */
   social?: boolean
@@ -464,13 +465,16 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
     case 'saveTask': {
       const t = action.task
       manage(t.ministryId)
-      const news = t.kind === 'news'
+      const kind = t.kind === 'news' || t.kind === 'video' ? t.kind : undefined
+      const news = kind === 'news'
+      const what = REQUEST_KINDS[kind ?? 'art'].the
       const title = t.title.trim().slice(0, 120)
-      if (!title) throw new ActionError(news ? 'Escolha em qual culto o vídeo vai passar.' : 'Diga qual arte precisa.')
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(t.dueDate)) throw new ActionError(news ? 'Escolha até quando precisa do vídeo.' : 'Escolha até quando precisa da arte.')
+      if (!title) throw new ActionError(news ? 'Escolha em qual culto o vídeo do News vai passar.' : `Diga qual é ${what}.`)
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(t.dueDate)) throw new ActionError(`Escolha até quando precisa d${what}.`)
       const eventId = t.eventId && d.events.some((e) => e.id === t.eventId) ? t.eventId : undefined
-      const projection = news ? t.projection ?? true : !!t.projection
-      const social = !!t.social
+      // o News passa só na projeção; arte e vídeo vão para a projeção e/ou mídias sociais
+      const projection = news || !!t.projection
+      const social = !news && !!t.social
       // o que vai para a projeção aparece na escala do culto: precisa saber qual é
       if (projection && !eventId) throw new ActionError('Escolha o culto em que vai para a projeção.')
       const assignee = d.members.find((m) => m.id === t.assigneeId)
@@ -481,7 +485,7 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
       if (existing && existing.ministryId !== t.ministryId) throw deny()
       const data = {
         title, eventId, details: t.details.trim().slice(0, 1500), assigneeId: assignee.id, dueDate: t.dueDate,
-        kind: news ? ('news' as const) : undefined, projection: projection || undefined, social: social || undefined,
+        kind, projection: projection || undefined, social: social || undefined,
       }
       if (existing) {
         Object.assign(existing, data)

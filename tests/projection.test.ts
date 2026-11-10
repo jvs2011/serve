@@ -8,18 +8,24 @@ process.env.SERVE_MEMORY_DB = '1'
 const notify = await import('../server/notify')
 
 describe('projeção', () => {
-  it('o vídeo do News vai para a projeção (precisa do culto) ou só para as mídias sociais', () => {
+  it('News só na projeção; arte e vídeo vão para a projeção e/ou mídias sociais', () => {
     const d = createSeed()
     const base = { ministryId: 'follow', details: '', assigneeId: 'm-davi', dueDate: todayISO() }
-    expect(() => applyAction(d, { type: 'saveTask', task: { ...base, title: 'Vídeo do News', kind: 'news' } }, 'm-rafaela')).toThrow(/culto/)
     const ev = d.events.find((e) => e.date > todayISO() && e.ministryIds.includes('follow') && e.slotId)!
-    applyAction(d, { type: 'saveTask', task: { ...base, title: 'Vídeo do News · X', kind: 'news', eventId: ev.id } }, 'm-rafaela')
-    const t = d.tasks!.find((x) => x.title === 'Vídeo do News · X')!
-    expect([t.kind, t.projection]).toEqual(['news', true])
-    // só para as mídias sociais: não precisa de culto e não aparece na projeção
-    applyAction(d, { type: 'saveTask', task: { ...base, title: 'Vídeo do News · redes', kind: 'news', projection: false, social: true } }, 'm-rafaela')
-    const s = d.tasks!.find((x) => x.title === 'Vídeo do News · redes')!
-    expect([s.projection, s.social, s.eventId]).toEqual([undefined, true, undefined])
+    // News: sempre projeção (precisa do culto), nunca mídias sociais
+    expect(() => applyAction(d, { type: 'saveTask', task: { ...base, title: 'Vídeo do News', kind: 'news', projection: false, social: true } }, 'm-rafaela')).toThrow(/culto/)
+    applyAction(d, { type: 'saveTask', task: { ...base, title: 'Vídeo do News · X', kind: 'news', eventId: ev.id, social: true } }, 'm-rafaela')
+    const n = d.tasks!.find((x) => x.title === 'Vídeo do News · X')!
+    expect([n.kind, n.projection, n.social]).toEqual(['news', true, undefined])
+    // vídeo geral só para as redes: não precisa de culto e não aparece na projeção
+    applyAction(d, { type: 'saveTask', task: { ...base, title: 'Vídeo · Conferência', kind: 'video', social: true } }, 'm-rafaela')
+    const v = d.tasks!.find((x) => x.title === 'Vídeo · Conferência')!
+    expect([v.kind, v.projection, v.social, v.eventId]).toEqual(['video', undefined, true, undefined])
+    // vídeo para a projeção precisa do culto e aparece no quadro
+    expect(() => applyAction(d, { type: 'saveTask', task: { ...base, title: 'Vídeo · Abertura', kind: 'video', projection: true } }, 'm-rafaela')).toThrow(/culto/)
+    applyAction(d, { type: 'saveTask', task: { ...base, title: 'Vídeo · Abertura', kind: 'video', projection: true, social: true, eventId: ev.id } }, 'm-rafaela')
+    expect(projectionMaterials(d, ev).tasks.map((t) => t.title)).toContain('Vídeo · Abertura')
+    expect(projectionSummary(projectionMaterials(d, ev))).toMatch(/1 vídeo/)
     // arte comum não vai para a projeção
     applyAction(d, { type: 'saveTask', task: { ...base, title: 'Arte · Y', assigneeId: 'm-julia', eventId: ev.id } }, 'm-rafaela')
     expect(d.tasks!.find((x) => x.title === 'Arte · Y')!.projection).toBeUndefined()

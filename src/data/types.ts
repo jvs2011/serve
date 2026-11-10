@@ -155,8 +155,8 @@ export interface Task {
   dueDate: string // YYYY-MM-DD
   status: 'open' | 'done'
   link?: string // link entregue (Drive, Canva, YouTube…)
-  /** 'news' = vídeo do Lagoinha News editado; sem valor = arte */
-  kind?: 'news'
+  /** 'video' = edição de vídeo; 'news' = vídeo do Lagoinha News; sem valor = arte */
+  kind?: 'video' | 'news'
   /** vai para a projeção: a Projeção recebe o link na escala do culto (`eventId`) */
   projection?: boolean
   /** vai para as mídias sociais */

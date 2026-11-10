@@ -120,13 +120,13 @@ export function notificationsFor(before: AppData, after: AppData, actorId: strin
     if ((!p || p.assigneeId !== t.assigneeId) && t.status === 'open' && t.assigneeId !== actorId) {
       out.push({
         to: [t.assigneeId],
-        payload: { title: t.kind === 'news' ? 'Vídeo do News para editar 🎬' : `Nova arte para você 🎨`, body: `${t.title}\n${dueText(t.dueDate, today)}. Toque para ver os detalhes.`, tag: `arte-${t.id}` },
+        payload: { title: t.kind === 'news' ? 'Vídeo do News para editar 🎬' : t.kind === 'video' ? 'Vídeo para editar 🎬' : `Nova arte para você 🎨`, body: `${t.title}\n${dueText(t.dueDate, today)}. Toque para ver os detalhes.`, tag: `arte-${t.id}` },
       })
     }
     if (p && p.status !== 'done' && t.status === 'done') {
       out.push({
         to: (m?.leaderIds ?? []).filter((id) => id !== actorId),
-        payload: { title: t.kind === 'news' ? 'Vídeo do News entregue ✅' : 'Arte entregue ✅', body: `${member(t.assigneeId)?.name ?? 'Alguém'} entregou: ${t.title}`, tag: `arte-${t.id}` },
+        payload: { title: t.kind === 'news' ? 'Vídeo do News entregue ✅' : t.kind === 'video' ? 'Vídeo entregue ✅' : 'Arte entregue ✅', body: `${member(t.assigneeId)?.name ?? 'Alguém'} entregou: ${t.title}`, tag: `arte-${t.id}` },
       })
       // vai para a projeção: a equipe escalada no culto recebe o link
       const e = t.projection && t.eventId ? ev(t.eventId) : undefined
@@ -269,7 +269,7 @@ export function taskRemindersFor(data: AppData, tomorrow: string): Outgoing[] {
   return [...by].map(([memberId, titles]) => ({
     to: [memberId],
     payload: {
-      title: titles.length === 1 ? (titles[0].startsWith('Vídeo do News') ? 'Vídeo do News para amanhã 🎬' : 'Arte para amanhã 🎨') : `${titles.length} entregas para amanhã`,
+      title: titles.length === 1 ? (titles[0].startsWith('Vídeo') ? `${titles[0].startsWith('Vídeo do News') ? 'Vídeo do News' : 'Vídeo'} para amanhã 🎬` : 'Arte para amanhã 🎨') : `${titles.length} entregas para amanhã`,
       body: titles.join('\n') + '\nQuando terminar, marque como entregue no app.',
       tag: `arte-lembrete-${tomorrow}`,
     },

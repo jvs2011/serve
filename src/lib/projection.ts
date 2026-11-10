@@ -44,11 +44,13 @@ export function projectionTeam(data: AppData, eventId: string): string[] {
 
 /** Resumo curto: "4 músicas · 1 arte · vídeo do News" */
 export function projectionSummary(m: ProjectionMaterials): string {
-  const arts = m.tasks.filter((t) => t.kind !== 'news').length
+  const arts = m.tasks.filter((t) => !t.kind).length
+  const videos = m.tasks.filter((t) => t.kind === 'video').length
   const news = m.tasks.some((t) => t.kind === 'news')
   return [
     m.songs.length && `${m.songs.length} ${m.songs.length === 1 ? 'música' : 'músicas'}`,
     arts && `${arts} ${arts === 1 ? 'arte' : 'artes'}`,
+    videos && `${videos} ${videos === 1 ? 'vídeo' : 'vídeos'}`,
     news && 'vídeo do News',
   ].filter(Boolean).join(' · ')
 }

@@ -80,7 +80,8 @@ ativar notificações e, para líderes, como publicar a escala). Dá para rever 
   **Material dos últimos cultos** (aba Escalas do ministério); as filmagens também vão para quem é da Edição do News
 - Lagoinha News: **Filmagem (News)** e **Gravação (News)** recebem o convite da gravação; **Edição do News** recebe o pedido
   do vídeo editado
-- Todo pedido (arte ou vídeo do News) tem destino: **Projeção** e/ou **Mídias sociais**
+- **Novo pedido** tem três tipos: **Edição de arte**, **Edição de vídeo** (vídeos gerais) e **Edição do News**.
+  Arte e vídeo vão para a **Projeção** e/ou **Mídias sociais**; o News vai só para a projeção
 
 **Projeção**
 - Dentro da escala do culto, a Projeção (e os líderes do Follow) vê o quadro **Para a projeção**: vídeo do News,
