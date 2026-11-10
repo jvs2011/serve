@@ -49,8 +49,8 @@ describe('projeção', () => {
     const team = [...new Set(cultos.flatMap((ev) => projectionTeam(d, ev.id)))]
     expect(team.length).toBeGreaterThanOrEqual(1)
     const b = structuredClone(d)
-    applyAction(d, { type: 'setTaskDone', taskId: t.id, done: true, link: 'youtube.com/x' }, 'm-davi')
-    const out = notify.notificationsFor(b, d, 'm-davi', todayISO())
+    applyAction(d, { type: 'setTaskDone', taskId: t.id, done: true, link: 'youtube.com/x' }, 'm-nina')
+    const out = notify.notificationsFor(b, d, 'm-nina', todayISO())
     const proj2 = out.find((o) => o.payload.title.startsWith('Para a projeção'))!
     expect(new Set(proj2.to)).toEqual(new Set(team.filter((id) => id !== 'm-rafaela')))
     expect(proj2.payload.body).toMatch(/Lagoinha News já está nos cultos de dom/)

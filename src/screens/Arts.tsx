@@ -162,12 +162,16 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
   }, [events])
 
   // responsáveis: equipe do ministério, com quem é de "Edição de artes" (ou do News) primeiro
-  const role = K.role
   const people = useMemo(() => {
     const list = ministryMembers(data, ministry.id)
-    const has = (id: string) => !!list.find((m) => m.id === id)?.ministries.some((mm) => mm.ministryId === ministry.id && mm.roles.includes(role))
-    return [...list].sort((a, b) => Number(has(b.id)) - Number(has(a.id)) || a.name.localeCompare(b.name)).map((m) => ({ m, art: has(m.id) }))
-  }, [data, ministry.id, role])
+    // a função mais indicada que a pessoa tem (posição na lista do tipo de pedido)
+    const best = (m: (typeof list)[number]) => {
+      const roles = m.ministries.find((mm) => mm.ministryId === ministry.id)?.roles ?? []
+      const i = K.roles.findIndex((r) => roles.includes(r))
+      return i < 0 ? K.roles.length : i
+    }
+    return [...list].sort((a, b) => best(a) - best(b) || a.name.localeCompare(b.name)).map((m) => ({ m, role: K.roles[best(m)] as string | undefined }))
+  }, [data, ministry.id, K])
 
   const [eventId, setEventId] = useState(task ? task.eventId ?? OTHER : '')
   // vídeo do News: o domingo em que passa (manhã e noite)
@@ -299,7 +303,7 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
         <span>Responsável</span>
         <select id="task-assignee" value={assigneeId} onChange={(e) => { setAssigneeId(e.target.value); setError('') }}>
           <option value="" disabled>Escolha…</option>
-          {people.map(({ m, art }) => <option key={m.id} value={m.id}>{m.name}{art ? ` · ${role}` : ''}</option>)}
+          {people.map(({ m, role }) => <option key={m.id} value={m.id}>{m.name}{role ? ` · ${role}` : ''}</option>)}
         </select>
       </label>
       <label className="field">

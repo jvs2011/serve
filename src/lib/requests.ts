@@ -15,16 +15,17 @@ export const REQUEST_KINDS: Record<RequestKind, {
   prefix: string
   /** "a arte", "o vídeo", "o vídeo do News" */
   the: string
-  /** função que aparece primeiro na lista de responsáveis */
-  role: string
+  /** funções que aparecem primeiro na lista de responsáveis (na ordem) */
+  roles: string[]
   /** pode ir para as mídias sociais */
   social: boolean
   /** dias antes do culto para o prazo sugerido */
   leadDays: number
 }> = {
-  art: { chip: 'Edição de arte', prefix: 'Arte', the: 'a arte', role: 'Edição de artes', social: true, leadDays: 2 },
-  video: { chip: 'Edição de vídeo', prefix: 'Vídeo', the: 'o vídeo', role: 'Vídeo', social: true, leadDays: 2 },
-  news: { chip: 'Edição do News', prefix: 'Vídeo do News', the: 'o vídeo do News', role: 'Edição do News', social: false, leadDays: 1 },
+  art: { chip: 'Edição de arte', prefix: 'Arte', the: 'a arte', roles: ['Edição de artes'], social: true, leadDays: 2 },
+  // vídeos gerais: quem edita (artes e vídeos) primeiro, depois quem filma
+  video: { chip: 'Edição de vídeo', prefix: 'Vídeo', the: 'o vídeo', roles: ['Edição de artes', 'Vídeo'], social: true, leadDays: 2 },
+  news: { chip: 'Edição do News', prefix: 'Vídeo do News', the: 'o vídeo do News', roles: ['Edição do News'], social: false, leadDays: 1 },
 }
 
 /** Troca o começo do título quando muda o tipo do pedido */

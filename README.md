@@ -12,9 +12,12 @@ npm run build      # roda os testes e gera /dist (se algum teste falhar, a publi
 npm run build:single  # gera /dist-single/index.html, um arquivo único para prévia
 ```
 
-Na tela de entrada há quatro perfis de demonstração do Follow (a primeira equipe a usar o app):
-**Líder do Follow** (Rafaela: rascunho da escala, artes e gravações), **Projeção** (Bruno: escala pendente e troca para assumir),
-**Edição de artes** (Júlia: arte com prazo para entregar) e **Lagoinha News** (Davi: convite de gravação).
+Na tela de entrada há um perfil de demonstração para cada função do Follow (a primeira equipe a usar o app):
+**Líder do Follow** (Rafaela: rascunho da escala, pedidos e gravações), **Projeção** (Bruno: escala pendente, troca para
+assumir e o quadro Para a projeção), **Vídeo** (Vitor) e **Fotografia** (Carolina: material do último culto para enviar),
+**Edição de artes e vídeos** (Júlia: arte e vídeo com prazo), **Transmissão** (Gustavo: escala pendente e troca),
+**Stories** (Bianca: fotos de um culto pelo histórico) e as três funções do **Lagoinha News**: **Filmagem** (Davi: convite
+e filmagens para enviar), **Edição** (Nina: vídeo do News para entregar) e **Apresentação** (Léo: convite da gravação).
 Cada perfil mostra sugestões do que experimentar.
 O administrador esconde ou mostra a demonstração em **Perfil → Demonstração na tela de entrada**.
 
@@ -78,7 +81,7 @@ ativar notificações e, para líderes, como publicar a escala). Dá para rever 
 - Fotografia, Vídeo e Filmagem (News) enviam o link do material depois de servir (botão na própria escala; cartão
   "Envie as fotos" na tela Início; lembrete no dia seguinte). Os líderes recebem o aviso e acompanham em
   **Material dos últimos cultos** (aba Escalas do ministério); as filmagens também vão para quem é da Edição do News
-- Lagoinha News: **Filmagem (News)** e **Gravação (News)** recebem o convite da gravação; **Edição do News** recebe o pedido
+- Lagoinha News: **Filmagem (News)** e **Apresentação (News)** recebem o convite da gravação; **Edição do News** recebe o pedido
   do vídeo editado
 - **Novo pedido** tem três tipos: **Edição de arte**, **Edição de vídeo** (vídeos gerais) e **Edição do News**.
   Arte e vídeo vão para a **Projeção** e/ou **Mídias sociais**; o News vai só para a projeção e é pedido por **domingo**
@@ -86,7 +89,7 @@ ativar notificações e, para líderes, como publicar a escala). Dá para rever 
 
 **Projeção**
 - Dentro da escala do culto, a Projeção (e os líderes do Follow) vê o quadro **Para a projeção**: vídeo do News,
-  artes com o link para abrir e as músicas do Louvor; na tela Início aparece o resumo ("4 músicas · 1 arte · vídeo do News")
+  artes com o botão Copiar link e as músicas do Louvor; na tela Início aparece o resumo ("4 músicas · 1 arte · vídeo do News")
 - Avisos: entregue com link → a Projeção escalada naquele culto; repertório enviado pelo Louvor → Louvor e Projeção do culto
 
 ## Estrutura
@@ -135,7 +138,8 @@ ministérios, funções em cada ministério e se é líder.
 
 `/cadastro/<ministério>` (ex.: **serve.lagoinhafranca.com/cadastro/follow**) é uma página só de formulário,
 para mandar no grupo do WhatsApp: nome completo, celular, equipes em que serve, equipes em que tem
-interesse (opcional) e autorização de uso dos dados. O usuário é criado na hora (marcado como
+interesse (opcional) e autorização de uso dos dados. As equipes aparecem em grupos, com uma linha sobre cada uma
+(no Follow: Nos cultos, Lagoinha News e Edição e site; o layout fica em `src/lib/signupTeams.ts`). O usuário é criado na hora (marcado como
 "formulário" em Pessoas). Um número já cadastrado nunca é alterado por ali. Limite de 15 envios
 por hora por conexão e um campo invisível contra robôs.
 

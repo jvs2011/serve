@@ -22,18 +22,21 @@ describe('material depois de servir', () => {
     expect(deliveryLabel(d, { ministryId: 'follow', role: 'Projeção' })).toBeUndefined()
   })
 
-  it('o Davi deve o vídeo do último culto; enviar avisa os líderes', () => {
+  it('o Vitor deve o vídeo do último culto; enviar avisa os líderes', () => {
     const d = createSeed()
-    const [owed] = pendingDeliveries(d, 'm-davi', today)
+    const [owed] = pendingDeliveries(d, 'm-vitor', today)
     expect(owed?.role).toBe('Vídeo')
+    expect(pendingDeliveries(d, 'm-carol', today)[0]?.role).toBe('Fotografia')
+    expect(pendingDeliveries(d, 'm-davi', today)[0]?.role).toBe('Filmagem (News)')
     expect(() => applyAction(d, { type: 'deliverMaterial', assignmentId: owed.id, link: 'drive.google.com/x' }, 'm-bruno')).toThrow(/permissão/)
     const b = structuredClone(d)
-    applyAction(d, { type: 'deliverMaterial', assignmentId: owed.id, link: 'drive.google.com/x' }, 'm-davi')
+    applyAction(d, { type: 'deliverMaterial', assignmentId: owed.id, link: 'drive.google.com/x' }, 'm-vitor')
     expect(owed.delivery?.link).toBe('https://drive.google.com/x')
-    expect(pendingDeliveries(d, 'm-davi', today)).toHaveLength(0)
-    const out = notify.notificationsFor(b, d, 'm-davi', today).find((o) => o.payload.title.startsWith('Material enviado'))!
+    // sobra no máximo o culto de hoje (o botão aparece a partir do dia do culto)
+    expect(pendingDeliveries(d, 'm-vitor', today).filter((a) => d.events.find((e) => e.id === a.eventId)!.date < today)).toHaveLength(0)
+    const out = notify.notificationsFor(b, d, 'm-vitor', today).find((o) => o.payload.title.startsWith('Material enviado'))!
     expect(out.to).toEqual(['m-rafaela'])
-    expect(out.payload.body).toMatch(/Davi enviou o vídeo/)
+    expect(out.payload.body).toMatch(/Vitor enviou o vídeo/)
   })
 
   it('filmagens do News também vão para quem edita o News', () => {
@@ -43,15 +46,15 @@ describe('material depois de servir', () => {
     const b = structuredClone(d)
     applyAction(d, { type: 'deliverMaterial', assignmentId: 'f1', link: 'https://wetransfer.com/x' }, 'm-rafaela')
     const out = notify.notificationsFor(b, d, 'm-rafaela', today).find((o) => o.payload.title.startsWith('Material enviado'))!
-    expect(out.to).toContain('m-davi') // Edição do News
+    expect(out.to).toContain('m-nina') // Edição do News
   })
 
   it('lembrete no dia seguinte para quem não enviou', () => {
     const d = createSeed()
-    const [owed] = pendingDeliveries(d, 'm-davi', today)
+    const [owed] = pendingDeliveries(d, 'm-vitor', today)
     const date = d.events.find((e) => e.id === owed.eventId)!.date
     const rem = notify.deliveryRemindersFor(d, date)
-    expect(rem.some((o) => o.to[0] === 'm-davi' && /Envie o vídeo/.test(o.payload.title))).toBe(true)
+    expect(rem.some((o) => o.to[0] === 'm-vitor' && /Envie o vídeo/.test(o.payload.title))).toBe(true)
   })
 
   it('função sem material não envia', () => {
@@ -62,7 +65,7 @@ describe('material depois de servir', () => {
 })
 
 describe('gravação do Lagoinha News', () => {
-  it('convida Filmagem e Gravação, uma vez por pessoa', () => {
+  it('convida Filmagem e Apresentação, uma vez por pessoa', () => {
     const d = createSeed()
     const date = toISO(addDays(fromISO(today), 5))
     // alguém com as duas funções recebe um convite só
@@ -72,12 +75,12 @@ describe('gravação do Lagoinha News', () => {
     const inv = d.assignments.filter((a) => a.eventId === ev.id)
     expect(inv.length).toBe(r.created)
     expect(new Set(inv.map((a) => a.memberId)).size).toBe(inv.length)
-    expect(new Set(inv.map((a) => a.role))).toEqual(new Set(['Filmagem (News)', 'Gravação (News)']))
-    expect(ev.slots!.map((s) => s.role)).toEqual(['Filmagem (News)', 'Gravação (News)'])
+    expect(new Set(inv.map((a) => a.role))).toEqual(new Set(['Filmagem (News)', 'Apresentação (News)']))
+    expect(ev.slots!.map((s) => s.role)).toEqual(['Filmagem (News)', 'Apresentação (News)'])
     expect(inv.some((a) => a.memberId === 'm-davi' && a.role === 'Filmagem (News)')).toBe(true)
   })
 
-  it('dados reais: quem era do Lagoinha News passa para Filmagem e Gravação', async () => {
+  it('dados reais: quem era do Lagoinha News passa para Filmagem e Apresentação', async () => {
     const ms = ministryList()
     const follow = ms.find((m) => m.id === 'follow')!
     follow.roles.push({ name: 'Lagoinha News', count: 0 })
@@ -92,10 +95,30 @@ describe('gravação do Lagoinha News', () => {
     await store.casDoc(await store.getVersion(), JSON.stringify(doc))
     await route('signup-info', 'GET', null, undefined, 'test', { m: 'follow' })
     const d = JSON.parse((await store.getDoc()).doc!) as AppData
-    expect(d.members[0].ministries[0].roles).toEqual(['Filmagem (News)', 'Gravação (News)', 'Vídeo'])
-    expect(d.members[0].interests![0].roles).toEqual(['Filmagem (News)', 'Gravação (News)'])
+    expect(d.members[0].ministries[0].roles).toEqual(['Filmagem (News)', 'Apresentação (News)', 'Vídeo'])
+    expect(d.members[0].interests![0].roles).toEqual(['Filmagem (News)', 'Apresentação (News)'])
     expect(d.ministries.find((m) => m.id === 'follow')!.roles.some((r) => r.name === 'Lagoinha News')).toBe(false)
     expect(d.events.find((e) => e.id === 's1')!.slots).toEqual([{ ministryId: 'follow', role: 'Filmagem (News)', count: 1 }])
     expect(d.assignments.find((a) => a.id === 'x1')!.role).toBe('Filmagem (News)')
+  })
+
+  it('dados reais: Gravação (News) vira Apresentação (News), inclusive nas escalas', async () => {
+    const ms = ministryList()
+    ms.find((m) => m.id === 'follow')!.roles.push({ name: 'Gravação (News)', count: 0 })
+    const date = toISO(addDays(fromISO(today), 3))
+    const doc: AppData = {
+      version: 1, ministries: ms, codeVersion: 23, unavailability: {}, swaps: [], notices: [],
+      members: [{ id: 'n1', name: 'Léo Reis', phone: '16911113333', access: 'volunteer', maxPerMonth: 4, ministries: [{ ministryId: 'follow', roles: ['Gravação (News)'] }] }],
+      events: [{ id: 's1', title: 'Gravação Lagoinha News', date, time: '19:30', ministryIds: ['follow'], setlist: [], slots: [{ ministryId: 'follow', role: 'Gravação (News)', count: 2 }] }],
+      assignments: [{ id: 'x1', eventId: 's1', ministryId: 'follow', role: 'Gravação (News)', memberId: 'n1', status: 'pending' }],
+    }
+    const store = getStore()!
+    await store.casDoc(await store.getVersion(), JSON.stringify(doc))
+    await route('signup-info', 'GET', null, undefined, 'test', { m: 'follow' })
+    const d = JSON.parse((await store.getDoc()).doc!) as AppData
+    expect(d.members[0].ministries[0].roles).toEqual(['Apresentação (News)'])
+    expect(d.ministries.find((m) => m.id === 'follow')!.roles.some((r) => r.name === 'Gravação (News)')).toBe(false)
+    expect(d.events.find((e) => e.id === 's1')!.slots).toEqual([{ ministryId: 'follow', role: 'Apresentação (News)', count: 2 }])
+    expect(d.assignments.find((a) => a.id === 'x1')!.role).toBe('Apresentação (News)')
   })
 })

@@ -15,7 +15,7 @@ export interface TeamSession {
 }
 
 /** Quem vai no dia da gravação do Lagoinha News (a Edição do News trabalha depois, por pedido) */
-export const NEWS_SESSION_ROLES = ['Filmagem (News)', 'Gravação (News)']
+export const NEWS_SESSION_ROLES = ['Filmagem (News)', 'Apresentação (News)']
 
 export const TEAM_SESSIONS: TeamSession[] = [
   { id: 'news', ministryId: 'follow', roles: NEWS_SESSION_ROLES, team: 'do Lagoinha News', title: 'Gravação Lagoinha News', activity: 'Gravação', defaultTime: '19:30' },

@@ -3,6 +3,7 @@ import { Check, CheckCircle2 } from 'lucide-react'
 import { Logo } from '../components/Logo'
 import { scrollToTop } from '../lib/scroll'
 import { isValidPhone, nextPhoneValue, tidyName } from '../lib/people'
+import { signupSections, type SignupSection } from '../lib/signupTeams'
 
 interface Info { id: string; name: string; description: string; color: string; teams: string[] }
 
@@ -128,35 +129,17 @@ export function Signup({ ministryId }: { ministryId: string }) {
             <fieldset className="signup-teams">
               <legend>Em quais equipes do {info.name} você serve?</legend>
               <span className="muted small">Pode marcar mais de uma.</span>
-              <div className="signup-team-grid">
-                {info.teams.map((t) => {
-                  const on = teams.includes(t)
-                  return (
-                    <button type="button" key={t} className={`signup-team${on ? ' on' : ''}`} aria-pressed={on} onClick={() => { toggle(t); setError('') }}
-                      style={on ? { borderColor: color } : undefined}>
-                      <span className="signup-check" style={on ? { background: color, borderColor: color } : undefined}>{on && <Check size={14} />}</span>
-                      {t}
-                    </button>
-                  )
-                })}
-              </div>
+              <TeamPicker sections={signupSections(info.id, info.teams)} isOn={(t) => teams.includes(t)} color={color} detailed
+                onToggle={(t) => { toggle(t); setError('') }} />
             </fieldset>
 
             {teams.length > 0 && info.teams.some((t) => !teams.includes(t)) && (
               <fieldset className="signup-teams">
                 <legend>Tem outra equipe do {info.name} que você teria interesse em participar?</legend>
                 <span className="muted small">Opcional. Pode marcar mais de uma.</span>
+                <TeamPicker sections={signupSections(info.id, info.teams.filter((t) => !teams.includes(t)))} isOn={(t) => interests.includes(t) && !noInterest}
+                  color={color} onToggle={toggleInterest} />
                 <div className="signup-team-grid">
-                  {info.teams.filter((t) => !teams.includes(t)).map((t) => {
-                    const on = interests.includes(t) && !noInterest
-                    return (
-                      <button type="button" key={t} className={`signup-team${on ? ' on' : ''}`} aria-pressed={on} onClick={() => toggleInterest(t)}
-                        style={on ? { borderColor: color } : undefined}>
-                        <span className="signup-check" style={on ? { background: color, borderColor: color } : undefined}>{on && <Check size={14} />}</span>
-                        {t}
-                      </button>
-                    )
-                  })}
                   <button type="button" className={`signup-team${noInterest ? ' on' : ''}`} aria-pressed={noInterest}
                     onClick={() => { setNoInterest((v) => !v); setInterests([]) }} style={noInterest ? { borderColor: color } : undefined}>
                     <span className="signup-check" style={noInterest ? { background: color, borderColor: color } : undefined}>{noInterest && <Check size={14} />}</span>
@@ -182,5 +165,35 @@ export function Signup({ ministryId }: { ministryId: string }) {
         <p className="signup-foot">Serve · escalas de voluntários da Lagoinha Franca</p>
       </main>
     </div>
+  )
+}
+
+/** Equipes em seções (ex.: Nos cultos, Lagoinha News); `detailed` mostra uma linha sobre cada equipe */
+function TeamPicker({ sections, isOn, onToggle, color, detailed }: {
+  sections: SignupSection[]; isOn: (team: string) => boolean; onToggle: (team: string) => void; color: string; detailed?: boolean
+}) {
+  return (
+    <>
+      {sections.map((s, i) => (
+        <div className="signup-section" key={s.title ?? i}>
+          {s.title && <h3>{s.title}</h3>}
+          <div className={`signup-team-grid${detailed ? ' detailed' : ''}`}>
+            {s.teams.map((t) => {
+              const on = isOn(t.name)
+              return (
+                <button type="button" key={t.name} className={`signup-team${on ? ' on' : ''}`} aria-pressed={on} onClick={() => onToggle(t.name)}
+                  style={on ? { borderColor: color } : undefined}>
+                  <span className="signup-check" style={on ? { background: color, borderColor: color } : undefined}>{on && <Check size={14} />}</span>
+                  <span className="signup-team-text">
+                    {t.label}
+                    {detailed && t.desc && <small>{t.desc}</small>}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </>
   )
 }

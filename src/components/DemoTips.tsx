@@ -11,8 +11,8 @@ const TIPS: Record<string, { title: string; tips: Tip[] }> = {
     title: 'Você está como líder do Follow',
     tips: [
       { text: 'Confira o rascunho da escala e toque em Publicar' },
-      { text: 'Peça uma arte e escolha o responsável', go: { name: 'ministry', id: 'follow', tab: 'arts' } },
-      { text: 'Agende uma gravação do Lagoinha News', go: { name: 'ministry', id: 'follow' } },
+      { text: 'Faça um pedido de arte, vídeo ou News', go: { name: 'ministry', id: 'follow', tab: 'arts' } },
+      { text: 'Veja quem já enviou fotos e vídeos dos últimos cultos', go: { name: 'ministry', id: 'follow' } },
       { text: 'Veja o painel com vagas, confirmações e presença', go: { name: 'dashboard' } },
     ],
   },
@@ -20,25 +20,68 @@ const TIPS: Record<string, { title: string; tips: Tip[] }> = {
     title: 'Você está na Projeção',
     tips: [
       { text: 'Confirme a escala que está esperando sua resposta' },
+      { text: 'Abra o culto e veja músicas, artes e o vídeo do News', go: 'agenda' },
       { text: 'Assuma a troca que um colega da Projeção pediu', go: 'swaps' },
-      { text: 'Veja o repertório do próximo culto', go: 'agenda' },
+    ],
+  },
+  'm-vitor': {
+    title: 'Você está no Vídeo',
+    tips: [
+      { text: 'Envie o vídeo do último culto (cartão logo abaixo)' },
+      { text: 'Confirme sua próxima escala' },
       { text: 'Marque um culto em que você não pode servir', go: { name: 'availability' } },
     ],
   },
-  'm-julia': {
-    title: 'Você está na Edição de artes',
+  'm-carol': {
+    title: 'Você está na Fotografia',
     tips: [
-      { text: 'Abra a arte pedida e veja o prazo' },
-      { text: 'Marque a arte como entregue com o link', go: { name: 'ministry', id: 'follow', tab: 'arts' } },
-      { text: 'Veja suas escalas de Stories', go: 'agenda' },
+      { text: 'Envie as fotos do último culto (cartão logo abaixo)' },
+      { text: 'Confirme sua próxima escala' },
+      { text: 'Peça troca de uma escala', go: 'agenda' },
+    ],
+  },
+  'm-julia': {
+    title: 'Você está na Edição (artes e vídeos)',
+    tips: [
+      { text: 'Veja a arte e o vídeo pedidos, com prazo e destino' },
+      { text: 'Entregue com o link do Canva, Drive ou YouTube', go: { name: 'ministry', id: 'follow', tab: 'arts' } },
+    ],
+  },
+  'm-gustavo': {
+    title: 'Você está na Transmissão',
+    tips: [
+      { text: 'Confirme a escala que está esperando sua resposta' },
+      { text: 'Assuma a troca que um colega da Transmissão pediu', go: 'swaps' },
+      { text: 'Veja suas próximas escalas', go: 'agenda' },
+    ],
+  },
+  'm-bianca': {
+    title: 'Você está nos Stories',
+    tips: [
+      { text: 'Confirme sua próxima escala' },
+      { text: 'Pegue as fotos de um culto no Histórico de serviço', go: { name: 'history' } },
+      { text: 'Veja os avisos do Follow logo abaixo' },
     ],
   },
   'm-davi': {
-    title: 'Você está no Lagoinha News',
+    title: 'Você está na Filmagem do News',
     tips: [
-      { text: 'Responda o convite da próxima gravação (Filmagem)' },
-      { text: 'Entregue o vídeo editado do News', go: { name: 'ministry', id: 'follow', tab: 'arts' } },
-      { text: 'Envie o vídeo do culto em que você serviu' },
+      { text: 'Responda o convite da próxima gravação' },
+      { text: 'Envie as filmagens da última gravação (cartão logo abaixo)' },
+    ],
+  },
+  'm-nina': {
+    title: 'Você está na Edição do News',
+    tips: [
+      { text: 'Veja o vídeo do News que você precisa entregar' },
+      { text: 'Entregue o link: a Projeção dos dois cultos de domingo recebe', go: { name: 'ministry', id: 'follow', tab: 'arts' } },
+    ],
+  },
+  'm-leo': {
+    title: 'Você está na Apresentação do News',
+    tips: [
+      { text: 'Responda o convite da próxima gravação' },
+      { text: 'Marque um dia em que você não pode gravar', go: { name: 'availability' } },
     ],
   },
 }
