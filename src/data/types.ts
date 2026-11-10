@@ -161,6 +161,8 @@ export interface Task {
   projection?: boolean
   /** vai para as mídias sociais */
   social?: boolean
+  /** vídeo do News: domingo em que passa (YYYY-MM-DD), nos cultos da manhã e da noite */
+  airDate?: string
   createdBy: string
   createdAt: string
   doneAt?: string

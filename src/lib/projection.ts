@@ -16,9 +16,15 @@ export interface ProjectionMaterials {
   songs: Song[]
 }
 
+/** Dia em que o pedido passa na projeção (o vídeo do News: o domingo; os outros: o dia do culto escolhido) */
+export function airDateOf(data: AppData, t: Task): string | undefined {
+  return t.airDate ?? data.events.find((e) => e.id === t.eventId)?.date
+}
+
 export function projectionMaterials(data: AppData, ev: ChurchEvent): ProjectionMaterials {
   const tasks = (data.tasks ?? [])
-    .filter((t) => t.projection && t.eventId === ev.id)
+    // o vídeo do News aparece em todos os cultos com projeção daquele domingo (manhã e noite)
+    .filter((t) => t.projection && (t.kind === 'news' ? hasProjection(data, ev) && airDateOf(data, t) === ev.date : t.eventId === ev.id))
     .sort((a, b) => Number(b.kind === 'news') - Number(a.kind === 'news') || a.title.localeCompare(b.title))
   return { tasks, songs: ev.ministryIds.includes('louvor') ? ev.setlist : [] }
 }
@@ -34,6 +40,21 @@ export function seesProjection(data: AppData, me: Member, ev: ChurchEvent): bool
   return canManage(me, PROJECTION_MINISTRY, data) ||
     me.ministries.some((mm) => mm.ministryId === PROJECTION_MINISTRY && mm.roles.includes(PROJECTION_ROLE))
 }
+
+/** Cultos em que o pedido vai passar na projeção */
+export function projectionEvents(data: AppData, t: Task): ChurchEvent[] {
+  if (!t.projection) return []
+  if (t.kind !== 'news') return data.events.filter((e) => e.id === t.eventId)
+  const day = airDateOf(data, t)
+  return data.events.filter((e) => e.date === day && hasProjection(data, e))
+}
+
+/** Domingos com projeção a partir de hoje (para o vídeo do News) */
+export function newsSundays(data: AppData, today: string, limit = 8): string[] {
+  const days = new Set(data.events.filter((e) => e.date >= today && hasProjection(data, e) && dayOfWeek(e.date) === 0).map((e) => e.date))
+  return [...days].sort().slice(0, limit)
+}
+const dayOfWeek = (iso: string) => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d).getDay() }
 
 /** Quem está escalado (publicado, sem recusa) na Projeção deste culto */
 export function projectionTeam(data: AppData, eventId: string): string[] {

@@ -5,7 +5,7 @@ import { DEFAULT_WEEKLY, eventId, weeklyEvents } from './agenda.js'
 import { NEWS_SESSION_ROLES } from './sessions.js'
 
 /** Versão do formato dos dados. Mude para forçar recriação dos dados de exemplo. */
-export const DATA_VERSION = 21
+export const DATA_VERSION = 22
 
 /*
  * Ministérios da Lagoinha Franca.
@@ -442,9 +442,6 @@ export function createSeed(): AppData {
       { id: 't-proj-arte', ministryId: 'follow', title: `Arte · ${projEv.title} (${dd(projEv.date)})`, eventId: projEv.id, details: 'Abertura do culto, 16:9.',
         assigneeId: 'm-julia', dueDate: toISO(addDays(fromISO(projEv.date), -2)), status: 'done', link: 'https://www.canva.com/', projection: true,
         createdBy: 'm-rafaela', createdAt: ago(72), doneAt: ago(20) },
-      { id: 't-proj-news', ministryId: 'follow', kind: 'news', title: `Vídeo do News · ${projEv.title} (${dd(projEv.date)})`, eventId: projEv.id, details: 'Episódio da semana, 3 minutos.',
-        assigneeId: 'm-davi', dueDate: toISO(addDays(fromISO(projEv.date), -1)), status: 'done', link: 'https://www.youtube.com/', projection: true,
-        createdBy: 'm-rafaela', createdAt: ago(96), doneAt: ago(6) },
     )
     if (projEv.ministryIds.includes('louvor') && projEv.setlist.length) projEv.setlistSentAt = ago(26)
   }
@@ -461,10 +458,20 @@ export function createSeed(): AppData {
     if (rand() < 0.8) a.delivery = { link: a.role === 'Vídeo' ? 'https://www.youtube.com/' : 'https://drive.google.com/', at: new Date(fromISO(date).getTime() + 30 * 3600_000).toISOString() }
   }
 
-  // o Davi edita o próximo episódio (ainda em aberto)
-  const later = data.events.filter((e) => e.slotId && e.ministryIds.includes('follow') && e.date > (projEv?.date ?? todayISO())).sort((a, b) => a.date.localeCompare(b.date))[1]
-  if (later) data.tasks!.push({ id: 't-news-2', ministryId: 'follow', kind: 'news', title: `Vídeo do News · ${later.title} (${dd(later.date)})`, eventId: later.id,
-    details: 'Gravação de sábado. Até 3 minutos.', assigneeId: 'm-davi', dueDate: toISO(addDays(fromISO(later.date), -1)), status: 'open', projection: true,
+  // vídeo do News: passa nos dois cultos de domingo. O deste domingo já foi entregue (o Bruno está na Projeção da manhã);
+  // o do domingo seguinte o Davi ainda está editando
+  const sundays = [...new Set(data.events.filter((e) => e.slotId && e.date > todayISO() && fromISO(e.date).getDay() === 0 && e.ministryIds.includes('follow')).map((e) => e.date))].sort()
+  const [sun1, sun2] = sundays
+  if (sun1) {
+    const morning = data.events.filter((e) => e.date === sun1 && e.slotId && e.ministryIds.includes('follow')).sort((a, b) => a.time.localeCompare(b.time))[0]
+    const proj = morning && data.assignments.find((a) => a.eventId === morning.id && a.ministryId === 'follow' && a.role === 'Projeção' && !a.draft)
+    if (proj && !data.assignments.some((b) => b.eventId === morning.id && b.memberId === 'm-bruno')) Object.assign(proj, { memberId: 'm-bruno', status: 'confirmed' })
+    data.tasks!.push({ id: 't-proj-news', ministryId: 'follow', kind: 'news', title: `Vídeo do News · domingo ${dd(sun1)}`, airDate: sun1, details: 'Episódio da semana, 3 minutos.',
+      assigneeId: 'm-davi', dueDate: toISO(addDays(fromISO(sun1), -1)), status: 'done', link: 'https://www.youtube.com/', projection: true,
+      createdBy: 'm-rafaela', createdAt: new Date(now.getTime() - 96 * 3600_000).toISOString(), doneAt: new Date(now.getTime() - 6 * 3600_000).toISOString() })
+  }
+  if (sun2) data.tasks!.push({ id: 't-news-2', ministryId: 'follow', kind: 'news', title: `Vídeo do News · domingo ${dd(sun2)}`, airDate: sun2,
+    details: 'Gravação de sábado. Até 3 minutos.', assigneeId: 'm-davi', dueDate: toISO(addDays(fromISO(sun2), -1)), status: 'open', projection: true,
     createdBy: 'm-rafaela', createdAt: new Date(now.getTime() - 5 * 3600_000).toISOString() })
 
   if (other) {

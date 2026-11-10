@@ -35,6 +35,8 @@ export interface TaskInput {
   projection?: boolean
   /** vai para as mídias sociais */
   social?: boolean
+  /** vídeo do News: domingo em que passa */
+  airDate?: string
 }
 
 /** Evento criado pelo líder para o próprio ministério (ex.: ação externa do We Care) */
@@ -469,14 +471,17 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
       const news = kind === 'news'
       const what = REQUEST_KINDS[kind ?? 'art'].the
       const title = t.title.trim().slice(0, 120)
-      if (!title) throw new ActionError(news ? 'Escolha em qual culto o vídeo do News vai passar.' : `Diga qual é ${what}.`)
+      if (!title) throw new ActionError(news ? 'Escolha em qual domingo o vídeo do News vai passar.' : `Diga qual é ${what}.`)
+      // o News passa no domingo (manhã e noite): guarda o dia, não um culto
+      const airDate = news && /^\d{4}-\d{2}-\d{2}$/.test(t.airDate ?? '') ? t.airDate : undefined
+      if (news && !airDate) throw new ActionError('Escolha em qual domingo o vídeo do News vai passar.')
       if (!/^\d{4}-\d{2}-\d{2}$/.test(t.dueDate)) throw new ActionError(`Escolha até quando precisa d${what}.`)
-      const eventId = t.eventId && d.events.some((e) => e.id === t.eventId) ? t.eventId : undefined
+      const eventId = !news && t.eventId && d.events.some((e) => e.id === t.eventId) ? t.eventId : undefined
       // o News passa só na projeção; arte e vídeo vão para a projeção e/ou mídias sociais
       const projection = news || !!t.projection
       const social = !news && !!t.social
       // o que vai para a projeção aparece na escala do culto: precisa saber qual é
-      if (projection && !eventId) throw new ActionError('Escolha o culto em que vai para a projeção.')
+      if (projection && !news && !eventId) throw new ActionError('Escolha o culto em que vai para a projeção.')
       const assignee = d.members.find((m) => m.id === t.assigneeId)
       if (!assignee) throw new ActionError('Escolha quem vai ficar responsável.')
       d.tasks ??= []
@@ -485,11 +490,11 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
       if (existing && existing.ministryId !== t.ministryId) throw deny()
       const data = {
         title, eventId, details: t.details.trim().slice(0, 1500), assigneeId: assignee.id, dueDate: t.dueDate,
-        kind, projection: projection || undefined, social: social || undefined,
+        kind, projection: projection || undefined, social: social || undefined, airDate,
       }
       if (existing) {
         Object.assign(existing, data)
-        for (const k of ['kind', 'projection', 'social', 'eventId'] as const) if (existing[k] === undefined) delete existing[k]
+        for (const k of ['kind', 'projection', 'social', 'eventId', 'airDate'] as const) if (existing[k] === undefined) delete existing[k]
       } else {
         d.tasks.unshift({ id: uid(), ministryId: t.ministryId, status: 'open', createdBy: me.id, createdAt: new Date().toISOString(), ...data })
       }

@@ -5,7 +5,7 @@
 import type { AppData, Assignment, ChurchEvent } from '../src/data/types.js'
 import type { PushPayload } from './push.js'
 import { isOff, openSlots } from '../src/lib/schedule.js'
-import { projectionTeam } from '../src/lib/projection.js'
+import { projectionEvents, projectionTeam } from '../src/lib/projection.js'
 import { deliveryLabel } from '../src/lib/delivery.js'
 
 export interface Outgoing { to: string[]; payload: PushPayload }
@@ -128,12 +128,14 @@ export function notificationsFor(before: AppData, after: AppData, actorId: strin
         to: (m?.leaderIds ?? []).filter((id) => id !== actorId),
         payload: { title: t.kind === 'news' ? 'Vídeo do News entregue ✅' : t.kind === 'video' ? 'Vídeo entregue ✅' : 'Arte entregue ✅', body: `${member(t.assigneeId)?.name ?? 'Alguém'} entregou: ${t.title}`, tag: `arte-${t.id}` },
       })
-      // vai para a projeção: a equipe escalada no culto recebe o link
-      const e = t.projection && t.eventId ? ev(t.eventId) : undefined
-      if (e && e.date >= today) {
+      // vai para a projeção: a equipe escalada no(s) culto(s) recebe o link (o News: manhã e noite do domingo)
+      const evs = projectionEvents(after, t).filter((e) => e.date >= today)
+      if (evs.length) {
+        const e = evs[0]
+        const where = t.kind === 'news' && evs.length > 1 ? `nos cultos de ${when(e).split(' ')[0]} ${when(e).split(' ')[1]}` : `na escala do ${e.title} (${when(e)})`
         out.push({
-          to: projectionTeam(after, e.id).filter((id) => id !== actorId && !(m?.leaderIds ?? []).includes(id)),
-          payload: { title: 'Para a projeção 🎬', body: `${t.kind === 'news' ? 'O vídeo do Lagoinha News' : t.title} já está na escala do ${e.title} (${when(e)}). Toque para abrir.`, tag: `projecao-${t.id}` },
+          to: [...new Set(evs.flatMap((x) => projectionTeam(after, x.id)))].filter((id) => id !== actorId && !(m?.leaderIds ?? []).includes(id)),
+          payload: { title: 'Para a projeção 🎬', body: `${t.kind === 'news' ? 'O vídeo do Lagoinha News' : t.title} já está ${where}. Toque para abrir.`, tag: `projecao-${t.id}` },
         })
       }
     }

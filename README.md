@@ -81,7 +81,8 @@ ativar notificações e, para líderes, como publicar a escala). Dá para rever 
 - Lagoinha News: **Filmagem (News)** e **Gravação (News)** recebem o convite da gravação; **Edição do News** recebe o pedido
   do vídeo editado
 - **Novo pedido** tem três tipos: **Edição de arte**, **Edição de vídeo** (vídeos gerais) e **Edição do News**.
-  Arte e vídeo vão para a **Projeção** e/ou **Mídias sociais**; o News vai só para a projeção
+  Arte e vídeo vão para a **Projeção** e/ou **Mídias sociais**; o News vai só para a projeção e é pedido por **domingo**
+  (aparece na escala da Projeção dos cultos da manhã e da noite)
 
 **Projeção**
 - Dentro da escala do culto, a Projeção (e os líderes do Follow) vê o quadro **Para a projeção**: vídeo do News,

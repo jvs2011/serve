@@ -7,7 +7,7 @@ import { canManage, sortEvents } from '../lib/schedule'
 import { memberById, ministryMembers } from '../lib/selectors'
 import { Avatar, Empty, Sheet } from '../components/ui'
 import { kindOf, REQUEST_KINDS, retitle, type RequestKind } from '../lib/requests'
-import { hasProjection } from '../lib/projection'
+import { hasProjection, newsSundays } from '../lib/projection'
 import type { Ministry, Task } from '../data/types'
 
 /** Ministérios que usam a aba de artes */
@@ -170,6 +170,9 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
   }, [data, ministry.id, role])
 
   const [eventId, setEventId] = useState(task ? task.eventId ?? OTHER : '')
+  // vídeo do News: o domingo em que passa (manhã e noite)
+  const [airDate, setAirDate] = useState(task?.airDate ?? '')
+  const sundays = useMemo(() => newsSundays(data, today), [data, today])
   const projEvent = (() => { const ev = data.events.find((e) => e.id === eventId); return !!ev && hasProjection(data, ev) })()
   const [title, setTitle] = useState(task?.title ?? '')
   const [details, setDetails] = useState(task?.details ?? '')
@@ -190,7 +193,18 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
     setDueDate(suggested < today ? today : suggested)
   }
 
+  const pickSunday = (d: string) => {
+    setAirDate(d)
+    setError('')
+    if (!d) return
+    setTitle(`Vídeo do News · domingo ${ddmm(d)}`)
+    // prazo padrão: o sábado antes (nunca antes de hoje)
+    const suggested = toISO(addDays(fromISO(d), -K.leadDays))
+    setDueDate(suggested < today ? today : suggested)
+  }
+
   const save = async () => {
+    if (news && !airDate) return setError('Escolha em qual domingo o vídeo do News vai passar.')
     if (!projection && !socialOn) return setError('Escolha para onde vai: projeção, mídias sociais ou as duas.')
     if (!title.trim()) return setError(projection ? 'Escolha em qual culto vai passar na projeção.' : eventId === OTHER ? `Escreva qual é ${K.the} ou o evento.` : `Escolha para qual culto ou evento é ${K.the}.`)
     if (!assigneeId) return setError('Escolha quem vai ficar responsável.')
@@ -198,7 +212,8 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
     setSaving(true)
     const r = await actions.saveTask({
       id: task?.id, ministryId: ministry.id, title, details, assigneeId, dueDate,
-      eventId: eventId && eventId !== OTHER ? eventId : undefined,
+      eventId: !news && eventId && eventId !== OTHER ? eventId : undefined,
+      airDate: news ? airDate : undefined,
       kind: kind === 'art' ? undefined : kind,
       projection: projection && projEvent, social: socialOn,
     })
@@ -221,8 +236,10 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
     if (k === kind) return
     setKind(k)
     setError('')
-    // o título acompanha o tipo do pedido
-    setTitle((t) => retitle(t, k))
+    // o título acompanha o tipo do pedido (o News usa o domingo, não o culto)
+    if (k === 'news') setTitle(airDate ? `Vídeo do News · domingo ${ddmm(airDate)}` : '')
+    else if (kind === 'news') { setTitle(''); setEventId('') }
+    else setTitle((t) => retitle(t, k))
     // destino: o News passa só na projeção; arte e vídeo começam nas mídias sociais
     setSocial(REQUEST_KINDS[k].social)
     setProjection(k === 'news')
@@ -243,7 +260,16 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
         <button className={`chip${projection ? ' on' : ''}`} aria-pressed={projection} disabled={news} onClick={() => setProjection(!projection)}><MonitorPlay size={15} /> Projeção</button>
         {K.social && <button className={`chip${social ? ' on' : ''}`} aria-pressed={social} onClick={() => { setSocial(!social); setError('') }}><Share2 size={15} /> Mídias sociais</button>}
       </div>
-      {projection && <p className="muted small">{news ? 'O vídeo do News passa só na projeção: quem editar' : 'Quem fizer'} entrega o link, e a Projeção recebe dentro da escala do culto em que vai passar.</p>}
+      {projection && <p className="muted small">{news ? 'O vídeo do News passa só na projeção, nos dois cultos do domingo: quem editar entrega o link, e a Projeção recebe na escala da manhã e da noite.' : 'Quem fizer entrega o link, e a Projeção recebe dentro da escala do culto em que vai passar.'}</p>}
+      {news ? (
+        <label className="field">
+          <span>Em qual domingo vai passar?</span>
+          <select id="task-sunday" value={airDate} onChange={(e) => pickSunday(e.target.value)}>
+            <option value="" disabled>Escolha…</option>
+            {sundays.map((d) => <option key={d} value={d}>dom, {ddmm(d)} · cultos da manhã e da noite</option>)}
+          </select>
+        </label>
+      ) : (
       <label className="field">
         <span>{projection ? 'Em qual culto vai passar?' : 'Para qual culto ou evento?'}</span>
         <select id="task-event" value={eventId} onChange={(e) => pickEvent(e.target.value)}>
@@ -258,7 +284,8 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
           {!projection && <option value={OTHER}>+ Outro evento {kind === 'art' ? 'ou arte' : 'ou vídeo'}</option>}
         </select>
       </label>
-      {(eventId === OTHER || (eventId && title)) && (
+      )}
+      {(news ? !!airDate : eventId === OTHER || (eventId && title)) && (
         <label className="field">
           <span>{eventId === OTHER ? (kind === 'art' ? 'Qual arte?' : 'Qual vídeo?') : 'Nome do pedido'}</span>
           <input id="task-title" value={title} onChange={(e) => { setTitle(e.target.value); setError('') }} placeholder={kind === 'art' ? 'Ex.: Arte da Conferência de Jovens' : `Ex.: ${K.prefix} · Conferência de Jovens`} />
