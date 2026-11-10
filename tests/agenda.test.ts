@@ -39,6 +39,8 @@ describe('agenda fixa', () => {
     expect(frequencyLabel(DEFAULT_WEEKLY.find((s) => s.id === 'sex-sala')!)).toBe('a cada 15 dias')
     const slots = recurringSlots(DEFAULT_WEEKLY)
     expect(slots.find((s) => s.key === '0-09:30')?.title).toBe('Culto de Celebração')
+    expect(slots.find((s) => s.key === '0-09:30')?.day).toBe('Aos domingos')
+    expect(slots.find((s) => s.key === '3-20:00')?.day).toBe('Às quartas')
     expect(slots.find((s) => s.key === '3-20:00')?.title).toBe('Culto Fé')
     expect(slots.find((s) => s.key === '5-20:00')?.title).toBe('Sala de Adoração (quinzenal)')
     expect(slots.some((s) => s.title.includes('Restaurar'))).toBe(false) // sem escala, não aparece

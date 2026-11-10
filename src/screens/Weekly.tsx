@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { CalendarClock, ChevronRight, Plus, Trash2 } from 'lucide-react'
 import { useStore } from '../data/store'
 import { useNav } from '../nav'
-import { DEFAULT_WEEKLY, MONTHS, WEEKDAYS, frequencyLabel, slotOn } from '../data/agenda'
+import { DEFAULT_WEEKLY, EVERY_WEEKDAY, MONTHS, WEEKDAYS, frequencyLabel, slotOn } from '../data/agenda'
 import { addDays, fromISO, toISO, todayISO } from '../lib/dates'
 import { Empty, MinistryBadge, Sheet, TopBar } from '../components/ui'
 import type { ActionResult } from '../data/actions'
@@ -30,7 +30,7 @@ export function Weekly() {
       {weekly.length === 0 && <Empty icon={<CalendarClock />} title="Nenhum culto fixo" text="Toque em + para cadastrar o primeiro." />}
       {days.filter((d) => d.slots.length).map((d) => (
         <section key={d.day} className="section">
-          <div className="section-head"><h3>{WEEKDAYS[d.day]}</h3></div>
+          <div className="section-head"><h3>{EVERY_WEEKDAY[d.day]}</h3></div>
           <div className="card list-card">
             {d.slots.map((s) => (
               <button key={s.id} className="weekly-row" onClick={() => setEditing(s)}>

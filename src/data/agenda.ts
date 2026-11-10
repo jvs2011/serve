@@ -8,6 +8,8 @@ import type { AppData, ChurchEvent, WeeklySlot } from './types.js'
 import { addDays, fromISO, toISO } from '../lib/dates.js'
 
 export const WEEKDAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+/** Para o que se repete toda semana: "Aos domingos", "Às quartas"… */
+export const EVERY_WEEKDAY = ['Aos domingos', 'Às segundas', 'Às terças', 'Às quartas', 'Às quintas', 'Às sextas', 'Aos sábados']
 export const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 
 const TEMPLO = ['louvor', 'follow', 'diaconato', 'centurioes', 'intercessao', 'consolidacao']
@@ -172,7 +174,7 @@ export function recurringSlots(weekly: WeeklySlot[]): RecurringSlot[] {
     const [h, m] = list[0].time.split(':')
     return {
       key,
-      day: WEEKDAYS[list[0].day],
+      day: EVERY_WEEKDAY[list[0].day],
       time: `${Number(h)}h${m === '00' ? '' : m}`,
       title: titles.join(' e ') + (list.every((s) => s.biweekly) ? ' (quinzenal)' : ''),
       ministryIds: [...new Set(list.flatMap((s) => s.ministryIds))],
