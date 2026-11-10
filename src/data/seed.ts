@@ -5,7 +5,7 @@ import { DEFAULT_WEEKLY, eventId, weeklyEvents } from './agenda.js'
 import { NEWS_SESSION_ROLES } from './sessions.js'
 
 /** Versão do formato dos dados. Mude para forçar recriação dos dados de exemplo. */
-export const DATA_VERSION = 22
+export const DATA_VERSION = 23
 
 /*
  * Ministérios da Lagoinha Franca.
@@ -466,6 +466,12 @@ export function createSeed(): AppData {
     const morning = data.events.filter((e) => e.date === sun1 && e.slotId && e.ministryIds.includes('follow')).sort((a, b) => a.time.localeCompare(b.time))[0]
     const proj = morning && data.assignments.find((a) => a.eventId === morning.id && a.ministryId === 'follow' && a.role === 'Projeção' && !a.draft)
     if (proj && !data.assignments.some((b) => b.eventId === morning.id && b.memberId === 'm-bruno')) Object.assign(proj, { memberId: 'm-bruno', status: 'confirmed' })
+    if (morning) {
+      data.tasks!.push({ id: 't-proj-arte-2', ministryId: 'follow', title: `Arte · Avisos da semana (${dd(sun1)})`, eventId: morning.id, details: 'Avisos da semana, 16:9.',
+        assigneeId: 'm-julia', dueDate: toISO(addDays(fromISO(sun1), -2)), status: 'done', link: 'https://www.canva.com/', projection: true, social: true,
+        createdBy: 'm-rafaela', createdAt: new Date(now.getTime() - 50 * 3600_000).toISOString(), doneAt: new Date(now.getTime() - 9 * 3600_000).toISOString() })
+      if (morning.ministryIds.includes('louvor') && morning.setlist.length) morning.setlistSentAt = new Date(now.getTime() - 20 * 3600_000).toISOString()
+    }
     data.tasks!.push({ id: 't-proj-news', ministryId: 'follow', kind: 'news', title: `Vídeo do News · domingo ${dd(sun1)}`, airDate: sun1, details: 'Episódio da semana, 3 minutos.',
       assigneeId: 'm-davi', dueDate: toISO(addDays(fromISO(sun1), -1)), status: 'done', link: 'https://www.youtube.com/', projection: true,
       createdBy: 'm-rafaela', createdAt: new Date(now.getTime() - 96 * 3600_000).toISOString(), doneAt: new Date(now.getTime() - 6 * 3600_000).toISOString() })

@@ -1,7 +1,8 @@
-import { Clapperboard, ExternalLink, Image, MonitorPlay, Music2 } from 'lucide-react'
+import { Clapperboard, Copy, ExternalLink, Image, MonitorPlay, Music2 } from 'lucide-react'
 import { useMe, useStore } from '../data/store'
 import { dueLabel } from '../lib/dates'
 import { firstName, memberById } from '../lib/selectors'
+import { copyText } from '../lib/clipboard'
 import { projectionMaterials, projectionTeam, seesProjection } from '../lib/projection'
 import type { ChurchEvent, Task } from '../data/types'
 
@@ -10,7 +11,7 @@ const q = (s: string) => encodeURIComponent(s)
 
 /** "Para a projeção": tudo o que vai para a projeção neste culto, dentro da escala do dia */
 export function ProjectionCard({ ev }: { ev: ChurchEvent }) {
-  const { data } = useStore()
+  const { data, notify } = useStore()
   const me = useMe()
   if (!seesProjection(data, me, ev)) return null
   const { tasks, songs } = projectionMaterials(data, ev)
@@ -33,7 +34,7 @@ export function ProjectionCard({ ev }: { ev: ChurchEvent }) {
           </span>
         </div>
         {done && t.link
-          ? <a className="btn btn-primary btn-sm" href={t.link} target="_blank" rel="noreferrer"><ExternalLink size={15} /> Abrir</a>
+          ? <button className="btn btn-primary btn-sm" onClick={async () => notify(await copyText(t.link!) ? 'Link copiado ✅' : `Não deu para copiar. Link: ${t.link}`)}><Copy size={15} /> Copiar link</button>
           : <span className={`pill ${done ? 'pill-confirmed' : 'pill-pending'}`}>{done ? 'Sem link' : 'A caminho'}</span>}
       </div>
     )
