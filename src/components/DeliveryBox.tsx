@@ -9,7 +9,7 @@ import { Sheet } from './ui'
 
 const ddmm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
 
-/** Na escala de quem é de Fotografia, Vídeo ou Filmagem do News: enviar o link do material */
+/** Na escala de quem é de Fotografia, Filmmaker ou Filmmaker do News: enviar o link do material */
 export function DeliveryBox({ item }: { item: Joined }) {
   const { data, actions, notify } = useStore()
   const [open, setOpen] = useState(false)
@@ -25,7 +25,8 @@ export function DeliveryBox({ item }: { item: Joined }) {
     setSaving(false)
     if (!r.ok) return notify(r.error)
     setOpen(false)
-    notify(link.trim() ? `Pronto! Os líderes receberam ${label} ✅` : 'Link removido')
+    const editRole = data.ministries.find((m) => m.id === item.a.ministryId)?.roles.find((r) => r.name === item.a.role)?.deliverTo
+    notify(link.trim() ? `Pronto! Os líderes${editRole ? ` e a ${editRole}` : ''} receberam ${label} ✅` : 'Link removido')
   }
 
   return (

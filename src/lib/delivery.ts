@@ -1,5 +1,6 @@
 /*
- * Material enviado depois de servir: fotos (Fotografia), vídeo (Vídeo), filmagens (Filmagem do News).
+ * Material enviado depois de servir: fotos (Fotografia), vídeo (Filmmaker), filmagens (Filmmaker do News).
+ * Quem edita recebe o aviso (`RoleSlot.deliverTo`, ex.: Fotografia → Edição de fotos).
  * A função diz se tem material (`RoleSlot.delivery`, ex.: "as fotos"); o link fica na própria escala.
  */
 import type { AppData, Assignment } from '../data/types.js'
@@ -26,4 +27,13 @@ export function pendingDeliveries(data: AppData, memberId: string, today: string
       return a.memberId === memberId && !!ev && ev.date >= fromISO && owesDelivery(data, a, ev.date, today)
     })
     .sort((a, b) => evs.get(b.eventId)!.date.localeCompare(evs.get(a.eventId)!.date))
+}
+
+/** Funções cujo material chega para a pessoa editar (ex.: quem é da Edição de fotos recebe o da Fotografia) */
+export function materialToEdit(data: AppData, memberId: string): { ministryId: string; roles: string[] }[] {
+  const me = data.members.find((m) => m.id === memberId)
+  return (me?.ministries ?? []).map((mm) => ({
+    ministryId: mm.ministryId,
+    roles: (data.ministries.find((x) => x.id === mm.ministryId)?.roles ?? []).filter((r) => r.deliverTo && mm.roles.includes(r.deliverTo)).map((r) => r.name),
+  })).filter((x) => x.roles.length)
 }

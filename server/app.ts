@@ -40,7 +40,7 @@ function emptyData(): AppData {
  * - cultos fixos futuros seguem a agenda fixa.
  */
 function syncStructure(d: AppData, today: string) {
-  // uma função pode virar outra, várias (ex.: Lagoinha News → Filmagem e Gravação) ou nenhuma
+  // uma função pode virar outra, várias (ex.: Lagoinha News → Filmmaker e Apresentação) ou nenhuma
   const renameAll = (mid: string, role: string): string[] => {
     const map = ROLE_RENAMES[mid]
     if (!map || !(role in map)) return [role]
@@ -85,12 +85,18 @@ function syncStructure(d: AppData, today: string) {
     ev.slots = [...merged.values()]
   }
 
-  // escalas futuras: renomeia a função ou tira a escala que não cabe mais
+  // escalas futuras: renomeia a função ou tira a escala que não cabe mais.
+  // Nas que já passaram, só troca o nome (ex.: Vídeo → Filmmaker), para o material e o histórico continuarem certos
   const gone = new Set<string>()
   const seen = new Set<string>()
   for (const a of d.assignments) {
     const ev = events.get(a.eventId)
-    if (!ev || ev.date < today) continue
+    if (!ev) continue
+    if (ev.date < today) {
+      const to = ROLE_RENAMES[a.ministryId]?.[a.role]
+      if (typeof to === 'string') a.role = to
+      continue
+    }
     const role = rename(a.ministryId, a.role)
     const custom = ev.slots?.some((s) => s.ministryId === a.ministryId && s.role === role)
     const exists = custom || !!d.ministries.find((x) => x.id === a.ministryId)?.roles.some((r) => r.name === role)

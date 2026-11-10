@@ -9,6 +9,8 @@ export interface RoleSlot {
   hint?: string
   /** quem serve nessa função envia um material depois (ex.: "as fotos"): o link fica na escala */
   delivery?: string
+  /** função que recebe esse material para editar (ex.: Fotografia → Edição de fotos) */
+  deliverTo?: string
 }
 
 /** Grupo fixo de pessoas que entra junto na escala (ex.: grupo de voz) */
@@ -156,7 +158,7 @@ export interface Task {
   status: 'open' | 'done'
   link?: string // link entregue (Drive, Canva, YouTube…)
   /** 'video' = edição de vídeo; 'news' = vídeo do Lagoinha News; sem valor = arte */
-  kind?: 'video' | 'news'
+  kind?: 'video' | 'photo' | 'news'
   /** vai para a projeção: a Projeção recebe o link na escala do culto (`eventId`) */
   projection?: boolean
   /** vai para as mídias sociais */

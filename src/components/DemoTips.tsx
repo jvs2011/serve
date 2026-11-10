@@ -11,7 +11,7 @@ const TIPS: Record<string, { title: string; tips: Tip[] }> = {
     title: 'Você está como líder do Follow',
     tips: [
       { text: 'Confira o rascunho da escala e toque em Publicar' },
-      { text: 'Faça um pedido de arte, vídeo ou News', go: { name: 'ministry', id: 'follow', tab: 'arts' } },
+      { text: 'Faça um pedido de arte, vídeo, fotos ou News', go: { name: 'ministry', id: 'follow', tab: 'arts' } },
       { text: 'Veja quem já enviou fotos e vídeos dos últimos cultos', go: { name: 'ministry', id: 'follow' } },
       { text: 'Veja o painel com vagas, confirmações e presença', go: { name: 'dashboard' } },
     ],
@@ -25,7 +25,7 @@ const TIPS: Record<string, { title: string; tips: Tip[] }> = {
     ],
   },
   'm-vitor': {
-    title: 'Você está no Vídeo',
+    title: 'Você está como Filmmaker',
     tips: [
       { text: 'Envie o vídeo do último culto (cartão logo abaixo)' },
       { text: 'Confirme sua próxima escala' },
@@ -40,11 +40,28 @@ const TIPS: Record<string, { title: string; tips: Tip[] }> = {
       { text: 'Peça troca de uma escala', go: 'agenda' },
     ],
   },
-  'm-julia': {
-    title: 'Você está na Edição (artes e vídeos)',
+  'm-lara': {
+    title: 'Você está na Edição de fotos',
     tips: [
-      { text: 'Veja a arte e o vídeo pedidos, com prazo e destino' },
-      { text: 'Entregue com o link do Canva, Drive ou YouTube', go: { name: 'ministry', id: 'follow', tab: 'arts' } },
+      { text: 'Veja o pedido de fotos, com prazo e destino' },
+      { text: 'Abra as fotos que a Fotografia enviou (Material para editar)' },
+      { text: 'Entregue com o link do Drive', go: { name: 'ministry', id: 'follow', tab: 'arts' } },
+    ],
+  },
+  'm-teo': {
+    title: 'Você está na Edição de vídeos',
+    tips: [
+      { text: 'Veja o pedido de vídeo, com prazo e destino' },
+      { text: 'Abra o vídeo que o Filmmaker enviou (Material para editar)' },
+      { text: 'Entregue com o link do YouTube ou do Drive', go: { name: 'ministry', id: 'follow', tab: 'arts' } },
+    ],
+  },
+  'm-julia': {
+    title: 'Você está na Edição de artes',
+    tips: [
+      { text: 'Veja a arte pedida, com prazo e destino' },
+      { text: 'Entregue com o link do Canva ou do Drive', go: { name: 'ministry', id: 'follow', tab: 'arts' } },
+      { text: 'Veja as artes que você já entregou', go: { name: 'ministry', id: 'follow', tab: 'arts' } },
     ],
   },
   'm-gustavo': {
@@ -64,7 +81,7 @@ const TIPS: Record<string, { title: string; tips: Tip[] }> = {
     ],
   },
   'm-davi': {
-    title: 'Você está na Filmagem do News',
+    title: 'Você está como Filmmaker do News',
     tips: [
       { text: 'Responda o convite da próxima gravação' },
       { text: 'Envie as filmagens da última gravação (cartão logo abaixo)' },
@@ -74,6 +91,7 @@ const TIPS: Record<string, { title: string; tips: Tip[] }> = {
     title: 'Você está na Edição do News',
     tips: [
       { text: 'Veja o vídeo do News que você precisa entregar' },
+      { text: 'Veja as filmagens da última gravação (Material para editar)' },
       { text: 'Entregue o link: a Projeção dos dois cultos de domingo recebe', go: { name: 'ministry', id: 'follow', tab: 'arts' } },
     ],
   },

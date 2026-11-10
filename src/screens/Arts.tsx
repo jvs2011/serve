@@ -1,19 +1,18 @@
 import { useMemo, useState } from 'react'
-import { CheckCircle2, ChevronRight, Clapperboard, ExternalLink, Film, MonitorPlay, Palette, Pencil, Plus, RotateCcw, Share2, Trash2 } from 'lucide-react'
+import { Camera, CheckCircle2, ChevronRight, Clapperboard, ExternalLink, Film, MonitorPlay, Palette, Pencil, Plus, RotateCcw, Share2, Trash2 } from 'lucide-react'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
 import { addDays, dueLabel, fromISO, timeRange, toISO, todayISO, weekdayShort } from '../lib/dates'
 import { canManage, sortEvents } from '../lib/schedule'
 import { memberById, ministryMembers } from '../lib/selectors'
 import { Avatar, Empty, Sheet } from '../components/ui'
-import { kindOf, REQUEST_KINDS, retitle, type RequestKind } from '../lib/requests'
+import { bareName, kindOf, REQUEST_KINDS, retitle, type RequestKind } from '../lib/requests'
 import { hasProjection, newsSundays } from '../lib/projection'
 import type { Ministry, Task } from '../data/types'
 
 /** Ministérios que usam a aba de artes */
 export const ARTS_MINISTRIES = ['follow']
-const isVideo = (t: Pick<Task, 'kind'>) => kindOf(t) !== 'art'
-const KIND_ICON = { art: Palette, video: Film, news: Clapperboard }
+const KIND_ICON = { art: Palette, video: Film, photo: Camera, news: Clapperboard }
 const ddmm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
 
 function DueBadge({ due, done }: { due: string; done?: boolean }) {
@@ -87,7 +86,7 @@ function TaskCard({ task, manage, onEdit }: { task: Task; manage: boolean; onEdi
         {done && task.doneAt && <span className="muted small">entregue em {ddmm(task.doneAt.slice(0, 10))}</span>}
       </div>
       {done && task.link && (
-        <a className="btn btn-soft btn-sm task-link" href={task.link} target="_blank" rel="noreferrer"><ExternalLink size={15} /> {isVideo(task) ? 'Abrir vídeo' : 'Abrir arte'}</a>
+        <a className="btn btn-soft btn-sm task-link" href={task.link} target="_blank" rel="noreferrer"><ExternalLink size={15} /> Abrir {bareName(kindOf(task))}</a>
       )}
       <div className="task-actions">
         {!done && (mine || manage) && (
@@ -106,11 +105,11 @@ function TaskCard({ task, manage, onEdit }: { task: Task; manage: boolean; onEdi
           <button className="btn btn-danger btn-sm" onClick={() => { actions.removeTask(task.id); notify('Pedido excluído') }}>Excluir</button>
         </div>
       )}
-      <Sheet open={deliver} onClose={() => setDeliver(false)} title={`Entregar ${REQUEST_KINDS[kindOf(task)].the.replace(/^(a|o) /, '')}`}>
+      <Sheet open={deliver} onClose={() => setDeliver(false)} title={`Entregar ${bareName(kindOf(task))}`}>
         <p className="muted">{task.title}</p>
         <label className="field">
-          <span>{isVideo(task) ? 'Link do vídeo' : 'Link da arte'}{task.projection ? '' : ' (opcional)'}</span>
-          <input id={`link-${task.id}`} inputMode="url" placeholder={isVideo(task) ? 'YouTube, Drive, WeTransfer…' : 'Drive, Canva, WeTransfer…'} value={link} onChange={(e) => setLink(e.target.value)} />
+          <span>Link {REQUEST_KINDS[kindOf(task)].of}{task.projection ? '' : ' (opcional)'}</span>
+          <input id={`link-${task.id}`} inputMode="url" placeholder={REQUEST_KINDS[kindOf(task)].linkHint} value={link} onChange={(e) => setLink(e.target.value)} />
         </label>
         {task.projection && <p className="muted small">A Projeção abre por este link no dia do culto.</p>}
         <button className="btn btn-primary btn-block" disabled={!!task.projection && !link.trim()} onClick={() => {
@@ -161,7 +160,7 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
     ]
   }, [events])
 
-  // responsáveis: equipe do ministério, com quem é de "Edição de artes" (ou do News) primeiro
+  // responsáveis: equipe do ministério, com a edição do tipo de pedido primeiro (ex.: Edição de fotos)
   const people = useMemo(() => {
     const list = ministryMembers(data, ministry.id)
     // a função mais indicada que a pessoa tem (posição na lista do tipo de pedido)
@@ -210,7 +209,7 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
   const save = async () => {
     if (news && !airDate) return setError('Escolha em qual domingo o vídeo do News vai passar.')
     if (!projection && !socialOn) return setError('Escolha para onde vai: projeção, mídias sociais ou as duas.')
-    if (!title.trim()) return setError(projection ? 'Escolha em qual culto vai passar na projeção.' : eventId === OTHER ? `Escreva qual é ${K.the} ou o evento.` : `Escolha para qual culto ou evento é ${K.the}.`)
+    if (!title.trim()) return setError(projection ? 'Escolha em qual culto vai passar na projeção.' : eventId === OTHER ? 'Escreva o nome do pedido ou do evento.' : 'Escolha o culto ou evento do pedido.')
     if (!assigneeId) return setError('Escolha quem vai ficar responsável.')
     if (!dueDate) return setError(`Escolha até quando precisa d${K.the}.`)
     setSaving(true)
@@ -224,7 +223,7 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
     setSaving(false)
     if (!r.ok) return setError(r.error)
     const who = memberById(data, assigneeId)?.name.split(' ')[0]
-    notify(task ? 'Pedido atualizado' : kind === 'art' ? `Arte pedida para ${who} 🎨` : `${K.prefix} pedido para ${who} 🎬`)
+    notify(task ? 'Pedido atualizado' : `Pedido enviado para ${who} ${K.emoji}`)
     onDone()
   }
 
@@ -244,7 +243,7 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
     if (k === 'news') setTitle(airDate ? `Vídeo do News · domingo ${ddmm(airDate)}` : '')
     else if (kind === 'news') { setTitle(''); setEventId('') }
     else setTitle((t) => retitle(t, k))
-    // destino: o News passa só na projeção; arte e vídeo começam nas mídias sociais
+    // destino: o News passa só na projeção; arte, vídeo e fotos começam nas mídias sociais
     setSocial(REQUEST_KINDS[k].social)
     setProjection(k === 'news')
   }
@@ -285,19 +284,19 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
               ))}
             </optgroup>
           ))}
-          {!projection && <option value={OTHER}>+ Outro evento {kind === 'art' ? 'ou arte' : 'ou vídeo'}</option>}
+          {!projection && <option value={OTHER}>+ Outro evento ou {bareName(kind)}</option>}
         </select>
       </label>
       )}
       {(news ? !!airDate : eventId === OTHER || (eventId && title)) && (
         <label className="field">
-          <span>{eventId === OTHER ? (kind === 'art' ? 'Qual arte?' : 'Qual vídeo?') : 'Nome do pedido'}</span>
-          <input id="task-title" value={title} onChange={(e) => { setTitle(e.target.value); setError('') }} placeholder={kind === 'art' ? 'Ex.: Arte da Conferência de Jovens' : `Ex.: ${K.prefix} · Conferência de Jovens`} />
+          <span>{eventId === OTHER ? K.which : 'Nome do pedido'}</span>
+          <input id="task-title" value={title} onChange={(e) => { setTitle(e.target.value); setError('') }} placeholder={K.example} />
         </label>
       )}
       <label className="field">
         <span>Detalhes (opcional)</span>
-        <textarea id="task-details" rows={3} value={details} onChange={(e) => setDetails(e.target.value)} placeholder={kind === 'art' ? 'Formato (feed, stories, projeção), textos, referências…' : 'Duração, formato, trechos, observações…'} />
+        <textarea id="task-details" rows={3} value={details} onChange={(e) => setDetails(e.target.value)} placeholder={K.detailsHint} />
       </label>
       <label className="field">
         <span>Responsável</span>
@@ -311,7 +310,7 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
         <input id="task-due" type="date" min={today} value={dueDate} onChange={(e) => { setDueDate(e.target.value); setError('') }} />
       </label>
       {error && <p className="error">{error}</p>}
-      <button className="btn btn-primary btn-block" disabled={saving} onClick={save}>{saving ? 'Salvando…' : task ? 'Salvar alterações' : kind === 'art' ? 'Pedir arte' : 'Pedir vídeo'}</button>
+      <button className="btn btn-primary btn-block" disabled={saving} onClick={save}>{saving ? 'Salvando…' : task ? 'Salvar alterações' : K.ask}</button>
     </>
   )
 }
@@ -326,8 +325,8 @@ export function HomeArtsCard() {
   return (
     <div className="card arts-home">
       <div className="arts-home-head">
-        <span className="arts-home-icon">{mine.every(isVideo) ? <Clapperboard size={18} /> : <Palette size={18} />}</span>
-        <strong className="grow">{mine.length === 1 ? `${REQUEST_KINDS[kindOf(mine[0])].prefix} para entregar` : mine.every((t) => !isVideo(t)) ? `${mine.length} artes para entregar` : `${mine.length} entregas pendentes`}</strong>
+        <span className="arts-home-icon">{(() => { const Icon = mine.every((t) => kindOf(t) === kindOf(mine[0])) ? KIND_ICON[kindOf(mine[0])] : Palette; return <Icon size={18} /> })()}</span>
+        <strong className="grow">{mine.length === 1 ? `${REQUEST_KINDS[kindOf(mine[0])].prefix} para entregar` : mine.every((t) => kindOf(t) === 'art') ? `${mine.length} artes para entregar` : `${mine.length} entregas pendentes`}</strong>
       </div>
       {mine.slice(0, 3).map((t) => (
         <button key={t.id} className="arts-home-row" onClick={() => push({ name: 'ministry', id: t.ministryId, tab: 'arts' })}>

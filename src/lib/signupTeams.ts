@@ -1,7 +1,7 @@
 /*
  * Como as equipes aparecem no formulário público de cadastro (/cadastro/<ministério>):
  * agrupadas, com um nome curto e uma linha explicando o que a equipe faz.
- * O valor enviado continua sendo o nome da função no app (ex.: "Filmagem (News)").
+ * O valor enviado continua sendo o nome da função no app (ex.: "Filmmaker (News)").
  */
 
 export interface SignupTeam { name: string; label: string; desc?: string }
@@ -13,18 +13,20 @@ const LAYOUTS: Record<string, Layout> = {
   follow: [
     { title: 'Nos cultos', teams: [
       ['Fotografia', 'Fotografia', 'fotografa o culto e envia as fotos'],
-      ['Vídeo', 'Vídeo', 'filma o culto e envia o vídeo'],
+      ['Filmmaker', 'Filmmaker', 'filma o culto e envia o vídeo'],
       ['Stories', 'Stories', 'posta os stories do culto'],
       ['Projeção', 'Projeção', 'letras, artes e vídeos na projeção'],
       ['Transmissão', 'Transmissão', 'transmite o culto ao vivo'],
     ] },
     { title: 'Lagoinha News', teams: [
-      ['Filmagem (News)', 'Filmagem', 'filma a gravação do News'],
+      ['Filmmaker (News)', 'Filmmaker', 'filma a gravação do News'],
       ['Apresentação (News)', 'Apresentação', 'apresenta o News na gravação'],
       ['Edição do News', 'Edição', 'edita o vídeo do News'],
     ] },
     { title: 'Edição e site', teams: [
-      ['Edição de artes', 'Edição de artes', 'artes e vídeos para a projeção e as redes'],
+      ['Edição de fotos', 'Edição de fotos', 'trata as fotos do culto e dos eventos'],
+      ['Edição de vídeos', 'Edição de vídeos', 'edita os vídeos para a projeção e as redes'],
+      ['Edição de artes', 'Edição de artes', 'artes para a projeção e as redes'],
       ['Gestão do site', 'Gestão do site', 'cuida do site da igreja'],
     ] },
   ],

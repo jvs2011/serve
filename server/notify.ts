@@ -7,6 +7,7 @@ import type { PushPayload } from './push.js'
 import { isOff, openSlots } from '../src/lib/schedule.js'
 import { projectionEvents, projectionTeam } from '../src/lib/projection.js'
 import { deliveryLabel } from '../src/lib/delivery.js'
+import { kindOf, REQUEST_KINDS } from '../src/lib/requests.js'
 
 export interface Outgoing { to: string[]; payload: PushPayload }
 
@@ -120,13 +121,13 @@ export function notificationsFor(before: AppData, after: AppData, actorId: strin
     if ((!p || p.assigneeId !== t.assigneeId) && t.status === 'open' && t.assigneeId !== actorId) {
       out.push({
         to: [t.assigneeId],
-        payload: { title: t.kind === 'news' ? 'Vídeo do News para editar 🎬' : t.kind === 'video' ? 'Vídeo para editar 🎬' : `Nova arte para você 🎨`, body: `${t.title}\n${dueText(t.dueDate, today)}. Toque para ver os detalhes.`, tag: `arte-${t.id}` },
+        payload: { title: REQUEST_KINDS[kindOf(t)].newTitle, body: `${t.title}\n${dueText(t.dueDate, today)}. Toque para ver os detalhes.`, tag: `arte-${t.id}` },
       })
     }
     if (p && p.status !== 'done' && t.status === 'done') {
       out.push({
         to: (m?.leaderIds ?? []).filter((id) => id !== actorId),
-        payload: { title: t.kind === 'news' ? 'Vídeo do News entregue ✅' : t.kind === 'video' ? 'Vídeo entregue ✅' : 'Arte entregue ✅', body: `${member(t.assigneeId)?.name ?? 'Alguém'} entregou: ${t.title}`, tag: `arte-${t.id}` },
+        payload: { title: REQUEST_KINDS[kindOf(t)].doneTitle, body: `${member(t.assigneeId)?.name ?? 'Alguém'} entregou: ${t.title}`, tag: `arte-${t.id}` },
       })
       // vai para a projeção: a equipe escalada no(s) culto(s) recebe o link (o News: manhã e noite do domingo)
       const evs = projectionEvents(after, t).filter((e) => e.date >= today)
@@ -169,15 +170,17 @@ export function notificationsFor(before: AppData, after: AppData, actorId: strin
     })
   }
 
-  // 9) material enviado (fotos, vídeo, filmagens) → líderes; filmagens do News também → Edição do News
+  // 9) material enviado (fotos, vídeo, filmagens) → líderes e a edição daquele material
+  //    (Fotografia → Edição de fotos, Filmmaker → Edição de vídeos, Filmmaker do News → Edição do News)
   for (const a of after.assignments) {
     const p = prevA.get(a.id)
     if (!a.delivery || (p?.delivery?.link === a.delivery.link)) continue
     const e = ev(a.eventId)
     const label = deliveryLabel(after, a)
     if (!e || !label) continue
-    const editors = a.role === 'Filmagem (News)'
-      ? after.members.filter((m) => m.ministries.some((mm) => mm.ministryId === a.ministryId && mm.roles.includes('Edição do News'))).map((m) => m.id)
+    const editRole = min(a.ministryId)?.roles.find((r) => r.name === a.role)?.deliverTo
+    const editors = editRole
+      ? after.members.filter((m) => m.ministries.some((mm) => mm.ministryId === a.ministryId && mm.roles.includes(editRole))).map((m) => m.id)
       : []
     out.push({
       to: [...new Set([...(min(a.ministryId)?.leaderIds ?? []), ...editors])].filter((id) => id !== actorId && id !== a.memberId),
@@ -263,16 +266,17 @@ function dueText(due: string, today: string): string {
 
 /** Lembrete na véspera do prazo das demandas em aberto */
 export function taskRemindersFor(data: AppData, tomorrow: string): Outgoing[] {
-  const by = new Map<string, string[]>()
+  const by = new Map<string, NonNullable<AppData['tasks']>>()
   for (const t of data.tasks ?? []) {
     if (t.status !== 'open' || t.dueDate !== tomorrow) continue
-    by.set(t.assigneeId, [...(by.get(t.assigneeId) ?? []), t.title])
+    by.set(t.assigneeId, [...(by.get(t.assigneeId) ?? []), t])
   }
-  return [...by].map(([memberId, titles]) => ({
+  return [...by].map(([memberId, tasks]) => ({
     to: [memberId],
     payload: {
-      title: titles.length === 1 ? (titles[0].startsWith('Vídeo') ? `${titles[0].startsWith('Vídeo do News') ? 'Vídeo do News' : 'Vídeo'} para amanhã 🎬` : 'Arte para amanhã 🎨') : `${titles.length} entregas para amanhã`,
-      body: titles.join('\n') + '\nQuando terminar, marque como entregue no app.',
+      // "Arte para amanhã 🎨", "Fotos para amanhã 📸", "Vídeo do News para amanhã 🎬"
+      title: tasks.length === 1 ? `${REQUEST_KINDS[kindOf(tasks[0])].prefix} para amanhã ${REQUEST_KINDS[kindOf(tasks[0])].emoji}` : `${tasks.length} entregas para amanhã`,
+      body: tasks.map((t) => t.title).join('\n') + '\nQuando terminar, marque como entregue no app.',
       tag: `arte-lembrete-${tomorrow}`,
     },
   }))

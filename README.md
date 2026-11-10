@@ -14,10 +14,11 @@ npm run build:single  # gera /dist-single/index.html, um arquivo único para pr�
 
 Na tela de entrada há um perfil de demonstração para cada função do Follow (a primeira equipe a usar o app):
 **Líder do Follow** (Rafaela: rascunho da escala, pedidos e gravações), **Projeção** (Bruno: escala pendente, troca para
-assumir e o quadro Para a projeção), **Vídeo** (Vitor) e **Fotografia** (Carolina: material do último culto para enviar),
-**Edição de artes e vídeos** (Júlia: arte e vídeo com prazo), **Transmissão** (Gustavo: escala pendente e troca),
-**Stories** (Bianca: fotos de um culto pelo histórico) e as três funções do **Lagoinha News**: **Filmagem** (Davi: convite
-e filmagens para enviar), **Edição** (Nina: vídeo do News para entregar) e **Apresentação** (Léo: convite da gravação).
+assumir e o quadro Para a projeção), **Transmissão** (Gustavo: escala pendente e troca), **Fotografia** (Carolina) e
+**Filmmaker** (Vitor: material do último culto para enviar), **Stories** (Bianca: fotos de um culto pelo histórico),
+**Edição de fotos** (Lara), **Edição de vídeos** (Téo) e **Edição de artes** (Júlia: pedido com prazo e o material que
+chegou para editar) e as três funções do **Lagoinha News**: **Filmmaker** (Davi: convite e filmagens para enviar),
+**Apresentação** (Léo: convite da gravação) e **Edição** (Nina: filmagens recebidas e o vídeo do News para entregar).
 Cada perfil mostra sugestões do que experimentar.
 O administrador esconde ou mostra a demonstração em **Perfil → Demonstração na tela de entrada**.
 
@@ -72,19 +73,22 @@ ativar notificações e, para líderes, como publicar a escala). Dá para rever 
 **Artes (Follow)**
 - Líder do Follow (ou admin) pede uma arte na aba **Artes** do ministério: escolhe um dos próximos
   cultos/eventos da agenda (título e prazo se preenchem) ou "Outro evento ou arte", detalhes,
-  responsável (quem é de "Edição de artes" aparece primeiro) e data de entrega
+  responsável (quem é da edição do tipo de pedido aparece primeiro, ex.: Edição de fotos) e data de entrega
 - O responsável vê a arte e o prazo (em X dias / amanhã / hoje / atrasada) na aba e na tela Início,
   e marca como entregue com o link (Drive, Canva…)
 - Notificações: nova arte → responsável; entregue → líderes; véspera do prazo → responsável
 
 **Material e destinos**
-- Fotografia, Vídeo e Filmagem (News) enviam o link do material depois de servir (botão na própria escala; cartão
+- Fotografia, Filmmaker e Filmmaker (News) enviam o link do material depois de servir (botão na própria escala; cartão
   "Envie as fotos" na tela Início; lembrete no dia seguinte). Os líderes recebem o aviso e acompanham em
-  **Material dos últimos cultos** (aba Escalas do ministério); as filmagens também vão para quem é da Edição do News
-- Lagoinha News: **Filmagem (News)** e **Apresentação (News)** recebem o convite da gravação; **Edição do News** recebe o pedido
+  **Material dos últimos cultos** (aba Escalas do ministério). A edição daquele material também recebe
+  (`RoleSlot.deliverTo`): Fotografia → **Edição de fotos**, Filmmaker → **Edição de vídeos**, Filmmaker (News) →
+  **Edição do News**; na tela Início de quem edita aparece **Material para editar**
+- Lagoinha News: **Filmmaker (News)** e **Apresentação (News)** recebem o convite da gravação; **Edição do News** recebe o pedido
   do vídeo editado
-- **Novo pedido** tem três tipos: **Edição de arte**, **Edição de vídeo** (vídeos gerais) e **Edição do News**.
-  Arte e vídeo vão para a **Projeção** e/ou **Mídias sociais**; o News vai só para a projeção e é pedido por **domingo**
+- **Novo pedido** tem quatro tipos: **Edição de arte**, **Edição de vídeo** (vídeos gerais), **Edição de fotos** e
+  **Edição do News** (textos por tipo em `src/lib/requests.ts`). Arte, vídeo e fotos vão para a **Projeção** e/ou
+  **Mídias sociais**; o News vai só para a projeção e é pedido por **domingo**
   (aparece na escala da Projeção dos cultos da manhã e da noite)
 
 **Projeção**

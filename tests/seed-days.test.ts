@@ -16,13 +16,18 @@ describe('demonstração estável em qualquer dia (14 dias seguidos)', () => {
       expect(swapsICanCover(d, me(id)).length, id).toBeGreaterThan(0)
     }
     const owedPast = (id: string) => pendingDeliveries(d, id, today).filter((a) => d.events.find((e) => e.id === a.eventId)!.date < today).map((a) => a.role)
-    expect(owedPast('m-vitor')).toEqual(['Vídeo'])
+    expect(owedPast('m-vitor')).toEqual(['Filmmaker'])
     expect(owedPast('m-carol')).toEqual(['Fotografia'])
-    expect(pendingDeliveries(d, 'm-davi', today)[0]?.role).toBe('Filmagem (News)')
+    expect(pendingDeliveries(d, 'm-davi', today)[0]?.role).toBe('Filmmaker (News)')
     for (const id of ['m-vitor', 'm-carol', 'm-bianca']) expect(myUpcoming(d, id).length, id).toBeGreaterThan(0)
     const past = d.assignments.filter((a) => a.memberId === 'm-bianca' && a.role === 'Stories' && (d.events.find((e) => e.id === a.eventId)?.date ?? '') < today)
     expect(past.some((a) => d.assignments.some((b) => b.eventId === a.eventId && b.role === 'Fotografia' && b.delivery))).toBe(true)
     expect((d.tasks ?? []).some((t) => t.id === 't-proj-arte')).toBe(true)
+    // pedidos da Edição de fotos e de vídeos: o material do culto já chegou
+    for (const [id, role] of [['t-fotos', 'Fotografia'], ['t-video', 'Filmmaker']]) {
+      const t = d.tasks!.find((x) => x.id === id)!
+      expect(d.assignments.some((a) => a.eventId === t.eventId && a.role === role && a.delivery), id).toBe(true)
+    }
     vi.useRealTimers()
   })
 })

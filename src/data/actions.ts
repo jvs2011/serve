@@ -6,7 +6,7 @@
 import type { AppData, AssignmentStatus, ChurchEvent, Member, Song, WeeklySlot } from './types.js'
 import { applyWeekly } from './agenda.js'
 import { deliveryLabel } from '../lib/delivery.js'
-import { REQUEST_KINDS } from '../lib/requests.js'
+import { isRequestKind, REQUEST_KINDS } from '../lib/requests.js'
 import { todayISO } from '../lib/dates.js'
 import { autoFill, canEditSetlist, canManage, groupAssignments, isOff, uid } from '../lib/schedule.js'
 import { sessionRole, TEAM_SESSIONS } from './sessions.js'
@@ -30,7 +30,7 @@ export interface TaskInput {
   assigneeId: string
   dueDate: string
   /** 'video' = edição de vídeo; 'news' = vídeo do Lagoinha News (só projeção) */
-  kind?: 'video' | 'news'
+  kind?: 'video' | 'photo' | 'news'
   /** vai para a projeção (o vídeo do News sempre vai) */
   projection?: boolean
   /** vai para as mídias sociais */
@@ -467,17 +467,17 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
     case 'saveTask': {
       const t = action.task
       manage(t.ministryId)
-      const kind = t.kind === 'news' || t.kind === 'video' ? t.kind : undefined
+      const kind = isRequestKind(t.kind) ? t.kind : undefined
       const news = kind === 'news'
       const what = REQUEST_KINDS[kind ?? 'art'].the
       const title = t.title.trim().slice(0, 120)
-      if (!title) throw new ActionError(news ? 'Escolha em qual domingo o vídeo do News vai passar.' : `Diga qual é ${what}.`)
+      if (!title) throw new ActionError(news ? 'Escolha em qual domingo o vídeo do News vai passar.' : 'Dê um nome ao pedido.')
       // o News passa no domingo (manhã e noite): guarda o dia, não um culto
       const airDate = news && /^\d{4}-\d{2}-\d{2}$/.test(t.airDate ?? '') ? t.airDate : undefined
       if (news && !airDate) throw new ActionError('Escolha em qual domingo o vídeo do News vai passar.')
       if (!/^\d{4}-\d{2}-\d{2}$/.test(t.dueDate)) throw new ActionError(`Escolha até quando precisa d${what}.`)
       const eventId = !news && t.eventId && d.events.some((e) => e.id === t.eventId) ? t.eventId : undefined
-      // o News passa só na projeção; arte e vídeo vão para a projeção e/ou mídias sociais
+      // o News passa só na projeção; arte, vídeo e fotos vão para a projeção e/ou mídias sociais
       const projection = news || !!t.projection
       const social = !news && !!t.social
       // o que vai para a projeção aparece na escala do culto: precisa saber qual é

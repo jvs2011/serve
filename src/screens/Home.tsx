@@ -14,6 +14,8 @@ import { HomeArtsCard } from './Arts'
 import { DraftBar } from '../components/DraftBar'
 import { DemoTips } from '../components/DemoTips'
 import { HomeDeliveriesCard } from '../components/DeliveryBox'
+import { HomeMaterialToEdit } from '../components/RecentMaterial'
+import { materialToEdit } from '../lib/delivery'
 import { PROJECTION_ROLE, projectionMaterials, projectionSummary } from '../lib/projection'
 
 export function Home() {
@@ -28,6 +30,7 @@ export function Home() {
   const otherPending = upcoming.slice(1).filter((x) => x.a.status === 'pending')
   const rest = upcoming.slice(1).filter((x) => x.a.status !== 'pending').slice(0, 4)
   const swaps = swapsICanCover(data, me)
+  const hasWork = (data.tasks ?? []).some((t) => t.assigneeId === me.id && t.status === 'open') || materialToEdit(data, me.id).length > 0
   const managed = managedMinistries(data, me)
   const mineIds = new Set(myMinistries(data, me).map((m) => m.id))
   const notices = data.notices.filter((n) => n.ministryId === null || mineIds.has(n.ministryId)).slice(0, 3)
@@ -98,7 +101,8 @@ export function Home() {
             <AssignmentActions item={next} />
           </div>
         </div>
-      ) : (
+      ) : !hasWork && (
+        // quem só edita (sem escala) vai direto aos pedidos e ao material
         <div className="card">
           <Empty icon={<CalendarCheck />} title="Tudo tranquilo por aqui" text="Quando você for escalado, a escala aparece aqui para confirmar." />
         </div>
@@ -106,6 +110,7 @@ export function Home() {
 
       <HomeArtsCard />
       <HomeDeliveriesCard />
+      <HomeMaterialToEdit />
 
       {toRate && <FeedbackCard key={toRate.a.id} title={toRate.ev.title} onSend={(r, c) => { actions.feedback(toRate.a.id, r, c); notify('Obrigado pelo feedback! +2 pontos') }} />}
 

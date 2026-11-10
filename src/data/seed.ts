@@ -5,14 +5,14 @@ import { DEFAULT_WEEKLY, eventId, weeklyEvents } from './agenda.js'
 import { NEWS_SESSION_ROLES } from './sessions.js'
 
 /** Versão do formato dos dados. Mude para forçar recriação dos dados de exemplo. */
-export const DATA_VERSION = 24
+export const DATA_VERSION = 25
 
 /*
  * Ministérios da Lagoinha Franca.
  * As funções (roles) e vagas por evento são uma sugestão inicial — ajuste com cada líder.
  * `people` é só para gerar voluntários de exemplo suficientes para o rodízio.
  */
-type MinistrySeed = Omit<Ministry, 'roles' | 'leaderIds'> & { roles: { name: string; count: number; people: number; group?: boolean; hint?: string; delivery?: string }[] }
+type MinistrySeed = Omit<Ministry, 'roles' | 'leaderIds'> & { roles: { name: string; count: number; people: number; group?: boolean; hint?: string; delivery?: string; deliverTo?: string }[] }
 
 const ministrySeeds: MinistrySeed[] = [
   {
@@ -29,15 +29,18 @@ const ministrySeeds: MinistrySeed[] = [
     id: 'follow', name: 'Follow', color: '#7C6CF2', icon: 'megaphone',
     description: 'Ministério de Comunicação',
     roles: [
-      // Fotografia e Vídeo enviam o material depois do culto (o link fica na escala)
-      { name: 'Fotografia', count: 1, people: 3, delivery: 'as fotos' }, { name: 'Vídeo', count: 1, people: 3, delivery: 'o vídeo' },
+      // Fotografia e Filmmaker enviam o material depois do culto (o link fica na escala) e a edição recebe
+      { name: 'Fotografia', count: 1, people: 3, delivery: 'as fotos', deliverTo: 'Edição de fotos' },
+      { name: 'Filmmaker', count: 1, people: 3, delivery: 'o vídeo', deliverTo: 'Edição de vídeos' },
       { name: 'Stories', count: 1, people: 3 }, { name: 'Projeção', count: 1, people: 3 }, { name: 'Transmissão', count: 1, people: 3 },
-      // sem vaga nos cultos (count 0): o Lagoinha News tem gravação agendada pelo líder (filmagem + quem grava)
-      // e a edição vai por pedido; artes vão pela aba Artes; site sem escala
-      { name: 'Filmagem (News)', count: 0, people: 3, delivery: 'as filmagens' },
+      // sem vaga nos cultos (count 0): o Lagoinha News tem gravação agendada pelo líder (Filmmaker + Apresentação);
+      // as edições vão por pedido (aba Artes); site sem escala
+      { name: 'Filmmaker (News)', count: 0, people: 3, delivery: 'as filmagens', deliverTo: 'Edição do News' },
       { name: 'Apresentação (News)', count: 0, people: 3 },
-      { name: 'Edição do News', count: 0, people: 2 },
+      { name: 'Edição de fotos', count: 0, people: 2 },
+      { name: 'Edição de vídeos', count: 0, people: 2 },
       { name: 'Edição de artes', count: 0, people: 3 },
+      { name: 'Edição do News', count: 0, people: 2 },
       { name: 'Gestão do site', count: 0, people: 2 },
     ],
   },
@@ -134,9 +137,10 @@ function buildPeople() {
     { id: 'm-rafaela', name: 'Rafaela Lopes', access: 'leader', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: ['Stories', 'Apresentação (News)'] }] },
     // perfis da demonstração do Follow (primeira equipe a usar o app): um para cada função
     ...([
-      ['m-bruno', 'Bruno Almeida', 'Projeção'], ['m-vitor', 'Vitor Lemos', 'Vídeo'], ['m-carol', 'Carolina Fontes', 'Fotografia'],
+      ['m-bruno', 'Bruno Almeida', 'Projeção'], ['m-vitor', 'Vitor Lemos', 'Filmmaker'], ['m-carol', 'Carolina Fontes', 'Fotografia'],
       ['m-julia', 'Júlia Sampaio', 'Edição de artes'], ['m-gustavo', 'Gustavo Brandão', 'Transmissão'], ['m-bianca', 'Bianca Viana', 'Stories'],
-      ['m-davi', 'Davi Moraes', 'Filmagem (News)'], ['m-nina', 'Nina Sales', 'Edição do News'], ['m-leo', 'Léo Antunes', 'Apresentação (News)'],
+      ['m-lara', 'Lara Mendes', 'Edição de fotos'], ['m-teo', 'Téo Rocha', 'Edição de vídeos'],
+      ['m-davi', 'Davi Moraes', 'Filmmaker (News)'], ['m-nina', 'Nina Sales', 'Edição do News'], ['m-leo', 'Léo Antunes', 'Apresentação (News)'],
     ] as const).map(([id, name, role]): Member => ({ id, name, access: 'volunteer', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: [role] }] })),
   ]
   const used = new Set(members.map((m) => m.name))
@@ -187,16 +191,18 @@ export const { members, ministries } = buildPeople()
 
 /** Membros sugeridos na tela de entrada (modo demonstração) */
 export const demoProfiles = [
-  { id: 'm-rafaela', label: 'Líder do Follow', hint: 'monta e publica a escala, pede artes e vídeos, agenda o News' },
+  { id: 'm-rafaela', label: 'Líder do Follow', hint: 'monta e publica a escala, faz os pedidos de edição, agenda o News' },
   { id: 'm-bruno', label: 'Projeção', hint: 'músicas, artes e vídeo do News dentro da escala' },
-  { id: 'm-vitor', label: 'Vídeo', hint: 'filma o culto e envia o vídeo pelo app' },
-  { id: 'm-carol', label: 'Fotografia', hint: 'fotografa o culto e envia as fotos pelo app' },
-  { id: 'm-julia', label: 'Edição (artes e vídeos)', hint: 'recebe pedidos com prazo e entrega o link' },
   { id: 'm-gustavo', label: 'Transmissão', hint: 'confirma escalas, pede e assume trocas' },
+  { id: 'm-carol', label: 'Fotografia', hint: 'fotografa o culto e envia as fotos pelo app' },
+  { id: 'm-vitor', label: 'Filmmaker', hint: 'filma o culto e envia o vídeo pelo app' },
   { id: 'm-bianca', label: 'Stories', hint: 'escalas de stories e as fotos de cada culto' },
-  { id: 'm-davi', label: 'News · Filmagem', hint: 'convite da gravação e envio das filmagens' },
-  { id: 'm-nina', label: 'News · Edição', hint: 'edita o vídeo do News e entrega o link' },
+  { id: 'm-lara', label: 'Edição de fotos', hint: 'recebe as fotos do culto e pedidos com prazo' },
+  { id: 'm-teo', label: 'Edição de vídeos', hint: 'recebe o vídeo do culto e pedidos com prazo' },
+  { id: 'm-julia', label: 'Edição de artes', hint: 'recebe pedidos de arte com prazo e entrega o link' },
+  { id: 'm-davi', label: 'News · Filmmaker', hint: 'convite da gravação e envio das filmagens' },
   { id: 'm-leo', label: 'News · Apresentação', hint: 'convite da gravação do News' },
+  { id: 'm-nina', label: 'News · Edição', hint: 'recebe as filmagens e entrega o vídeo do News' },
 ]
 const DEMO_IDS = new Set(demoProfiles.map((p) => p.id))
 
@@ -437,11 +443,11 @@ export function createSeed(): AppData {
     nextOf(role).filter((a) => !data.assignments.some((b) => b.eventId === a.eventId && b.memberId === memberId)).slice(0, n)
       .forEach((a, i) => { a.memberId = memberId; a.status = i === 0 && firstPending ? 'pending' : 'confirmed'; delete a.checkedIn })
   give('m-bruno', 'Projeção', 3)
-  give('m-vitor', 'Vídeo', 2)
+  give('m-vitor', 'Filmmaker', 2)
   give('m-carol', 'Fotografia', 2)
   give('m-gustavo', 'Transmissão', 3)
   give('m-bianca', 'Stories', 2)
-  // convite da próxima gravação do News esperando resposta (Filmagem e Apresentação)
+  // convite da próxima gravação do News esperando resposta (Filmmaker e Apresentação)
   for (const id of ['m-davi', 'm-leo']) {
     const a = data.assignments.find((x) => x.eventId === 'e-demo-news' && x.memberId === id)
     if (a) a.status = 'pending'
@@ -460,19 +466,19 @@ export function createSeed(): AppData {
     )
     if (projEv.ministryIds.includes('louvor') && projEv.setlist.length) projEv.setlistSentAt = ago(26)
   }
-  // material dos cultos que já passaram: quase tudo enviado; o Vitor (Vídeo) e a Carolina (Fotografia) ainda devem o do último culto
+  // material dos cultos que já passaram: quase tudo enviado; o Vitor (Filmmaker) e a Carolina (Fotografia) ainda devem o do último culto
   const deliverable = (a: Assignment) => data.ministries.find((m) => m.id === a.ministryId)?.roles.find((r) => r.name === a.role)?.delivery
   const lastPast = (role: string, memberId: string) => data.assignments
     .filter((a) => a.ministryId === 'follow' && a.role === role && (evById.get(a.eventId)?.date ?? '9') < todayISO() && a.status !== 'declined')
     .sort((x, y) => evById.get(y.eventId)!.date.localeCompare(evById.get(x.eventId)!.date))
     .find((a) => a.memberId === memberId || !data.assignments.some((b) => b.eventId === a.eventId && b.memberId === memberId))
-  const owed = [lastPast('Vídeo', 'm-vitor'), lastPast('Fotografia', 'm-carol')]
+  const owed = [lastPast('Filmmaker', 'm-vitor'), lastPast('Fotografia', 'm-carol')]
   owed.forEach((a, i) => a && Object.assign(a, { memberId: i ? 'm-carol' : 'm-vitor', status: 'confirmed', checkedIn: true }))
   for (const a of data.assignments) {
     const date = evById.get(a.eventId)?.date ?? ''
     if (!date || date >= todayISO() || !deliverable(a) || a.status === 'declined' || owed.includes(a)) continue
     // os perfis de demonstração só devem o material do último culto (os outros já foram enviados)
-    if (DEMO_IDS.has(a.memberId) || rand() < 0.8) a.delivery = { link: a.role === 'Vídeo' ? 'https://www.youtube.com/' : 'https://drive.google.com/', at: new Date(fromISO(date).getTime() + 30 * 3600_000).toISOString() }
+    if (DEMO_IDS.has(a.memberId) || rand() < 0.8) a.delivery = { link: a.role === 'Filmmaker' ? 'https://www.youtube.com/' : 'https://drive.google.com/', at: new Date(fromISO(date).getTime() + 30 * 3600_000).toISOString() }
   }
   // Stories: a Bianca serviu num culto em que as fotos já chegaram (abre pelo histórico e pega as fotos)
   const withPhotos = data.assignments
@@ -482,28 +488,44 @@ export function createSeed(): AppData {
     .find((b) => b && !data.assignments.some((c) => c.eventId === b.eventId && c.memberId === 'm-bianca'))
   if (withPhotos) Object.assign(withPhotos, { memberId: 'm-bianca', status: 'confirmed', checkedIn: true })
 
-  // gravação do News que já passou: a Filmagem (Davi) ainda deve as filmagens; quem edita (Nina) espera por elas
+  // gravação do News que já passou: o Filmmaker (Davi) ainda deve as filmagens; quem edita (Nina) espera por elas
   const pastRec = toISO(addDays(today, -3))
   data.events.push({
     id: 'e-demo-news-past', title: 'Gravação Lagoinha News', date: pastRec, time: '19:30', ministryIds: ['follow'], setlist: [],
     activity: 'Gravação · episódio da semana', place: 'Garagem',
     slots: NEWS_SESSION_ROLES.map((role) => ({ ministryId: 'follow', role, count: 2 })),
   })
-  const filmers = data.members.filter((m) => m.id !== 'm-davi' && newsRole(m) === 'Filmagem (News)')
+  const filmers = data.members.filter((m) => m.id !== 'm-davi' && newsRole(m) === 'Filmmaker (News)')
   data.assignments.push(
-    { id: 'a-rec-1', eventId: 'e-demo-news-past', ministryId: 'follow', role: 'Filmagem (News)', memberId: 'm-davi', status: 'confirmed', checkedIn: true },
-    ...(filmers[0] ? [{ id: 'a-rec-2', eventId: 'e-demo-news-past', ministryId: 'follow', role: 'Filmagem (News)', memberId: filmers[0].id, status: 'confirmed' as const, checkedIn: true,
+    { id: 'a-rec-1', eventId: 'e-demo-news-past', ministryId: 'follow', role: 'Filmmaker (News)', memberId: 'm-davi', status: 'confirmed', checkedIn: true },
+    ...(filmers[0] ? [{ id: 'a-rec-2', eventId: 'e-demo-news-past', ministryId: 'follow', role: 'Filmmaker (News)', memberId: filmers[0].id, status: 'confirmed' as const, checkedIn: true,
       delivery: { link: 'https://wetransfer.com/', at: new Date(fromISO(pastRec).getTime() + 20 * 3600_000).toISOString() } }] : []),
     { id: 'a-rec-3', eventId: 'e-demo-news-past', ministryId: 'follow', role: 'Apresentação (News)', memberId: 'm-leo', status: 'confirmed', checkedIn: true },
     { id: 'a-rec-4', eventId: 'e-demo-news-past', ministryId: 'follow', role: 'Apresentação (News)', memberId: 'm-rafaela', status: 'confirmed', checkedIn: true },
   )
 
-  // edição geral: além das artes, um vídeo para as redes
-  const lastSunday = [...data.events].filter((e) => e.slotId && e.date < todayISO() && fromISO(e.date).getDay() === 0 && e.ministryIds.includes('follow')).sort((a, b) => b.date.localeCompare(a.date))[0]
-  data.tasks!.push({ id: 't-video', ministryId: 'follow', kind: 'video', title: `Vídeo · Melhores momentos do domingo${lastSunday ? ` (${dd(lastSunday.date)})` : ''}`,
-    eventId: lastSunday?.id, details: 'Reels de 30 a 45 segundos com o louvor e a ministração. Vídeo bruto no link do Vitor.',
-    assigneeId: 'm-julia', dueDate: toISO(addDays(today, 3)), status: 'open', social: true,
-    createdBy: 'm-rafaela', createdAt: new Date(now.getTime() - 20 * 3600_000).toISOString() })
+  // Edição de vídeos (Téo) e Edição de fotos (Lara): um pedido do último domingo cada, com o material do culto já enviado
+  // (um culto diferente do que o Vitor e a Carolina ainda devem)
+  const owedEvents = new Set(owed.map((a) => a?.eventId))
+  const lastSunday = [...data.events].filter((e) => e.slotId && e.date < todayISO() && fromISO(e.date).getDay() === 0 && e.ministryIds.includes('follow') && !owedEvents.has(e.id))
+    .sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time))[0]
+  const sundayTag = lastSunday ? ` (${dd(lastSunday.date)})` : ''
+  data.tasks!.push(
+    { id: 't-video', ministryId: 'follow', kind: 'video', title: `Vídeo · Melhores momentos do domingo${sundayTag}`,
+      eventId: lastSunday?.id, details: 'Reels de 30 a 45 segundos com o louvor e a ministração. O vídeo do Filmmaker está no culto.',
+      assigneeId: 'm-teo', dueDate: toISO(addDays(today, 3)), status: 'open', social: true,
+      createdBy: 'm-rafaela', createdAt: new Date(now.getTime() - 20 * 3600_000).toISOString() },
+    { id: 't-fotos', ministryId: 'follow', kind: 'photo', title: `Fotos · ${lastSunday?.title ?? 'Culto de domingo'}${sundayTag}`,
+      eventId: lastSunday?.id, details: 'As 20 melhores fotos tratadas, para o feed e os stories. As fotos da Fotografia estão no culto.',
+      assigneeId: 'm-lara', dueDate: toISO(addDays(today, 2)), status: 'open', social: true,
+      createdBy: 'm-rafaela', createdAt: new Date(now.getTime() - 26 * 3600_000).toISOString() },
+  )
+  // o material do último domingo chegou: fotos e vídeo enviados
+  for (const a of data.assignments) {
+    if (a.eventId === lastSunday?.id && (a.role === 'Fotografia' || a.role === 'Filmmaker') && a.status !== 'declined' && !owed.includes(a) && !a.delivery) {
+      a.delivery = { link: a.role === 'Filmmaker' ? 'https://www.youtube.com/' : 'https://drive.google.com/', at: new Date(fromISO(lastSunday.date).getTime() + 26 * 3600_000).toISOString() }
+    }
+  }
 
   // vídeo do News: passa nos dois cultos de domingo. O deste domingo já foi entregue (o Bruno está na Projeção da manhã);
   // o do domingo seguinte o Davi ainda está editando
@@ -536,7 +558,7 @@ export function createSeed(): AppData {
     data.swaps.unshift({ id: 'sw-transmissao', assignmentId: otherTx.id, fromMemberId: otherTx.memberId, reason: 'Plantão no trabalho nesse dia.', createdAt: new Date(now.getTime() - 7 * 3600_000).toISOString(), status: 'open' })
   }
   // perfis do Follow: a escala mais próxima espera a resposta, as outras já estão confirmadas
-  for (const [id, role] of [['m-bruno', 'Projeção'], ['m-vitor', 'Vídeo'], ['m-carol', 'Fotografia'], ['m-gustavo', 'Transmissão'], ['m-bianca', 'Stories']]) {
+  for (const [id, role] of [['m-bruno', 'Projeção'], ['m-vitor', 'Filmmaker'], ['m-carol', 'Fotografia'], ['m-gustavo', 'Transmissão'], ['m-bianca', 'Stories']]) {
     data.assignments.filter((a) => a.memberId === id && a.role === role && !a.draft && a.status !== 'declined' && (evById.get(a.eventId)?.date ?? '') >= todayISO())
       .sort((x, y) => evById.get(x.eventId)!.date.localeCompare(evById.get(y.eventId)!.date))
       .forEach((a, i) => { a.status = i === 0 ? 'pending' : 'confirmed' })
@@ -557,6 +579,10 @@ export const ROLE_RENAMES: Record<string, Record<string, string | string[] | nul
   louvor: { Ministro: 'Voz', Vocal: 'Voz' },
   centurioes: { 'Portão': 'Estacionamento', 'Ronda externa': 'Estacionamento' },
   shine: { 'Recepção': 'Organização', Apoio: 'Organização' },
-  // o Lagoinha News virou duas funções no dia da gravação (a Edição do News é nova): quem era do News fica nas duas
-  follow: { 'Lagoinha News': ['Filmagem (News)', 'Apresentação (News)'], 'Gravação (News)': 'Apresentação (News)' },
+  // o Lagoinha News virou duas funções no dia da gravação (a Edição do News é nova): quem era do News fica nas duas.
+  // Vídeo virou Filmmaker (e Filmagem do News, Filmmaker do News)
+  follow: {
+    'Lagoinha News': ['Filmmaker (News)', 'Apresentação (News)'], 'Gravação (News)': 'Apresentação (News)',
+    'Filmagem (News)': 'Filmmaker (News)', 'Vídeo': 'Filmmaker',
+  },
 }

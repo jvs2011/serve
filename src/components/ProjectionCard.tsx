@@ -25,7 +25,7 @@ export function ProjectionCard({ ev }: { ev: ChurchEvent }) {
     const done = t.status === 'done'
     return (
       <div key={t.id} className="proj-item">
-        <span className={`proj-icon${t.kind ? ' news' : ''}`}>{t.kind ? <Clapperboard size={18} /> : <Image size={18} />}</span>
+        <span className={`proj-icon${t.kind === 'video' || t.kind === 'news' ? ' news' : ''}`}>{t.kind === 'video' || t.kind === 'news' ? <Clapperboard size={18} /> : <Image size={18} />}</span>
         <div className="grow">
           <strong>{news ? 'Vídeo do Lagoinha News' : t.title}</strong>
           <span className="muted small">
