@@ -108,3 +108,17 @@ export function nextPhoneValue(prev: string, typed: string): string {
   }
   return maskPhone(typed)
 }
+
+/**
+ * Nomes curtos para listas ("Davi, Samuel"): só o primeiro nome, e o sobrenome
+ * quando dois da mesma lista têm o mesmo primeiro nome ("Davi Moraes, Davi Barros").
+ */
+export function shortNames(names: string[], among: string[] = names): string[] {
+  const first = (n: string) => n.trim().split(/\s+/)[0]
+  const count = new Map<string, number>()
+  for (const n of among) count.set(first(n), (count.get(first(n)) ?? 0) + 1)
+  return names.map((n) => {
+    const parts = n.trim().split(/\s+/)
+    return (count.get(parts[0]) ?? 0) > 1 && parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1]}` : parts[0]
+  })
+}

@@ -4,6 +4,7 @@ import { useStore } from '../data/store'
 import { sessionRole, TEAM_SESSIONS, type TeamSession } from '../data/sessions'
 import { addDays, fromISO, toISO, todayISO, weekdayShort } from '../lib/dates'
 import { isOff } from '../lib/schedule'
+import { shortNames } from '../lib/people'
 import { Sheet } from '../components/ui'
 import type { Ministry } from '../data/types'
 
@@ -48,6 +49,7 @@ function SessionForm({ session, onDone }: { session: TeamSession; onDone: () => 
   const probe = { id: '', title: '', date, time, ministryIds: [], setlist: [] }
   const off = team.filter((m) => isOff(data, m, probe))
   const invited = team.filter((m) => !off.includes(m))
+  const allNames = team.map((m) => m.name)
 
   const send = async () => {
     if (!date) return setError('Escolha o dia.')
@@ -83,9 +85,9 @@ function SessionForm({ session, onDone }: { session: TeamSession; onDone: () => 
         <strong>{invited.length ? `Convite para ${invited.length} ${invited.length === 1 ? 'pessoa' : 'pessoas'} da equipe ${session.team}` : `Ninguém da equipe ${session.team} está disponível`}</strong>
         {session.roles.map((r) => {
           const who = invited.filter((m) => sessionRole(session, m) === r)
-          return who.length > 0 && <span key={r} className="small"><b>{r}:</b> {who.map((m) => m.name.split(' ')[0]).join(', ')}</span>
+          return who.length > 0 && <span key={r} className="small"><b>{r}:</b> {shortNames(who.map((m) => m.name), allNames).join(', ')}</span>
         })}
-        {off.length > 0 && <span className="small muted">Indisponível nesse dia: {off.map((m) => m.name.split(' ')[0]).join(', ')}</span>}
+        {off.length > 0 && <span className="small muted">Indisponível nesse dia: {shortNames(off.map((m) => m.name), allNames).join(', ')}</span>}
         {team.length === 0 && <span className="small muted">Cadastre pessoas em {session.roles.join(' ou ')} para poder convidar.</span>}
       </div>
 

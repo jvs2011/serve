@@ -62,3 +62,12 @@ describe('formulário de cadastro do Follow', () => {
     expect(signupSections('louvor', ['Voz', 'Teclado'])).toEqual([{ title: undefined, teams: [{ name: 'Voz', label: 'Voz' }, { name: 'Teclado', label: 'Teclado' }] }])
   })
 })
+
+describe('nomes curtos', () => {
+  it('mostra o sobrenome só quando o primeiro nome se repete', async () => {
+    const { shortNames } = await import('../src/lib/people')
+    expect(shortNames(['Davi Moraes', 'Samuel Souza', 'Davi Barros'])).toEqual(['Davi Moraes', 'Samuel', 'Davi Barros'])
+    expect(shortNames(['Davi Moraes'], ['Davi Moraes', 'Davi Barros'])).toEqual(['Davi Moraes'])
+    expect(shortNames(['Léo Antunes', 'Rafaela Lopes'])).toEqual(['Léo', 'Rafaela'])
+  })
+})
