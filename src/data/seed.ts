@@ -4,7 +4,7 @@ import { autoFill } from '../lib/schedule.js'
 import { DEFAULT_WEEKLY, eventId, weeklyEvents } from './agenda.js'
 
 /** Versão do formato dos dados. Mude para forçar recriação dos dados de exemplo. */
-export const DATA_VERSION = 17
+export const DATA_VERSION = 18
 
 /*
  * Ministérios da Lagoinha Franca.
@@ -126,7 +126,11 @@ function buildPeople() {
     { id: 'm-lucas', name: 'Lucas Andrade', access: 'admin', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: ['Transmissão'] }] },
     { id: 'm-mariana', name: 'Mariana Costa', access: 'leader', maxPerMonth: 6, phone: '', ministries: [{ ministryId: 'louvor', roles: ['Voz'] }] },
     { id: 'm-ana', name: 'Ana Ribeiro', access: 'volunteer', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'louvor', roles: ['Voz'] }, { ministryId: 'diaconato', roles: ['Acolhimento'] }] },
-    { id: 'm-rafaela', name: 'Rafaela Lopes', access: 'leader', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: ['Edição de artes', 'Stories', 'Lagoinha News'] }] },
+    { id: 'm-rafaela', name: 'Rafaela Lopes', access: 'leader', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: ['Stories', 'Lagoinha News'] }] },
+    // perfis da demonstração do Follow (primeira equipe a usar o app)
+    { id: 'm-bruno', name: 'Bruno Almeida', access: 'volunteer', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: ['Projeção'] }] },
+    { id: 'm-julia', name: 'Júlia Sampaio', access: 'volunteer', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: ['Edição de artes', 'Stories'] }] },
+    { id: 'm-davi', name: 'Davi Moraes', access: 'volunteer', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: ['Lagoinha News', 'Vídeo'] }] },
   ]
   const used = new Set(members.map((m) => m.name))
   let n = 0
@@ -176,10 +180,10 @@ export const { members, ministries } = buildPeople()
 
 /** Membros sugeridos na tela de entrada (modo demonstração) */
 export const demoProfiles = [
-  { id: 'm-ana', label: 'Voluntária', hint: 'Louvor e Diaconato' },
-  { id: 'm-mariana', label: 'Líder', hint: 'Louvor: grupos de voz e rascunho da escala' },
-  { id: 'm-rafaela', label: 'Líder', hint: 'Follow: artes e gravações do Lagoinha News' },
-  { id: 'm-lucas', label: 'Coordenação', hint: 'Acesso a todos os ministérios' },
+  { id: 'm-rafaela', label: 'Líder do Follow', hint: 'monta a escala, pede artes e agenda o News' },
+  { id: 'm-bruno', label: 'Projeção', hint: 'confirma escalas, pede e assume trocas' },
+  { id: 'm-julia', label: 'Edição de artes', hint: 'recebe pedidos de arte e entrega pelo app' },
+  { id: 'm-davi', label: 'Lagoinha News', hint: 'convites de gravação e escalas de vídeo' },
 ]
 
 const setlists: Song[][] = [
@@ -360,30 +364,30 @@ export function createSeed(): AppData {
     },
   ]
 
-  // artes do Follow (exemplos): uma para o Lucas, uma atrasada e uma entregue
-  const artists = members.filter((m) => m.ministries.some((mm) => mm.ministryId === 'follow' && mm.roles.includes('Edição de artes')))
-  const upcoming = data.events.filter((e) => e.date > todayISO() && e.ministryIds.includes('follow'))
+  // artes do Follow (exemplos): duas para a Júlia (uma já entregue) e uma atrasada de outra pessoa
+  const artists = members.filter((m) => m.id !== 'm-julia' && m.ministries.some((mm) => mm.ministryId === 'follow' && mm.roles.includes('Edição de artes')))
+  const upcoming = data.events.filter((e) => e.date > todayISO() && e.ministryIds.includes('follow') && e.slotId)
   const dd = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
   const e1 = upcoming[0], e2 = upcoming.find((e) => e.date > (e1?.date ?? '')) ?? upcoming[1]
   data.tasks = []
   if (e1) data.tasks.push({
     id: 't1', ministryId: 'follow', title: `Arte · ${e1.title} (${dd(e1.date)})`, eventId: e1.id,
-    details: 'Feed e stories. Usar a foto do último batismo e o texto "Venha celebrar com a gente".',
-    assigneeId: 'm-rafaela', dueDate: toISO(addDays(today, 2)), status: 'open', createdBy: 'm-lucas', createdAt: new Date(now.getTime() - 86_400_000).toISOString(),
+    details: 'Feed e stories. Usar a foto do último batismo e o texto “Venha celebrar com a gente”.',
+    assigneeId: 'm-julia', dueDate: toISO(addDays(today, 2)), status: 'open', createdBy: 'm-rafaela', createdAt: new Date(now.getTime() - 86_400_000).toISOString(),
   })
   if (e2 && artists[0]) data.tasks.push({
     id: 't2', ministryId: 'follow', title: `Arte · ${e2.title} (${dd(e2.date)})`, eventId: e2.id, details: 'Versão para o telão (16:9).',
     assigneeId: artists[0].id, dueDate: toISO(addDays(today, -1)), status: 'open', createdBy: 'm-rafaela', createdAt: new Date(now.getTime() - 3 * 86_400_000).toISOString(),
   })
-  if (artists[1]) data.tasks.push({
-    id: 't3', ministryId: 'follow', title: 'Arte · Reunião Follow', details: '', assigneeId: artists[1].id,
+  data.tasks.push({
+    id: 't3', ministryId: 'follow', title: 'Arte · Reunião Follow', details: 'Convite para os stories.', assigneeId: 'm-julia',
     dueDate: toISO(addDays(today, -3)), status: 'done', link: 'https://www.canva.com/', createdBy: 'm-rafaela',
     createdAt: new Date(now.getTime() - 6 * 86_400_000).toISOString(), doneAt: new Date(now.getTime() - 4 * 86_400_000).toISOString(),
   })
 
-  // Louvor: rascunho da escala dos 2 cultos seguintes, esperando a Mariana publicar
-  for (const e of data.events.filter((e) => e.date > horizon && e.ministryIds.includes('louvor') && e.ministryIds.length > 1).slice(0, 2)) {
-    for (const a of autoFill(data, e.id, 'louvor')) data.assignments.push({ ...a, draft: true })
+  // rascunho da escala dos 2 cultos seguintes, esperando a líder publicar (Follow e Louvor)
+  for (const e of data.events.filter((e) => e.date > horizon && e.ministryIds.includes('follow') && e.ministryIds.length > 1).slice(0, 2)) {
+    for (const mid of ['follow', 'louvor']) for (const a of autoFill(data, e.id, mid)) data.assignments.push({ ...a, draft: true })
   }
 
   // Follow: gravação do Lagoinha News com a equipe convidada (alguns já responderam)
@@ -407,6 +411,24 @@ export function createSeed(): AppData {
   })
   for (const a of autoFill(data, 'e-demo-wecare', 'wecare').slice(0, 4)) data.assignments.push({ ...a, status: rand() < 0.5 ? 'confirmed' : 'pending' })
   data.events.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+
+  // perfis do Follow: escalas nos próximos cultos (a primeira esperando resposta) e uma troca para o Bruno assumir
+  const nextOf = (role: string) => data.assignments
+    .filter((a) => a.ministryId === 'follow' && a.role === role && !a.draft && a.status !== 'declined' && (evById.get(a.eventId)?.date ?? '') > todayISO())
+    .sort((x, y) => evById.get(x.eventId)!.date.localeCompare(evById.get(y.eventId)!.date))
+  const give = (memberId: string, role: string, n: number, firstPending = true) =>
+    nextOf(role).filter((a) => !data.assignments.some((b) => b.eventId === a.eventId && b.memberId === memberId)).slice(0, n)
+      .forEach((a, i) => { a.memberId = memberId; a.status = i === 0 && firstPending ? 'pending' : 'confirmed'; delete a.checkedIn })
+  give('m-bruno', 'Projeção', 3)
+  give('m-julia', 'Stories', 2, false)
+  give('m-davi', 'Vídeo', 2, false)
+  const davi = data.assignments.find((a) => a.eventId === 'e-demo-news' && a.memberId === 'm-davi')
+  if (davi) davi.status = 'pending'
+  const other = nextOf('Projeção').find((a) => a.memberId !== 'm-bruno' && !data.assignments.some((b) => b.eventId === a.eventId && b.memberId === 'm-bruno'))
+  if (other) {
+    other.status = 'confirmed'
+    data.swaps.unshift({ id: 'sw-projecao', assignmentId: other.id, fromMemberId: other.memberId, reason: 'Vou estar viajando nesse fim de semana 🙏', createdAt: new Date(now.getTime() - 3 * 3600_000).toISOString(), status: 'open' })
+  }
 
   return data
 }

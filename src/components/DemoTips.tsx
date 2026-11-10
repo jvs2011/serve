@@ -7,39 +7,38 @@ interface Tip { text: string; go?: Tab | Route }
 
 /** O que vale experimentar em cada perfil de demonstração */
 const TIPS: Record<string, { title: string; tips: Tip[] }> = {
-  'm-ana': {
-    title: 'Você está como voluntária',
-    tips: [
-      { text: 'Confirme a escala que está esperando sua resposta' },
-      { text: 'Assuma o pedido de troca de um colega', go: 'swaps' },
-      { text: 'Marque um culto em que você não pode servir', go: { name: 'availability' } },
-      { text: 'Veja o repertório e a cifra do próximo culto', go: 'agenda' },
-    ],
-  },
-  'm-mariana': {
-    title: 'Você está como líder do Louvor',
-    tips: [
-      { text: 'Confira o rascunho da escala e toque em Publicar' },
-      { text: 'Monte ou edite um grupo de voz', go: { name: 'ministry', id: 'louvor', tab: 'groups' } },
-      { text: 'Gere a escala automática dos próximos 30 dias', go: { name: 'ministry', id: 'louvor' } },
-      { text: 'Mande um aviso para a equipe', go: { name: 'ministry', id: 'louvor', tab: 'notices' } },
-    ],
-  },
   'm-rafaela': {
     title: 'Você está como líder do Follow',
     tips: [
+      { text: 'Confira o rascunho da escala e toque em Publicar' },
       { text: 'Peça uma arte e escolha o responsável', go: { name: 'ministry', id: 'follow', tab: 'arts' } },
       { text: 'Agende uma gravação do Lagoinha News', go: { name: 'ministry', id: 'follow' } },
-      { text: 'Veja quem já confirmou a próxima gravação', go: 'agenda' },
+      { text: 'Veja o painel com vagas, confirmações e presença', go: { name: 'dashboard' } },
     ],
   },
-  'm-lucas': {
-    title: 'Você está como coordenação',
+  'm-bruno': {
+    title: 'Você está na Projeção',
     tips: [
-      { text: 'Veja o painel com vagas, presença e quem precisa de cuidado', go: { name: 'dashboard' } },
-      { text: 'Acompanhe todas as trocas da igreja', go: 'swaps' },
-      { text: 'Veja a ação externa do We Care', go: { name: 'ministry', id: 'wecare' } },
-      { text: 'Cadastre uma pessoa', go: { name: 'people' } },
+      { text: 'Confirme a escala que está esperando sua resposta' },
+      { text: 'Assuma a troca que um colega da Projeção pediu', go: 'swaps' },
+      { text: 'Veja o repertório do próximo culto', go: 'agenda' },
+      { text: 'Marque um culto em que você não pode servir', go: { name: 'availability' } },
+    ],
+  },
+  'm-julia': {
+    title: 'Você está na Edição de artes',
+    tips: [
+      { text: 'Abra a arte pedida e veja o prazo' },
+      { text: 'Marque a arte como entregue com o link', go: { name: 'ministry', id: 'follow', tab: 'arts' } },
+      { text: 'Veja suas escalas de Stories', go: 'agenda' },
+    ],
+  },
+  'm-davi': {
+    title: 'Você está no Lagoinha News',
+    tips: [
+      { text: 'Responda o convite da próxima gravação' },
+      { text: 'Veja quem já confirmou a gravação', go: 'agenda' },
+      { text: 'Peça troca de uma escala de Vídeo', go: 'agenda' },
     ],
   },
 }

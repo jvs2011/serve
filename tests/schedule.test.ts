@@ -67,7 +67,7 @@ describe('rascunho da escala', () => {
     const someone = d.members.find((m) => m.ministries.some((mm) => mm.ministryId === 'louvor' && mm.roles.includes('Bateria')))!
     applyAction(d, { type: 'assign', eventId: ev.id, ministryId: 'louvor', role: 'Bateria', memberId: someone.id }, 'm-mariana')
     expect(applyAction(d, { type: 'discardDrafts', ministryId: 'louvor' }, 'm-mariana').created).toBeGreaterThanOrEqual(1)
-    expect(d.assignments.some((a) => a.draft)).toBe(false)
+    expect(d.assignments.some((a) => a.draft && a.ministryId === 'louvor')).toBe(false)
   })
 })
 

@@ -12,8 +12,10 @@ npm run build      # roda os testes e gera /dist (se algum teste falhar, a publi
 npm run build:single  # gera /dist-single/index.html, um arquivo único para prévia
 ```
 
-Na tela de entrada há quatro perfis de demonstração: **Voluntária** (Ana), **Líder do Louvor** (Mariana: grupos de voz e rascunho),
-**Líder do Follow** (Rafaela: artes e Lagoinha News) e **Coordenação** (Lucas). Cada perfil mostra sugestões do que experimentar.
+Na tela de entrada há quatro perfis de demonstração do Follow (a primeira equipe a usar o app):
+**Líder do Follow** (Rafaela: rascunho da escala, artes e gravações), **Projeção** (Bruno: escala pendente e troca para assumir),
+**Edição de artes** (Júlia: arte com prazo para entregar) e **Lagoinha News** (Davi: convite de gravação).
+Cada perfil mostra sugestões do que experimentar.
 O administrador esconde ou mostra a demonstração em **Perfil → Demonstração na tela de entrada**.
 
 ## Funcionalidades
