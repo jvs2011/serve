@@ -6,6 +6,7 @@ import type { AppData, Assignment, ChurchEvent } from '../src/data/types.js'
 import type { PushPayload } from './push.js'
 import { isOff, openSlots } from '../src/lib/schedule.js'
 import { projectionTeam } from '../src/lib/projection.js'
+import { deliveryLabel } from '../src/lib/delivery.js'
 
 export interface Outgoing { to: string[]; payload: PushPayload }
 
@@ -166,6 +167,22 @@ export function notificationsFor(before: AppData, after: AppData, actorId: strin
     })
   }
 
+  // 9) material enviado (fotos, vídeo, filmagens) → líderes; filmagens do News também → Edição do News
+  for (const a of after.assignments) {
+    const p = prevA.get(a.id)
+    if (!a.delivery || (p?.delivery?.link === a.delivery.link)) continue
+    const e = ev(a.eventId)
+    const label = deliveryLabel(after, a)
+    if (!e || !label) continue
+    const editors = a.role === 'Filmagem (News)'
+      ? after.members.filter((m) => m.ministries.some((mm) => mm.ministryId === a.ministryId && mm.roles.includes('Edição do News'))).map((m) => m.id)
+      : []
+    out.push({
+      to: [...new Set([...(min(a.ministryId)?.leaderIds ?? []), ...editors])].filter((id) => id !== actorId && id !== a.memberId),
+      payload: { title: 'Material enviado 📸', body: `${first(member(a.memberId)?.name)} enviou ${label} do ${e.title} (${when(e)}). Toque para abrir.`, tag: `material-${a.id}` },
+    })
+  }
+
   // 8) repertório enviado → equipe do Louvor escalada no culto
   const beforeEvents = new Map(before.events.map((e) => [e.id, e]))
   for (const e of after.events) {
@@ -303,4 +320,19 @@ export function draftRemindersFor(data: AppData, from: string, until: string): O
     })
   }
   return out.filter((o) => o.to.length > 0)
+}
+
+/** Quem serviu ontem numa função com material (fotos, vídeo, filmagens) e ainda não enviou */
+export function deliveryRemindersFor(data: AppData, yesterday: string): Outgoing[] {
+  const out: Outgoing[] = []
+  for (const a of data.assignments) {
+    const e = data.events.find((x) => x.id === a.eventId)
+    const label = deliveryLabel(data, a)
+    if (!e || e.date !== yesterday || !label || a.delivery || a.draft || a.status === 'declined') continue
+    out.push({
+      to: [a.memberId],
+      payload: { title: `Envie ${label} 📸`, body: `${e.title} de ontem: coloque o link (Drive, WeTransfer…) no app. A equipe está esperando.`, tag: `material-${a.id}` },
+    })
+  }
+  return out
 }

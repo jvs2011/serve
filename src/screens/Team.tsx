@@ -12,6 +12,7 @@ import { SessionCards } from './Sessions'
 import { GroupsTab } from './Groups'
 import { MinistryEventCard } from './MinistryEvents'
 import { DraftBar } from '../components/DraftBar'
+import { RecentMaterial } from '../components/RecentMaterial'
 import { FillBar, fillOf } from './Agenda'
 
 export function Team() {
@@ -99,6 +100,7 @@ export function MinistryDetail({ id, initialTab, asTab }: { id: string; initialT
       {tab === 'schedule' && (
         <>
           {manage && <DraftBar ministry={ministry} />}
+          {manage && <RecentMaterial ministry={ministry} />}
           {manage && <SessionCards ministry={ministry} />}
           {manage && <MinistryEventCard ministry={ministry} />}
           {manage && (

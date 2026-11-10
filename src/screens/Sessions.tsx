@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Clapperboard } from 'lucide-react'
 import { useStore } from '../data/store'
-import { TEAM_SESSIONS, type TeamSession } from '../data/sessions'
+import { sessionRole, TEAM_SESSIONS, type TeamSession } from '../data/sessions'
 import { addDays, fromISO, toISO, todayISO, weekdayShort } from '../lib/dates'
 import { isOff } from '../lib/schedule'
 import { Sheet } from '../components/ui'
@@ -21,7 +21,7 @@ export function SessionCards({ ministry }: { ministry: Ministry }) {
           <span className="session-icon" style={{ background: `${ministry.color}22`, color: ministry.color }}><Clapperboard size={20} /></span>
           <div className="grow">
             <strong>{s.title}</strong>
-            <span className="muted small">Escolha o melhor dia da semana. A equipe {s.role} recebe o convite para confirmar.</span>
+            <span className="muted small">Escolha o melhor dia da semana. Quem é de {s.roles.join(' e ')} recebe o convite para confirmar.</span>
           </div>
           <button className="btn btn-primary btn-sm" onClick={() => setOpen(s)}>Agendar</button>
         </div>
@@ -44,7 +44,7 @@ function SessionForm({ session, onDone }: { session: TeamSession; onDone: () => 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const team = data.members.filter((m) => m.ministries.some((mm) => mm.ministryId === session.ministryId && mm.roles.includes(session.role)))
+  const team = data.members.filter((m) => sessionRole(session, m))
   const probe = { id: '', title: '', date, time, ministryIds: [], setlist: [] }
   const off = team.filter((m) => isOff(data, m, probe))
   const invited = team.filter((m) => !off.includes(m))
@@ -80,10 +80,13 @@ function SessionForm({ session, onDone }: { session: TeamSession; onDone: () => 
       <label className="field"><span>Recado para a equipe (opcional)</span><input id="ses-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex.: pauta da semana: Shine Day" /></label>
 
       <div className="invite-box">
-        <strong>{invited.length ? `Convite para ${invited.length} ${invited.length === 1 ? 'pessoa' : 'pessoas'} da equipe ${session.role}` : `Ninguém da equipe ${session.role} está disponível`}</strong>
-        {invited.length > 0 && <span className="small">{invited.map((m) => m.name.split(' ')[0]).join(', ')}</span>}
+        <strong>{invited.length ? `Convite para ${invited.length} ${invited.length === 1 ? 'pessoa' : 'pessoas'} da equipe ${session.team}` : `Ninguém da equipe ${session.team} está disponível`}</strong>
+        {session.roles.map((r) => {
+          const who = invited.filter((m) => sessionRole(session, m) === r)
+          return who.length > 0 && <span key={r} className="small"><b>{r}:</b> {who.map((m) => m.name.split(' ')[0]).join(', ')}</span>
+        })}
         {off.length > 0 && <span className="small muted">Indisponível nesse dia: {off.map((m) => m.name.split(' ')[0]).join(', ')}</span>}
-        {team.length === 0 && <span className="small muted">Cadastre pessoas na equipe {session.role} para poder convidar.</span>}
+        {team.length === 0 && <span className="small muted">Cadastre pessoas em {session.roles.join(' ou ')} para poder convidar.</span>}
       </div>
 
       {error && <p className="error">{error}</p>}

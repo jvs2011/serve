@@ -3,11 +3,12 @@
  * O mesmo código roda no celular (demonstração) e no servidor (dados reais),
  * e o servidor confere as permissões de quem está pedindo a alteração.
  */
-import type { AppData, AssignmentStatus, Member, Song, WeeklySlot } from './types.js'
+import type { AppData, AssignmentStatus, ChurchEvent, Member, Song, WeeklySlot } from './types.js'
 import { applyWeekly } from './agenda.js'
+import { deliveryLabel } from '../lib/delivery.js'
 import { todayISO } from '../lib/dates.js'
 import { autoFill, canEditSetlist, canManage, groupAssignments, isOff, uid } from '../lib/schedule.js'
-import { TEAM_SESSIONS } from './sessions.js'
+import { sessionRole, TEAM_SESSIONS } from './sessions.js'
 import { LEADER_ROLES } from './seed.js'
 import { isValidPhone, normalizePhone, tidyName } from '../lib/people.js'
 
@@ -27,10 +28,12 @@ export interface TaskInput {
   details: string
   assigneeId: string
   dueDate: string
-  /** 'news' = vídeo do Lagoinha News (sempre vai para a projeção) */
+  /** 'news' = vídeo do Lagoinha News */
   kind?: 'news'
-  /** a arte vai para a projeção */
+  /** vai para a projeção (o vídeo do News vai, se não disser o contrário) */
   projection?: boolean
+  /** vai para as mídias sociais */
+  social?: boolean
 }
 
 /** Evento criado pelo líder para o próprio ministério (ex.: ação externa do We Care) */
@@ -98,6 +101,7 @@ export type Action =
   | { type: 'saveWeekly'; slot: WeeklySlot }
   | { type: 'removeWeekly'; slotId: string }
   | { type: 'sendSetlist'; eventId: string }
+  | { type: 'deliverMaterial'; assignmentId: string; link: string }
   | { type: 'removeTask'; taskId: string }
   | { type: 'setTaskDone'; taskId: string; done: boolean; link?: string }
 
@@ -323,18 +327,16 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
       if (!/^\d{4}-\d{2}-\d{2}$/.test(action.date)) throw new ActionError('Escolha o dia.')
       if (!/^\d{2}:\d{2}$/.test(action.time)) throw new ActionError('Escolha o horário.')
       const note = action.note?.trim().slice(0, 200)
-      const ev = {
+      const ev: ChurchEvent = {
         id: uid(), title: cfg.title, date: action.date, time: action.time, ministryIds: [cfg.ministryId], setlist: [],
         activity: note ? `${cfg.activity} · ${note}` : cfg.activity, place: action.place?.trim().slice(0, 80) || undefined,
-        slots: [{ ministryId: cfg.ministryId, role: cfg.role, count: 1 }],
       }
-      // convida toda a equipe (menos quem marcou indisponibilidade nesse dia/horário)
-      const team = d.members.filter((m) => m.ministries.some((mm) => mm.ministryId === cfg.ministryId && mm.roles.includes(cfg.role)))
-      const invited = team.filter((m) => !isOff(d, m, ev))
-      ev.slots[0].count = Math.max(1, invited.length)
+      // convida a equipe (menos quem marcou indisponibilidade nesse dia/horário); cada pessoa uma vez, na sua função
+      const invited = d.members.filter((m) => sessionRole(cfg, m) && !isOff(d, m, ev))
+      ev.slots = cfg.roles.map((role) => ({ ministryId: cfg.ministryId, role, count: Math.max(1, invited.filter((m) => sessionRole(cfg, m) === role).length) }))
       d.events.push(ev)
       d.events.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
-      for (const m of invited) d.assignments.push({ id: uid(), eventId: ev.id, ministryId: cfg.ministryId, role: cfg.role, memberId: m.id, status: 'pending' })
+      for (const m of invited) d.assignments.push({ id: uid(), eventId: ev.id, ministryId: cfg.ministryId, role: sessionRole(cfg, m)!, memberId: m.id, status: 'pending' })
       return { created: invited.length }
     }
     case 'addMinistryEvent': {
@@ -430,6 +432,15 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
       const c = applyWeekly(d, todayISO())
       return { created: c.added, updated: c.updated, removed: c.removed }
     }
+    case 'deliverMaterial': {
+      const a = findA(action.assignmentId)
+      if (a.memberId !== me.id && !canManage(me, a.ministryId, d)) throw deny()
+      if (!deliveryLabel(d, a)) throw new ActionError('Essa função não envia material.')
+      const link = action.link.trim()
+      if (!link) { delete a.delivery; return {} }
+      a.delivery = { link: (/^https?:\/\//.test(link) ? link : `https://${link}`).slice(0, 500), at: new Date().toISOString() }
+      return {}
+    }
     case 'sendSetlist': {
       const ev = findEv(action.eventId)
       if (!canEditSetlist(d, me, ev)) throw deny()
@@ -458,7 +469,8 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
       if (!title) throw new ActionError(news ? 'Escolha em qual culto o vídeo vai passar.' : 'Diga qual arte precisa.')
       if (!/^\d{4}-\d{2}-\d{2}$/.test(t.dueDate)) throw new ActionError(news ? 'Escolha até quando precisa do vídeo.' : 'Escolha até quando precisa da arte.')
       const eventId = t.eventId && d.events.some((e) => e.id === t.eventId) ? t.eventId : undefined
-      const projection = news || !!t.projection
+      const projection = news ? t.projection ?? true : !!t.projection
+      const social = !!t.social
       // o que vai para a projeção aparece na escala do culto: precisa saber qual é
       if (projection && !eventId) throw new ActionError('Escolha o culto em que vai para a projeção.')
       const assignee = d.members.find((m) => m.id === t.assigneeId)
@@ -469,11 +481,11 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
       if (existing && existing.ministryId !== t.ministryId) throw deny()
       const data = {
         title, eventId, details: t.details.trim().slice(0, 1500), assigneeId: assignee.id, dueDate: t.dueDate,
-        kind: news ? ('news' as const) : undefined, projection: projection || undefined,
+        kind: news ? ('news' as const) : undefined, projection: projection || undefined, social: social || undefined,
       }
       if (existing) {
         Object.assign(existing, data)
-        for (const k of ['kind', 'projection', 'eventId'] as const) if (existing[k] === undefined) delete existing[k]
+        for (const k of ['kind', 'projection', 'social', 'eventId'] as const) if (existing[k] === undefined) delete existing[k]
       } else {
         d.tasks.unshift({ id: uid(), ministryId: t.ministryId, status: 'open', createdBy: me.id, createdAt: new Date().toISOString(), ...data })
       }

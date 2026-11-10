@@ -1,17 +1,18 @@
-import type { AppData, ChurchEvent, Member, Ministry, Song, WeeklySlot } from './types.js'
+import type { AppData, Assignment, ChurchEvent, Member, Ministry, Song, WeeklySlot } from './types.js'
 import { addDays, toISO, fromISO, todayISO } from '../lib/dates.js'
 import { autoFill } from '../lib/schedule.js'
 import { DEFAULT_WEEKLY, eventId, weeklyEvents } from './agenda.js'
+import { NEWS_SESSION_ROLES } from './sessions.js'
 
 /** Versão do formato dos dados. Mude para forçar recriação dos dados de exemplo. */
-export const DATA_VERSION = 19
+export const DATA_VERSION = 20
 
 /*
  * Ministérios da Lagoinha Franca.
  * As funções (roles) e vagas por evento são uma sugestão inicial — ajuste com cada líder.
  * `people` é só para gerar voluntários de exemplo suficientes para o rodízio.
  */
-type MinistrySeed = Omit<Ministry, 'roles' | 'leaderIds'> & { roles: { name: string; count: number; people: number; group?: boolean; hint?: string }[] }
+type MinistrySeed = Omit<Ministry, 'roles' | 'leaderIds'> & { roles: { name: string; count: number; people: number; group?: boolean; hint?: string; delivery?: string }[] }
 
 const ministrySeeds: MinistrySeed[] = [
   {
@@ -28,10 +29,14 @@ const ministrySeeds: MinistrySeed[] = [
     id: 'follow', name: 'Follow', color: '#7C6CF2', icon: 'megaphone',
     description: 'Ministério de Comunicação',
     roles: [
-      { name: 'Fotografia', count: 1, people: 3 }, { name: 'Vídeo', count: 1, people: 3 }, { name: 'Stories', count: 1, people: 3 },
-      { name: 'Projeção', count: 1, people: 3 }, { name: 'Transmissão', count: 1, people: 3 },
-      // sem vaga nos cultos (count 0): News tem gravação agendada pelo líder; artes vão pela aba Artes; site sem escala
-      { name: 'Lagoinha News', count: 0, people: 4 },
+      // Fotografia e Vídeo enviam o material depois do culto (o link fica na escala)
+      { name: 'Fotografia', count: 1, people: 3, delivery: 'as fotos' }, { name: 'Vídeo', count: 1, people: 3, delivery: 'o vídeo' },
+      { name: 'Stories', count: 1, people: 3 }, { name: 'Projeção', count: 1, people: 3 }, { name: 'Transmissão', count: 1, people: 3 },
+      // sem vaga nos cultos (count 0): o Lagoinha News tem gravação agendada pelo líder (filmagem + quem grava)
+      // e a edição vai por pedido; artes vão pela aba Artes; site sem escala
+      { name: 'Filmagem (News)', count: 0, people: 3, delivery: 'as filmagens' },
+      { name: 'Gravação (News)', count: 0, people: 3 },
+      { name: 'Edição do News', count: 0, people: 2 },
       { name: 'Edição de artes', count: 0, people: 3 },
       { name: 'Gestão do site', count: 0, people: 2 },
     ],
@@ -126,11 +131,11 @@ function buildPeople() {
     { id: 'm-lucas', name: 'Lucas Andrade', access: 'admin', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: ['Transmissão'] }] },
     { id: 'm-mariana', name: 'Mariana Costa', access: 'leader', maxPerMonth: 6, phone: '', ministries: [{ ministryId: 'louvor', roles: ['Voz'] }] },
     { id: 'm-ana', name: 'Ana Ribeiro', access: 'volunteer', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'louvor', roles: ['Voz'] }, { ministryId: 'diaconato', roles: ['Acolhimento'] }] },
-    { id: 'm-rafaela', name: 'Rafaela Lopes', access: 'leader', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: ['Stories', 'Lagoinha News'] }] },
+    { id: 'm-rafaela', name: 'Rafaela Lopes', access: 'leader', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: ['Stories', 'Gravação (News)'] }] },
     // perfis da demonstração do Follow (primeira equipe a usar o app)
     { id: 'm-bruno', name: 'Bruno Almeida', access: 'volunteer', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: ['Projeção'] }] },
     { id: 'm-julia', name: 'Júlia Sampaio', access: 'volunteer', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: ['Edição de artes', 'Stories'] }] },
-    { id: 'm-davi', name: 'Davi Moraes', access: 'volunteer', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: ['Lagoinha News', 'Vídeo'] }] },
+    { id: 'm-davi', name: 'Davi Moraes', access: 'volunteer', maxPerMonth: 4, phone: '', ministries: [{ ministryId: 'follow', roles: ['Filmagem (News)', 'Edição do News', 'Vídeo'] }] },
   ]
   const used = new Set(members.map((m) => m.name))
   let n = 0
@@ -183,7 +188,7 @@ export const demoProfiles = [
   { id: 'm-rafaela', label: 'Líder do Follow', hint: 'monta a escala, pede artes e agenda o News' },
   { id: 'm-bruno', label: 'Projeção', hint: 'confirma escalas, pede e assume trocas' },
   { id: 'm-julia', label: 'Edição de artes', hint: 'recebe pedidos de arte e entrega pelo app' },
-  { id: 'm-davi', label: 'Lagoinha News', hint: 'convites de gravação e escalas de vídeo' },
+  { id: 'm-davi', label: 'Lagoinha News', hint: 'filma a gravação, edita o vídeo e envia o material' },
 ]
 
 const setlists: Song[][] = [
@@ -374,6 +379,7 @@ export function createSeed(): AppData {
     id: 't1', ministryId: 'follow', title: `Arte · ${e1.title} (${dd(e1.date)})`, eventId: e1.id,
     details: 'Feed e stories. Usar a foto do último batismo e o texto “Venha celebrar com a gente”.',
     assigneeId: 'm-julia', dueDate: toISO(addDays(today, 2)), status: 'open', createdBy: 'm-rafaela', createdAt: new Date(now.getTime() - 86_400_000).toISOString(),
+    social: true,
   })
   if (e2 && artists[0]) data.tasks.push({
     id: 't2', ministryId: 'follow', title: `Arte · ${e2.title} (${dd(e2.date)})`, eventId: e2.id, details: 'Versão para a projeção (16:9).',
@@ -381,7 +387,7 @@ export function createSeed(): AppData {
     projection: true,
   })
   data.tasks.push({
-    id: 't3', ministryId: 'follow', title: 'Arte · Reunião Follow', details: 'Convite para os stories.', assigneeId: 'm-julia',
+    id: 't3', ministryId: 'follow', title: 'Arte · Reunião Follow', details: 'Convite para os stories.', assigneeId: 'm-julia', social: true,
     dueDate: toISO(addDays(today, -3)), status: 'done', link: 'https://www.canva.com/', createdBy: 'm-rafaela',
     createdAt: new Date(now.getTime() - 6 * 86_400_000).toISOString(), doneAt: new Date(now.getTime() - 4 * 86_400_000).toISOString(),
   })
@@ -393,13 +399,14 @@ export function createSeed(): AppData {
 
   // Follow: gravação do Lagoinha News com a equipe convidada (alguns já responderam)
   const newsDay = toISO(addDays(today, 4))
-  const newsTeam = data.members.filter((m) => m.ministries.some((mm) => mm.ministryId === 'follow' && mm.roles.includes('Lagoinha News')))
+  const newsRole = (m: Member) => NEWS_SESSION_ROLES.find((r) => m.ministries.some((mm) => mm.ministryId === 'follow' && mm.roles.includes(r)))
+  const newsTeam = data.members.filter((m) => newsRole(m))
   data.events.push({
     id: 'e-demo-news', title: 'Gravação Lagoinha News', date: newsDay, time: '19:30', ministryIds: ['follow'], setlist: [],
-    activity: 'Gravação · episódio de dezembro', place: 'Garagem', slots: [{ ministryId: 'follow', role: 'Lagoinha News', count: newsTeam.length }],
+    activity: 'Gravação · episódio de dezembro', place: 'Garagem', slots: NEWS_SESSION_ROLES.map((role) => ({ ministryId: 'follow', role, count: Math.max(1, newsTeam.filter((m) => newsRole(m) === role).length) })),
   })
   newsTeam.forEach((m, i) => data.assignments.push({
-    id: `a-news-${i}`, eventId: 'e-demo-news', ministryId: 'follow', role: 'Lagoinha News', memberId: m.id,
+    id: `a-news-${i}`, eventId: 'e-demo-news', ministryId: 'follow', role: newsRole(m)!, memberId: m.id,
     status: m.id === 'm-rafaela' ? 'confirmed' : i % 3 === 1 ? 'declined' : i % 3 === 2 ? 'confirmed' : 'pending',
   }))
 
@@ -436,11 +443,24 @@ export function createSeed(): AppData {
         assigneeId: 'm-julia', dueDate: toISO(addDays(fromISO(projEv.date), -2)), status: 'done', link: 'https://www.canva.com/', projection: true,
         createdBy: 'm-rafaela', createdAt: ago(72), doneAt: ago(20) },
       { id: 't-proj-news', ministryId: 'follow', kind: 'news', title: `Vídeo do News · ${projEv.title} (${dd(projEv.date)})`, eventId: projEv.id, details: 'Episódio da semana, 3 minutos.',
-        assigneeId: 'm-davi', dueDate: toISO(addDays(fromISO(projEv.date), -1)), status: 'done', link: 'https://www.youtube.com/', projection: true,
+        assigneeId: 'm-davi', dueDate: toISO(addDays(fromISO(projEv.date), -1)), status: 'done', link: 'https://www.youtube.com/', projection: true, social: true,
         createdBy: 'm-rafaela', createdAt: ago(96), doneAt: ago(6) },
     )
     if (projEv.ministryIds.includes('louvor') && projEv.setlist.length) projEv.setlistSentAt = ago(26)
   }
+  // material dos cultos que já passaram: quase tudo enviado; o Davi ainda deve o vídeo do último culto em que serviu
+  const deliverable = (a: Assignment) => data.ministries.find((m) => m.id === a.ministryId)?.roles.find((r) => r.name === a.role)?.delivery
+  const pastVideo = data.assignments
+    .filter((a) => a.ministryId === 'follow' && a.role === 'Vídeo' && (evById.get(a.eventId)?.date ?? '9') < todayISO() && a.status !== 'declined')
+    .sort((x, y) => evById.get(y.eventId)!.date.localeCompare(evById.get(x.eventId)!.date))
+    .find((a) => !data.assignments.some((b) => b.eventId === a.eventId && b.memberId === 'm-davi'))
+  if (pastVideo) Object.assign(pastVideo, { memberId: 'm-davi', status: 'confirmed', checkedIn: true })
+  for (const a of data.assignments) {
+    const date = evById.get(a.eventId)?.date ?? ''
+    if (!date || date >= todayISO() || !deliverable(a) || a.status === 'declined' || a === pastVideo) continue
+    if (rand() < 0.8) a.delivery = { link: a.role === 'Vídeo' ? 'https://www.youtube.com/' : 'https://drive.google.com/', at: new Date(fromISO(date).getTime() + 30 * 3600_000).toISOString() }
+  }
+
   // o Davi edita o próximo episódio (ainda em aberto)
   const later = data.events.filter((e) => e.slotId && e.ministryIds.includes('follow') && e.date > (projEv?.date ?? todayISO())).sort((a, b) => a.date.localeCompare(b.date))[1]
   if (later) data.tasks!.push({ id: 't-news-2', ministryId: 'follow', kind: 'news', title: `Vídeo do News · ${later.title} (${dd(later.date)})`, eventId: later.id,
@@ -463,8 +483,10 @@ export const LEADER_ROLES: Record<string, string> = { carisma: 'Secretário' }
  * null = a função deixou de existir (sai do cadastro das pessoas).
  */
 
-export const ROLE_RENAMES: Record<string, Record<string, string | null>> = {
+export const ROLE_RENAMES: Record<string, Record<string, string | string[] | null>> = {
   louvor: { Ministro: 'Voz', Vocal: 'Voz' },
   centurioes: { 'Portão': 'Estacionamento', 'Ronda externa': 'Estacionamento' },
   shine: { 'Recepção': 'Organização', Apoio: 'Organização' },
+  // o Lagoinha News virou duas funções no dia da gravação (a Edição do News é nova): quem era do News fica nas duas
+  follow: { 'Lagoinha News': ['Filmagem (News)', 'Gravação (News)'] },
 }

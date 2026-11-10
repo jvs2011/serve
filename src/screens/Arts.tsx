@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { CheckCircle2, ChevronRight, Clapperboard, ExternalLink, MonitorPlay, Palette, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react'
+import { CheckCircle2, ChevronRight, Clapperboard, ExternalLink, MonitorPlay, Palette, Pencil, Plus, RotateCcw, Share2, Trash2 } from 'lucide-react'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
 import { addDays, dueLabel, fromISO, timeRange, toISO, todayISO, weekdayShort } from '../lib/dates'
@@ -12,7 +12,7 @@ import type { Ministry, Task } from '../data/types'
 /** Ministérios que usam a aba de artes */
 export const ARTS_MINISTRIES = ['follow']
 const ART_ROLE = 'Edição de artes'
-const NEWS_ROLE = 'Lagoinha News'
+const NEWS_ROLE = 'Edição do News'
 const isNews = (t: Pick<Task, 'kind'>) => t.kind === 'news'
 const ddmm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
 
@@ -74,7 +74,12 @@ function TaskCard({ task, manage, onEdit }: { task: Task; manage: boolean; onEdi
         <strong className="grow">{task.title}</strong>
         {done ? <span className="pill pill-confirmed">Entregue</span> : <DueBadge due={task.dueDate} />}
       </div>
-      {task.projection && <span className="task-proj"><MonitorPlay size={14} /> Vai para a projeção: a equipe recebe o link na escala do culto</span>}
+      {(task.projection || task.social) && (
+        <div className="task-dest">
+          {task.projection && <span><MonitorPlay size={14} /> Projeção</span>}
+          {task.social && <span><Share2 size={14} /> Mídias sociais</span>}
+        </div>
+      )}
       {task.details && <p className="task-details">{task.details}</p>}
       <div className="task-who">
         <Avatar name={who?.name ?? '?'} size={26} />
@@ -135,11 +140,14 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
 
   const [kind, setKind] = useState<'art' | 'news'>(task && isNews(task) ? 'news' : 'art')
   const news = kind === 'news'
+  // destino: projeção (aparece na escala do culto) e/ou mídias sociais
+  const [projection, setProjectionState] = useState(task ? !!task.projection : false)
+  const [social, setSocial] = useState(task ? !!task.social : true)
   // opções prontas: próximos cultos e eventos (fixos e especiais); o vídeo do News só nos cultos com projeção
   const events = useMemo(() => {
     const until = toISO(addDays(new Date(), 35))
-    return data.events.filter((e) => e.date >= today && e.date <= until && (!news || hasProjection(data, e))).sort(sortEvents)
-  }, [data, today, news])
+    return data.events.filter((e) => e.date >= today && e.date <= until && (!projection || hasProjection(data, e))).sort(sortEvents)
+  }, [data, today, projection])
 
   const groups: [string, typeof events][] = useMemo(() => {
     const week = toISO(addDays(new Date(), 6))
@@ -159,7 +167,6 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
     return [...list].sort((a, b) => Number(has(b.id)) - Number(has(a.id)) || a.name.localeCompare(b.name)).map((m) => ({ m, art: has(m.id) }))
   }, [data, ministry.id, role])
 
-  const [projection, setProjection] = useState(!!task?.projection)
   const [eventId, setEventId] = useState(task ? task.eventId ?? OTHER : '')
   const projEvent = (() => { const ev = data.events.find((e) => e.id === eventId); return !!ev && hasProjection(data, ev) })()
   const [title, setTitle] = useState(task?.title ?? '')
@@ -172,7 +179,7 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
   const pickEvent = (id: string) => {
     setEventId(id)
     setError('')
-    if (id === OTHER || !id) { if (!task) setTitle(''); return }
+    if (id === OTHER || !id) { if (!task) setTitle(id === OTHER && news ? 'Vídeo do News · ' : ''); return }
     const ev = data.events.find((e) => e.id === id)
     if (!ev) return
     setTitle(`${news ? 'Vídeo do News' : 'Arte'} · ${ev.title} (${ddmm(ev.date)})`)
@@ -182,7 +189,8 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
   }
 
   const save = async () => {
-    if (!title.trim()) return setError(news ? 'Escolha em qual culto o vídeo vai passar.' : eventId === OTHER ? 'Escreva qual é a arte ou o evento.' : 'Escolha para qual culto ou evento é a arte.')
+    if (!projection && !social) return setError('Escolha para onde vai: projeção, mídias sociais ou as duas.')
+    if (!title.trim()) return setError(projection ? 'Escolha em qual culto vai passar na projeção.' : eventId === OTHER ? `Escreva qual é ${news ? 'o vídeo' : 'a arte'} ou o evento.` : `Escolha para qual culto ou evento é ${news ? 'o vídeo' : 'a arte'}.`)
     if (!assigneeId) return setError('Escolha quem vai ficar responsável.')
     if (!dueDate) return setError(news ? 'Escolha até quando precisa do vídeo.' : 'Escolha até quando precisa da arte.')
     setSaving(true)
@@ -190,7 +198,7 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
       id: task?.id, ministryId: ministry.id, title, details, assigneeId, dueDate,
       eventId: eventId && eventId !== OTHER ? eventId : undefined,
       kind: news ? 'news' : undefined,
-      projection: news || (projection && projEvent),
+      projection: projection && projEvent, social,
     })
     setSaving(false)
     if (!r.ok) return setError(r.error)
@@ -199,15 +207,23 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
     onDone()
   }
 
+  // projeção só em culto com Projeção: se o culto escolhido não tem, escolhe de novo
+  const setProjection = (on: boolean) => {
+    setProjectionState(on)
+    setError('')
+    const ev = data.events.find((e) => e.id === eventId)
+    if (on && (eventId === OTHER || (ev && !hasProjection(data, ev)))) { setEventId(''); if (!task) setTitle('') }
+  }
+
   const switchKind = (k: 'art' | 'news') => {
     if (k === kind) return
     setKind(k)
     setError('')
-    // o vídeo do News só passa em culto com projeção
-    const ev = data.events.find((e) => e.id === eventId)
-    if (k === 'news' && (eventId === OTHER || (ev && !hasProjection(data, ev)))) { setEventId(''); setTitle(''); return }
     // o título acompanha o tipo do pedido
     setTitle((t) => (k === 'news' ? t.replace(/^Arte · /, 'Vídeo do News · ') : t.replace(/^Vídeo do News · /, 'Arte · ')))
+    // destino mais comum: o News passa na projeção; a arte vai para as mídias sociais
+    setSocial(k === 'art')
+    setProjection(k === 'news')
   }
 
   return (
@@ -218,9 +234,14 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
           <button className={`chip${news ? ' on' : ''}`} onClick={() => switchKind('news')}><Clapperboard size={15} /> Vídeo do Lagoinha News</button>
         </div>
       )}
-      {news && <p className="muted small">Quem edita o episódio entrega o link do vídeo, e a Projeção recebe na escala do culto em que ele vai passar.</p>}
+      <span className="field-label">Para onde vai?</span>
+      <div className="chips dest-chips">
+        <button className={`chip${projection ? ' on' : ''}`} aria-pressed={projection} onClick={() => setProjection(!projection)}><MonitorPlay size={15} /> Projeção</button>
+        <button className={`chip${social ? ' on' : ''}`} aria-pressed={social} onClick={() => { setSocial(!social); setError('') }}><Share2 size={15} /> Mídias sociais</button>
+      </div>
+      {projection && <p className="muted small">Quem fizer entrega o link, e a Projeção recebe dentro da escala do culto em que vai passar.</p>}
       <label className="field">
-        <span>{news ? 'Em qual culto vai passar?' : 'Para qual culto ou evento?'}</span>
+        <span>{projection ? 'Em qual culto vai passar?' : 'Para qual culto ou evento?'}</span>
         <select id="task-event" value={eventId} onChange={(e) => pickEvent(e.target.value)}>
           <option value="" disabled>Escolha…</option>
           {groups.map(([label, list]) => list.length > 0 && (
@@ -230,25 +251,19 @@ function TaskForm({ ministry, task, onDone }: { ministry: Ministry; task: Task |
               ))}
             </optgroup>
           ))}
-          {!news && <option value={OTHER}>+ Outro evento ou arte</option>}
+          {!projection && <option value={OTHER}>+ Outro evento {news ? 'ou vídeo' : 'ou arte'}</option>}
         </select>
       </label>
       {(eventId === OTHER || (eventId && title)) && (
         <label className="field">
-          <span>{eventId === OTHER ? 'Qual arte?' : news ? 'Nome do pedido' : 'Nome da arte'}</span>
-          <input id="task-title" value={title} onChange={(e) => { setTitle(e.target.value); setError('') }} placeholder="Ex.: Arte da Conferência de Jovens" />
+          <span>{eventId === OTHER ? (news ? 'Qual vídeo?' : 'Qual arte?') : news ? 'Nome do pedido' : 'Nome da arte'}</span>
+          <input id="task-title" value={title} onChange={(e) => { setTitle(e.target.value); setError('') }} placeholder={news ? 'Ex.: Vídeo do News · episódio de dezembro' : 'Ex.: Arte da Conferência de Jovens'} />
         </label>
       )}
       <label className="field">
         <span>Detalhes (opcional)</span>
         <textarea id="task-details" rows={3} value={details} onChange={(e) => setDetails(e.target.value)} placeholder={news ? 'Episódio, duração, observações…' : 'Formato (feed, stories, projeção), textos, referências…'} />
       </label>
-      {!news && eventId && eventId !== OTHER && projEvent && (
-        <label className="switch-row proj-switch">
-          <span><MonitorPlay size={18} /> Vai para a projeção <span className="muted small block">A Projeção recebe o link dentro da escala do culto</span></span>
-          <input type="checkbox" checked={projection} onChange={(e) => setProjection(e.target.checked)} />
-        </label>
-      )}
       <label className="field">
         <span>Responsável</span>
         <select id="task-assignee" value={assigneeId} onChange={(e) => { setAssigneeId(e.target.value); setError('') }}>

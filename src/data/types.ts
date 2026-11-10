@@ -7,6 +7,8 @@ export interface RoleSlot {
   group?: boolean
   /** complemento mostrado junto do nome (ex.: "0 a 3 anos") */
   hint?: string
+  /** quem serve nessa função envia um material depois (ex.: "as fotos"): o link fica na escala */
+  delivery?: string
 }
 
 /** Grupo fixo de pessoas que entra junto na escala (ex.: grupo de voz) */
@@ -119,6 +121,8 @@ export interface Assignment {
   draft?: boolean
   checkedIn?: boolean
   feedback?: { rating: number; comment: string }
+  /** material enviado depois de servir (fotos, vídeo, filmagens) */
+  delivery?: { link: string; at: string }
 }
 
 export interface SwapRequest {
@@ -155,6 +159,8 @@ export interface Task {
   kind?: 'news'
   /** vai para a projeção: a Projeção recebe o link na escala do culto (`eventId`) */
   projection?: boolean
+  /** vai para as mídias sociais */
+  social?: boolean
   createdBy: string
   createdAt: string
   doneAt?: string

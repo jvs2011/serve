@@ -151,6 +151,7 @@ function makeActions(
     saveWeekly: (slot: WeeklySlot) => dispatchAsync({ type: 'saveWeekly', slot }),
     removeWeekly: (slotId: string) => dispatchAsync({ type: 'removeWeekly', slotId }),
     sendSetlist: (eventId: string) => dispatchAsync({ type: 'sendSetlist', eventId }),
+    deliverMaterial: (assignmentId: string, link: string) => dispatchAsync({ type: 'deliverMaterial', assignmentId, link }),
     removeTask: (taskId: string) => { dispatch({ type: 'removeTask', taskId }) },
     setTaskDone: (taskId: string, done: boolean, link?: string) => { dispatch({ type: 'setTaskDone', taskId, done, link }) },
     saveMember: (member: MemberInput) => dispatchAsync({ type: 'saveMember', member }),

@@ -8,7 +8,7 @@ process.env.SERVE_MEMORY_DB = '1'
 const notify = await import('../server/notify')
 
 describe('projeção', () => {
-  it('o vídeo do News sempre vai para a projeção e precisa do culto', () => {
+  it('o vídeo do News vai para a projeção (precisa do culto) ou só para as mídias sociais', () => {
     const d = createSeed()
     const base = { ministryId: 'follow', details: '', assigneeId: 'm-davi', dueDate: todayISO() }
     expect(() => applyAction(d, { type: 'saveTask', task: { ...base, title: 'Vídeo do News', kind: 'news' } }, 'm-rafaela')).toThrow(/culto/)
@@ -16,6 +16,10 @@ describe('projeção', () => {
     applyAction(d, { type: 'saveTask', task: { ...base, title: 'Vídeo do News · X', kind: 'news', eventId: ev.id } }, 'm-rafaela')
     const t = d.tasks!.find((x) => x.title === 'Vídeo do News · X')!
     expect([t.kind, t.projection]).toEqual(['news', true])
+    // só para as mídias sociais: não precisa de culto e não aparece na projeção
+    applyAction(d, { type: 'saveTask', task: { ...base, title: 'Vídeo do News · redes', kind: 'news', projection: false, social: true } }, 'm-rafaela')
+    const s = d.tasks!.find((x) => x.title === 'Vídeo do News · redes')!
+    expect([s.projection, s.social, s.eventId]).toEqual([undefined, true, undefined])
     // arte comum não vai para a projeção
     applyAction(d, { type: 'saveTask', task: { ...base, title: 'Arte · Y', assigneeId: 'm-julia', eventId: ev.id } }, 'm-rafaela')
     expect(d.tasks!.find((x) => x.title === 'Arte · Y')!.projection).toBeUndefined()

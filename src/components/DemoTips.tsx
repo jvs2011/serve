@@ -36,9 +36,9 @@ const TIPS: Record<string, { title: string; tips: Tip[] }> = {
   'm-davi': {
     title: 'Você está no Lagoinha News',
     tips: [
-      { text: 'Responda o convite da próxima gravação' },
-      { text: 'Veja quem já confirmou a gravação', go: 'agenda' },
-      { text: 'Peça troca de uma escala de Vídeo', go: 'agenda' },
+      { text: 'Responda o convite da próxima gravação (Filmagem)' },
+      { text: 'Entregue o vídeo editado do News', go: { name: 'ministry', id: 'follow', tab: 'arts' } },
+      { text: 'Envie o vídeo do culto em que você serviu' },
     ],
   },
 }

@@ -12,7 +12,7 @@ import { isValidPhone, normalizePhone } from '../src/lib/people.js'
 import { canManage, visibleTo } from '../src/lib/schedule.js'
 import { getStore, type Store } from './storage.js'
 import { addSub, isValidSub, removeSub, sendPush, vapidKeys } from './push.js'
-import { confirmRemindersFor, draftRemindersFor, notificationsFor, openSlotsAlertsFor, remindersFor, taskRemindersFor, type Outgoing } from './notify.js'
+import { confirmRemindersFor, deliveryRemindersFor, draftRemindersFor, notificationsFor, openSlotsAlertsFor, remindersFor, taskRemindersFor, type Outgoing } from './notify.js'
 
 const LIVE_VERSION = 1
 const SESSION_TTL = 180 * 24 * 3600 // 180 dias
@@ -40,14 +40,18 @@ function emptyData(): AppData {
  * - cultos fixos futuros seguem a agenda fixa.
  */
 function syncStructure(d: AppData, today: string) {
-  const rename = (mid: string, role: string): string | null => {
+  // uma função pode virar outra, várias (ex.: Lagoinha News → Filmagem e Gravação) ou nenhuma
+  const renameAll = (mid: string, role: string): string[] => {
     const map = ROLE_RENAMES[mid]
-    return map && role in map ? map[role] : role
+    if (!map || !(role in map)) return [role]
+    const to = map[role]
+    return to === null ? [] : Array.isArray(to) ? to : [to]
   }
+  const rename = (mid: string, role: string): string | null => renameAll(mid, role)[0] ?? null
   const fixRoles = (list: { ministryId: string; roles: string[] }[] | undefined) =>
     list?.forEach((mm) => {
       const valid = new Set(d.ministries.find((x) => x.id === mm.ministryId)?.roles.map((r) => r.name) ?? [])
-      mm.roles = [...new Set(mm.roles.map((r) => rename(mm.ministryId, r)).filter((r): r is string => !!r && valid.has(r)))]
+      mm.roles = [...new Set(mm.roles.flatMap((r) => renameAll(mm.ministryId, r)).filter((r) => valid.has(r)))]
     })
   for (const m of d.members) { fixRoles(m.ministries); fixRoles(m.interests) }
   // culto fixo que mudou de horário: a indisponibilidade marcada acompanha (Rocket 19h → 19h30)
@@ -67,6 +71,19 @@ function syncStructure(d: AppData, today: string) {
   // cultos fixos futuros seguem a agenda fixa (editada pela coordenação)
   if (d.weekly) applyWeekly(d, today)
   const events = new Map(d.events.map((e) => [e.id, e]))
+
+  // vagas próprias de eventos futuros (ex.: gravação do News) acompanham a função renomeada
+  for (const ev of d.events) {
+    if (!ev.slots || ev.date < today) continue
+    const merged = new Map<string, { ministryId: string; role: string; count: number }>()
+    for (const s of ev.slots) {
+      const role = rename(s.ministryId, s.role)
+      if (!role) continue
+      const k = `${s.ministryId}|${role}`
+      merged.set(k, { ministryId: s.ministryId, role, count: Math.max(s.count, merged.get(k)?.count ?? 0) })
+    }
+    ev.slots = [...merged.values()]
+  }
 
   // escalas futuras: renomeia a função ou tira a escala que não cabe mais
   const gone = new Set<string>()
@@ -431,6 +448,7 @@ export async function route(name: string, method: string, body: any, auth: strin
           ...draftRemindersFor(data, brToday(), in3),
           ...openSlotsAlertsFor(data, tomorrow, in3),
           ...confirmRemindersFor(data, in3),
+          ...deliveryRemindersFor(data, toISO(addDays(fromISO(brToday()), -1))),
         ]
         await deliver(store, list)
         return ok({ tomorrow, people: list.length })

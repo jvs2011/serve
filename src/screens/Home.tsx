@@ -13,6 +13,7 @@ import { ThemeToggle } from '../components/ThemeToggle'
 import { HomeArtsCard } from './Arts'
 import { DraftBar } from '../components/DraftBar'
 import { DemoTips } from '../components/DemoTips'
+import { HomeDeliveriesCard } from '../components/DeliveryBox'
 import { PROJECTION_ROLE, projectionMaterials, projectionSummary } from '../lib/projection'
 
 export function Home() {
@@ -104,6 +105,7 @@ export function Home() {
       )}
 
       <HomeArtsCard />
+      <HomeDeliveriesCard />
 
       {toRate && <FeedbackCard key={toRate.a.id} title={toRate.ev.title} onSend={(r, c) => { actions.feedback(toRate.a.id, r, c); notify('Obrigado pelo feedback! +2 pontos') }} />}
 

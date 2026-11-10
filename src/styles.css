@@ -807,8 +807,19 @@ select:focus { border-color: var(--accent); }
 .proj-song .grow { min-width: 0; }
 .proj-n { width: 22px; flex: none; color: var(--muted); font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
 .hero-proj { margin-top: 6px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255,255,255,.8); }
-.task-proj { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--accent-strong); }
+.task-dest { display: flex; flex-wrap: wrap; gap: 6px; }
+.task-dest span { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-strong); }
 .kind-chips .chip { display: inline-flex; align-items: center; gap: 6px; }
 .proj-switch { margin-bottom: 14px; }
 .proj-switch svg { vertical-align: -3px; margin-right: 4px; color: var(--accent-strong); }
 .proj-item a.btn { text-decoration: none; }
+.delivery { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--ok-soft); color: var(--ink); font-size: 14px; }
+.delivery > svg { color: var(--ok); flex: none; }
+.delivery .btn { text-decoration: none; }
+.my-assignment .delivery, .my-assignment > .btn-block { margin-top: 10px; }
+.deliv-link { color: var(--ok); }
+.dest-chips .chip { display: inline-flex; align-items: center; gap: 6px; }
+.recent-material { margin-bottom: 14px; }
+.material-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.material-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
+.material-chip.ok { background: var(--ok-soft); color: var(--ok); }

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { AlertTriangle, ArrowDown, ArrowLeft, Lightbulb, ArrowUp, ArrowUpDown, Check, ExternalLink, Music2, Pencil, Plus, Send, Sparkles, Trash2, UserPlus, Users, X } from 'lucide-react'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
-import { longDate, relativeDay, timeRange } from '../lib/dates'
+import { longDate, relativeDay, timeRange, todayISO } from '../lib/dates'
 import { firstName, join, memberById } from '../lib/selectors'
 import { canEditSetlist, canManage, isPast, openSlots, rankCandidates, rankGroups, slotsFor } from '../lib/schedule'
 import { AssignmentActions } from '../components/AssignmentActions'
@@ -10,6 +10,8 @@ import { DraftBar } from '../components/DraftBar'
 import { EventEditForm } from './MinistryEvents'
 import { SongLibrary } from './SongLibrary'
 import { ProjectionCard } from '../components/ProjectionCard'
+import { DeliveryBox } from '../components/DeliveryBox'
+import { deliveryLabel } from '../lib/delivery'
 import { Avatar, Empty, MinistryBadge, Sheet, StatusPill, TopBar } from '../components/ui'
 import type { Assignment, ChurchEvent, Ministry, Song } from '../data/types'
 import { FillBar, fillOf } from './Agenda'
@@ -85,6 +87,7 @@ export function EventDetail({ id }: { id: string }) {
             <StatusPill status={x.a.status} checkedIn={x.a.checkedIn} />
           </div>
           <AssignmentActions item={x} />
+          <DeliveryBox item={x} />
         </div>
       ))}
 
@@ -114,6 +117,9 @@ function MinistryTeam({ ev, ministry }: { ev: ChurchEvent; ministry: Ministry })
   const manage = canManage(me, ministry.id, data) && !isPast(ev)
   const [picker, setPicker] = useState<string | null>(null)
   const [groupPicker, setGroupPicker] = useState<string | null>(null)
+  const today = todayISO()
+  // quem é da equipe vê o material enviado (ex.: Stories usa as fotos, a Edição do News usa as filmagens)
+  const seesMaterial = canManage(me, ministry.id, data) || me.ministries.some((mm) => mm.ministryId === ministry.id)
   const list = data.assignments.filter((a) => a.eventId === ev.id && a.ministryId === ministry.id)
 
   const auto = () => {
@@ -158,6 +164,10 @@ function MinistryTeam({ ev, ministry }: { ev: ChurchEvent; ministry: Ministry })
               <Avatar name={m?.name ?? '?'} size={28} />
               <span className="grow">{m ? (a.memberId === me.id ? 'Você' : m.name) : '—'}{swap && <em className="swap-tag">troca</em>}</span>
               <StatusPill status={a.status} checkedIn={a.checkedIn} draft={a.draft} />
+              {a.delivery && seesMaterial && (
+                <a className="icon-btn sm deliv-link" href={a.delivery.link} target="_blank" rel="noreferrer" aria-label={`Abrir ${deliveryLabel(data, a) ?? 'material'} de ${m?.name ?? ''}`}><ExternalLink size={16} /></a>
+              )}
+              {!a.delivery && canManage(me, ministry.id, data) && ev.date < today && a.status !== 'declined' && !a.draft && deliveryLabel(data, a) && <span className="tag warn">falta enviar</span>}
               {manage && (
                 <button className="icon-btn sm" aria-label="Remover" onClick={() => actions.unassign(a.id)}><X size={16} /></button>
               )}
