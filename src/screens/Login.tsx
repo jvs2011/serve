@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { ArrowLeft, ArrowRight, PartyPopper } from 'lucide-react'
 import { ApiError, useStore } from '../data/store'
 import { createSeed, demoProfiles } from '../data/seed'
@@ -9,7 +9,10 @@ import { isValidPhone, nextPhoneValue } from '../lib/people'
 
 const demoMembers = createSeed().members
 
-export function Login() {
+type DemoProfile = { id: string; label: string; hint: string }
+
+/** Entrada com celular e PIN. O painel do computador usa outro título e só os perfis de líder na demonstração. */
+export function Login({ title, text, profiles = demoProfiles }: { title?: ReactNode; text?: string; profiles?: DemoProfile[] } = {}) {
   const { actions } = useStore()
   const [available, setAvailable] = useState<boolean | null>(null)
   const [showDemo, setShowDemo] = useState<boolean | null>(null)
@@ -88,8 +91,8 @@ export function Login() {
     <div className="login">
       <div className="login-hero">
         <Logo size={44} light />
-        <h1>Servir é um <em>privilégio.</em></h1>
-        <p>Escalas dos ministérios da Lagoinha Franca, na palma da mão.</p>
+        <h1>{title ?? <>Servir é um <em>privilégio.</em></>}</h1>
+        <p>{text ?? 'Escalas dos ministérios da Lagoinha Franca, na palma da mão.'}</p>
       </div>
 
       <div className="login-card">
@@ -163,7 +166,7 @@ export function Login() {
         <p className="muted small demo-hint">Fique à vontade para testar: as alterações são desfeitas 10 minutos depois.</p>
 
         <div className="demo-list">
-          {demoProfiles.map((p) => {
+          {profiles.map((p) => {
             const m = demoMembers.find((x) => x.id === p.id)
             if (!m) return null
             return (

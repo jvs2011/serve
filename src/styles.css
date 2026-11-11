@@ -542,6 +542,9 @@ input:focus, textarea:focus { border-color: var(--accent); }
 .device-aside .logo { color: #fff !important; }
 .device-aside h2 { font-size: 34px; line-height: 1.1; font-weight: 800; letter-spacing: -0.03em; text-wrap: balance; }
 .device-aside p { color: #B9B7B3; line-height: 1.55; font-size: 15px; }
+.device-panel-link { display: grid; gap: 2px; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .05); color: #fff; text-decoration: none; font-size: 14px; }
+.device-panel-link span { color: #B9B7B3; }
+.device-panel-link:hover { background: rgba(255, 255, 255, .09); }
 .device-qr { display: grid; justify-items: start; gap: 10px; margin-top: 6px; }
 .device-qr span { font-size: 13px; color: #8E8C93; word-break: break-all; }
 .qr { width: 132px; height: 132px; flex-shrink: 0; background: #fff; border-radius: 16px; padding: 12px; }
@@ -832,3 +835,5 @@ select:focus { border-color: var(--accent); }
 .material-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .material-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
 .material-chip.ok { background: var(--ok-soft); color: var(--ok); }
+
+.pn-hint { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius-sm); padding: 12px 14px; margin-top: 14px; }

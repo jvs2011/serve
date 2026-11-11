@@ -101,6 +101,8 @@ export function Dashboard() {
         </Section>
       )}
 
+      <p className="muted small pn-hint">No computador ou tablet, abra <b>serve.lagoinhafranca.com/painel</b>: escalas em grade, equipe e pedidos numa tela grande.</p>
+
       <Section title="Quem precisa de cuidado" action={<HeartHandshake size={18} className="accent" />}>
         <div className="card">
           {care.length === 0 ? (

@@ -30,3 +30,15 @@ export function downloadText(filename: string, text: string, type = 'text/csv;ch
   a.remove()
   setTimeout(() => URL.revokeObjectURL(url), 2000)
 }
+
+/** Planilha da equipe de um ministério (painel do líder) */
+export function teamCsv(rows: import('./panel').TeamRow[], today: string): string {
+  const esc = (v: string) => (/[";\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
+  const br = (iso?: string) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '')
+  const head = ['Nome', 'Celular', 'Funções', `Escalas em ${today.slice(5, 7)}/${today.slice(0, 4)}`, 'Limite por mês', 'Próxima escala', 'Última vez que serviu', 'Confirma (%)', 'Dias indisponível (30 dias)']
+  const lines = rows.map((r) => [
+    r.member.name, r.member.phone ? formatPhone(r.member.phone) : '', r.roles.join(', '), String(r.month), String(r.member.maxPerMonth),
+    r.next ? `${br(r.next.ev.date)} ${r.next.ev.title} (${r.next.a.role})` : '', br(r.last), r.confirmRate === null ? '' : String(r.confirmRate), String(r.off),
+  ])
+  return '﻿' + [head, ...lines].map((r) => r.map((c) => esc(c)).join(';')).join('\r\n')
+}

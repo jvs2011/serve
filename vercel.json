@@ -42,6 +42,14 @@
     {
       "source": "/cadastro/:id",
       "destination": "/cadastro/:id.html"
+    },
+    {
+      "source": "/painel",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/painel/",
+      "destination": "/index.html"
     }
   ]
 }

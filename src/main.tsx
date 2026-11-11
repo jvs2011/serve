@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { lazy, StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import { Signup } from './screens/Signup'
@@ -7,12 +7,19 @@ import './styles.css'
 
 // /cadastro/<ministério> → formulário público de cadastro (sem o app)
 const signup = location.pathname.match(/^\/cadastro\/([a-z0-9-]+)\/?$/i)
+// /painel → painel dos líderes no computador ou tablet (carregado só aqui, o app do celular não baixa)
+const panel = /^\/painel\/?$/i.test(location.pathname)
+const Panel = lazy(() => import('./panel/Panel'))
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <DeviceFrame kind={signup ? 'form' : 'app'}>
-      {signup ? <Signup ministryId={signup[1].toLowerCase()} /> : <App />}
-    </DeviceFrame>
+    {panel ? (
+      <Suspense fallback={null}><Panel /></Suspense>
+    ) : (
+      <DeviceFrame kind={signup ? 'form' : 'app'}>
+        {signup ? <Signup ministryId={signup[1].toLowerCase()} /> : <App />}
+      </DeviceFrame>
+    )}
   </StrictMode>,
 )
 

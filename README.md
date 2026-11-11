@@ -96,6 +96,34 @@ ativar notificações e, para líderes, como publicar a escala). Dá para rever 
   artes com o botão Copiar link e as músicas do Louvor; na tela Início aparece o resumo ("4 músicas · 1 arte · vídeo do News")
 - Avisos: entregue com link → a Projeção escalada naquele culto; repertório enviado pelo Louvor → Louvor e Projeção do culto
 
+### Painel do líder no computador (/painel)
+
+**serve.lagoinhafranca.com/painel** é uma área só para **líderes e coordenação**, feita para computador e tablet
+(em tela menor que 760 px aparece o aviso para usar o app; voluntário que entra vê que o painel é da liderança).
+Usa o mesmo login (celular + PIN) e os mesmos dados do app, e só é baixado por quem abre o /painel.
+
+- **Menu lateral**: troca de ministério (a coordenação vê todos), seções e números do que está pendente; no tablet
+  o menu vira uma coluna de ícones
+- **Visão geral**: vagas preenchidas, vagas abertas (14 dias), quem não respondeu, trocas pedidas, rascunho e
+  presença; lista **Precisa da sua atenção** com a ação ali mesmo (publicar rascunho, escalar substituto,
+  escalar na vaga aberta, chamar no WhatsApp, ver pedido atrasado); próximos cultos com o preenchimento;
+  material dos últimos cultos (o link abre direto); quem precisa de cuidado; para a coordenação, o
+  preenchimento de todos os ministérios
+- **Escalas em grade**: cada linha é um culto/evento e cada coluna uma função (2, 4 ou 8 semanas, navegando
+  semana a semana). Cores: confirmado, aguardando, rascunho e vaga aberta. **+ Escalar** abre os candidatos em
+  ordem (disponibilidade, outras escalas, limite do mês, rodízio; grupos de voz no Louvor); clicar em um nome
+  troca ou tira da escala. Preencher automático (tudo ou um culto), publicar/descartar o rascunho,
+  **Copiar para o WhatsApp** (texto pronto da escala publicada) e **Imprimir** (paisagem)
+- **Equipe**: tabela com busca, filtro por função e "só quem está sem escala"; escalas no mês × limite,
+  próxima escala, última vez que serviu, quanto confirma e indisponibilidade; clique abre os detalhes da
+  pessoa; **Baixar planilha** (CSV)
+- **Pedidos** (Follow): tabela de arte, vídeo, fotos e News com prazo, destino e responsável; novo pedido,
+  editar, marcar como entregue com o link, reabrir e excluir
+- **Avisos**: escrever o aviso e ver os enviados (a coordenação também manda para a igreja toda)
+
+O código fica em `src/panel/` e as regras (grade, atenção, números da equipe, texto do WhatsApp) em
+`src/lib/panel.ts`. No computador, a tela do app mostra o link para o painel.
+
 ## Estrutura
 
 ```
@@ -109,6 +137,8 @@ src/
   lib/schedule.ts    regras de escala: disponibilidade, ranking de candidatos, escala automática, pontos
   lib/selectors.ts   consultas derivadas
   screens/           telas (Início, Escalas, Evento, Trocas, Ministérios, Perfil, Painel…)
+  panel/             painel do líder no computador (/painel): visão geral, grade de escalas, equipe, pedidos, avisos
+  lib/panel.ts       regras do painel do computador
   components/        UI compartilhada
 server/              servidor: armazenamento (Upstash/memória), login, sessões, regras
 api/                 funções da Vercel (/api/login, /api/verify, /api/data, /api/action…)

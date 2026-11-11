@@ -15,7 +15,7 @@ export const ARTS_MINISTRIES = ['follow']
 const KIND_ICON = { art: Palette, video: Film, photo: Camera, news: Clapperboard }
 const ddmm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
 
-function DueBadge({ due, done }: { due: string; done?: boolean }) {
+export function DueBadge({ due, done }: { due: string; done?: boolean }) {
   if (done) return null
   const d = dueLabel(due)
   return <span className={`due due-${d.level}`}>{d.text}</span>
@@ -125,7 +125,7 @@ function TaskCard({ task, manage, onEdit }: { task: Task; manage: boolean; onEdi
 const OTHER = '__outro__'
 
 /** Formulário de nova arte / edição */
-function TaskSheet({ ministry, task, onClose }: { ministry: Ministry; task: Task | 'new' | null; onClose: () => void }) {
+export function TaskSheet({ ministry, task, onClose }: { ministry: Ministry; task: Task | 'new' | null; onClose: () => void }) {
   return (
     <Sheet open={!!task} onClose={onClose} title={task === 'new' ? 'Novo pedido' : 'Editar pedido'}>
       {task && <TaskForm key={task === 'new' ? 'new' : task.id} ministry={ministry} task={task === 'new' ? null : task} onDone={onClose} />}

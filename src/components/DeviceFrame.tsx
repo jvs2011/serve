@@ -86,6 +86,12 @@ export function DeviceFrame({ children, kind }: { children: ReactNode; kind: 'ap
           <QrCode text={url} />
           <span>{host}</span>
         </div>
+        {kind === 'app' && (
+          <a className="device-panel-link" href="/painel">
+            <strong>É líder ou da coordenação?</strong>
+            <span>Use o painel do computador: escalas em grade, equipe e pedidos →</span>
+          </a>
+        )}
       </aside>
 
       <div className="device-slot" style={{ width: PHONE_W * scale, height: PHONE_H * scale }}>
