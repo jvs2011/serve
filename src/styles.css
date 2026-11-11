@@ -837,3 +837,13 @@ select:focus { border-color: var(--accent); }
 .material-chip.ok { background: var(--ok-soft); color: var(--ok); }
 
 .pn-hint { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius-sm); padding: 12px 14px; margin-top: 14px; }
+
+/* avisos: até quando fica ativo, retirar e excluir */
+.until-picker { margin: 2px 0 6px; }
+.until-picker .chips { margin-bottom: 8px; gap: 6px; }
+.until-picker .chip { height: 32px; font-size: 13px; padding: 0 12px; }
+.until-date { margin-bottom: 8px; }
+.until-date span { font-weight: 500 !important; color: var(--muted) !important; }
+.notice.ended { opacity: .75; }
+.notice-manage { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.notice-manage > span { flex: 1; min-width: 0; }

@@ -122,7 +122,10 @@ e, quando ligada, a demonstração com os perfis de líder e coordenação).
   marcadas continuam; quem perde a função de Voz sai do grupo); **Baixar planilha** (CSV)
 - **Pedidos** (Follow): tabela de arte, vídeo, fotos e News com prazo, destino e responsável; novo pedido,
   editar, marcar como entregue com o link, reabrir e excluir
-- **Avisos**: escrever o aviso e ver os enviados (a coordenação também manda para a igreja toda)
+- **Avisos**: escrever o aviso e escolher **até quando fica ativo** (1 semana, 2 semanas, 1 mês, um dia escolhido ou
+  sem data); depois do último dia o aviso sai sozinho da tela da equipe. Na lista (Ativos / Encerrados e retirados):
+  **mudar a data**, **retirar** (some para a equipe e fica no histórico), **reativar** e **excluir** de vez. A
+  coordenação também manda para a igreja toda. No app, a aba Avisos do ministério tem o mesmo (data, retirar, excluir)
 - **Eventos**: os cultos e encontros do ministério (próximos 30 dias, 3 meses ou os que passaram), com o tipo
   (culto fixo, evento do ministério, evento especial, gravação) e o preenchimento; criar evento do ministério,
   **agendar a gravação do News**, editar e cancelar (o líder, os eventos do ministério; a coordenação, qualquer um)

@@ -144,6 +144,10 @@ export interface Notice {
   title: string
   body: string
   createdAt: string
+  /** último dia em que o aviso aparece (YYYY-MM-DD); sem data = até ser retirado */
+  until?: string
+  /** retirado pela liderança: some para a equipe, mas continua no histórico do líder */
+  archivedAt?: string
 }
 
 /** Demanda de um ministério com responsável e prazo (ex.: artes do Follow) */

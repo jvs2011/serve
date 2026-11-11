@@ -9,7 +9,11 @@ body.panel-mode a.btn, body.panel-mode a.icon-btn, .pn-pop a { text-decoration: 
 .pn-brand .pn-tag { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-strong); background: var(--accent-soft); padding: 3px 8px; border-radius: 99px; }
 .pn-min { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); font-size: 15px; text-align: left; }
 .pn-min:not(.static):hover { border-color: var(--muted); }
-.pn-nav { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 -6px; padding: 0 6px; }
+.pn-nav { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 -6px; padding: 0 6px; scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.pn-nav:hover { scrollbar-color: var(--line) transparent; }
+.pn-nav::-webkit-scrollbar { width: 6px; }
+.pn-nav::-webkit-scrollbar-thumb { background: transparent; border-radius: 6px; }
+.pn-nav:hover::-webkit-scrollbar-thumb { background: var(--line); }
 .pn-nav-group { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); padding: 12px 12px 6px; }
 .pn-nav-group:first-child { padding-top: 0; }
 .pn-nav-sep { display: none; }
@@ -256,7 +260,17 @@ body.panel-mode .sheet-grip { display: none; }
 
 /* ---- avisos ---- */
 .pn-notices { list-style: none; margin: 0; padding: 0; max-height: 70vh; overflow: auto; }
-.pn-notices li { display: grid; gap: 4px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.pn-notices li { display: grid; gap: 4px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.pn-notices li.ended > strong, .pn-notices li.ended > p { opacity: .65; }
+.pn-notice-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+.pn-notice-status { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--ok); background: var(--ok-soft); padding: 3px 9px; border-radius: 99px; margin-right: auto; }
+.pn-notice-status.off { color: var(--muted); background: var(--surface-2); }
+.pn-notice-actions { display: inline-flex; align-items: center; gap: 6px; }
+.pn-notice-actions .icon-btn { color: var(--ink-2); }
+.pn-notice-actions .icon-btn:hover { background: var(--surface-2); }
+.pn-notice-date { margin-top: 10px; padding: 12px; border-radius: 12px; background: var(--surface-2); }
+.pn-notice-date .chip:not(.on) { background: var(--surface); }
+.pn-under { margin-top: 10px; }
 .pn-notices li:last-child { border-bottom: 0; }
 .pn-notices p { color: var(--ink-2); white-space: pre-wrap; font-size: 14px; }
 .pn-cols-notices textarea { font-size: 15px; }
@@ -383,6 +397,17 @@ body.panel-mode .sheet-grip { display: none; }
 .pn-cols-even { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 16px; }
 .pn-cols-even .pn-card-head { flex-wrap: wrap; }
 .pn-page code { font-size: 12px; background: var(--surface-2); padding: 2px 6px; border-radius: 6px; }
+
+/* ---- telas baixas (notebook ou zoom do navegador): menu mais compacto para caber tudo ---- */
+@media (max-height: 820px) and (min-width: 1101px) {
+  .pn-side { padding-top: 14px; gap: 10px; }
+  .pn-nav button { height: 34px; font-size: 14px; }
+  .pn-nav-group { padding: 8px 12px 4px; }
+  .pn-nav .pn-min { padding: 5px 8px; margin-bottom: 2px; }
+  .pn-side-foot { flex-direction: row; display: flex; align-items: center; gap: 4px; padding-top: 8px; }
+  .pn-me { flex: 1; min-width: 0; padding: 0; }
+  .pn-foot-actions .icon-btn { width: 32px; height: 32px; }
+}
 
 /* ---- tablet e telas médias ---- */
 @media (max-width: 1280px) {

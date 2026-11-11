@@ -1,16 +1,17 @@
 import { useState } from 'react'
-import { ChevronRight, Megaphone, Sparkles, Trophy, Users } from 'lucide-react'
+import { ChevronRight, Sparkles, Trophy, Users } from 'lucide-react'
 import { useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
-import { addDays, relativeDay, timeAgo, timeRange, toISO, todayISO } from '../lib/dates'
+import { addDays, relativeDay, timeRange, toISO, todayISO } from '../lib/dates'
 import { ledMinistries, memberById, ministryMembers, myMinistries } from '../lib/selectors'
 import { canManage, levelFor, pointsFor, sortEvents } from '../lib/schedule'
-import { Avatar, Empty, MinistryBadge, Section, Sheet, TopBar } from '../components/ui'
+import { Avatar, MinistryBadge, Section, TopBar } from '../components/ui'
 import type { Ministry } from '../data/types'
 import { ARTS_MINISTRIES, ArtsTab } from './Arts'
 import { SessionCards } from './Sessions'
 import { GroupsTab } from './Groups'
 import { MinistryEventCard } from './MinistryEvents'
+import { MinistryNotices } from './MinistryNotices'
 import { DraftBar } from '../components/DraftBar'
 import { RecentMaterial } from '../components/RecentMaterial'
 import { FillBar, fillOf } from './Agenda'
@@ -53,14 +54,11 @@ export function MinistryDetail({ id, initialTab, asTab }: { id: string; initialT
   const me = useMe()
   const { back, push } = useNav()
   const [tab, setTab] = useState<'schedule' | 'team' | 'groups' | 'notices' | 'arts'>(initialTab ?? 'schedule')
-  const [noticeOpen, setNoticeOpen] = useState(false)
-  const [notice, setNotice] = useState({ title: '', body: '' })
   const ministry = data.ministries.find((m) => m.id === id)
   if (!ministry) return null
   const manage = canManage(me, ministry.id, data)
   const members = ministryMembers(data, ministry.id)
   const events = data.events.filter((e) => e.ministryIds.includes(ministry.id) && e.date >= todayISO()).sort(sortEvents)
-  const notices = data.notices.filter((n) => n.ministryId === ministry.id)
   const ranking = members.map((m) => ({ m, pts: pointsFor(data, m.id) })).sort((a, b) => b.pts - a.pts)
 
   const autoMonth = () => {
@@ -171,35 +169,7 @@ export function MinistryDetail({ id, initialTab, asTab }: { id: string; initialT
         </>
       )}
 
-      {tab === 'notices' && (
-        <>
-          {manage && <button className="btn btn-primary btn-block" onClick={() => setNoticeOpen(true)}><Megaphone size={18} /> Novo aviso</button>}
-          {notices.length === 0 ? (
-            <Empty icon={<Megaphone />} title="Sem avisos por aqui" />
-          ) : (
-            <div className="list">
-              {notices.map((n) => (
-                <div key={n.id} className="card notice">
-                  <span className="muted small">{memberById(data, n.authorId)?.name} · {timeAgo(n.createdAt)}</span>
-                  <strong>{n.title}</strong>
-                  <p>{n.body}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      <Sheet open={noticeOpen} onClose={() => setNoticeOpen(false)} title={`Aviso para ${ministry.name}`}>
-        <label className="field"><span>Título</span><input value={notice.title} onChange={(e) => setNotice({ ...notice, title: e.target.value })} /></label>
-        <label className="field"><span>Mensagem</span><textarea rows={4} value={notice.body} onChange={(e) => setNotice({ ...notice, body: e.target.value })} /></label>
-        <button className="btn btn-primary btn-block" disabled={!notice.title.trim()} onClick={() => {
-          actions.addNotice(ministry.id, notice.title.trim(), notice.body.trim())
-          setNotice({ title: '', body: '' })
-          setNoticeOpen(false)
-          notify('Aviso publicado para a equipe 📣')
-        }}>Publicar</button>
-      </Sheet>
+      {tab === 'notices' && <MinistryNotices ministry={ministry} manage={manage} />}
     </div>
   )
 }

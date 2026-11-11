@@ -3,7 +3,7 @@ import { BarChart3, Bell, CalendarCheck, ChevronRight, Clock, Megaphone, Monitor
 import { demoExpiresAt, useMe, useStore } from '../data/store'
 import { useNav } from '../nav'
 import { greeting, relativeDay, timeAgo, timeRange, todayISO, addDays, toISO } from '../lib/dates'
-import { firstName, join, managedMinistries, memberById, myMinistries, myUpcoming, swapsICanCover } from '../lib/selectors'
+import { firstName, join, managedMinistries, memberById, myMinistries, myUpcoming, noticeActive, swapsICanCover } from '../lib/selectors'
 import { draftsOf, openSlots } from '../lib/schedule'
 import { AssignmentActions } from '../components/AssignmentActions'
 import { Avatar, DateBlock, Empty, MinistryBadge, Section, StatusPill } from '../components/ui'
@@ -33,7 +33,8 @@ export function Home() {
   const hasWork = (data.tasks ?? []).some((t) => t.assigneeId === me.id && t.status === 'open') || materialToEdit(data, me.id).length > 0
   const managed = managedMinistries(data, me)
   const mineIds = new Set(myMinistries(data, me).map((m) => m.id))
-  const notices = data.notices.filter((n) => n.ministryId === null || mineIds.has(n.ministryId)).slice(0, 3)
+  // avisos ativos (não retirados e dentro da data) da igreja e dos meus ministérios
+  const notices = data.notices.filter((n) => (n.ministryId === null || mineIds.has(n.ministryId)) && noticeActive(n, todayISO())).slice(0, 3)
 
   // feedback das últimas escalas com check-in
   const weekAgo = toISO(addDays(new Date(), -7))

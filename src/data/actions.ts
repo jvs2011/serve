@@ -85,7 +85,9 @@ export type Action =
   | { type: 'autoSchedule'; eventIds: string[]; ministryId: string }
   | { type: 'publishDrafts'; ministryId: string; eventId?: string }
   | { type: 'discardDrafts'; ministryId: string; eventId?: string }
-  | { type: 'addNotice'; ministryId: string | null; title: string; body: string }
+  | { type: 'addNotice'; ministryId: string | null; title: string; body: string; until?: string }
+  | { type: 'archiveNotice'; noticeId: string; archived: boolean; until?: string }
+  | { type: 'removeNotice'; noticeId: string }
   | { type: 'addSong'; eventId: string; song: Omit<Song, 'id'> }
   | { type: 'removeSong'; eventId: string; songId: string }
   | { type: 'editSong'; eventId: string; songId: string; song: Omit<Song, 'id'> }
@@ -285,7 +287,32 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
     }
     case 'addNotice': {
       if (action.ministryId === null ? !isAdmin : !canManage(me, action.ministryId, d)) throw deny()
-      d.notices.unshift({ id: uid(), ministryId: action.ministryId, authorId: me.id, title: action.title.slice(0, 120), body: action.body.slice(0, 2000), createdAt: new Date().toISOString() })
+      const until = noticeUntil(action.until)
+      d.notices.unshift({
+        id: uid(), ministryId: action.ministryId, authorId: me.id, title: action.title.slice(0, 120), body: action.body.slice(0, 2000),
+        createdAt: new Date().toISOString(), ...(until ? { until } : {}),
+      })
+      return {}
+    }
+    case 'archiveNotice': {
+      // retirar (some para a equipe) ou voltar a mostrar, com uma nova data de término se quiser
+      const n = d.notices.find((x) => x.id === action.noticeId) ?? (() => { throw notFound() })()
+      if (n.ministryId === null ? !isAdmin : !canManage(me, n.ministryId, d)) throw deny()
+      if (action.archived) n.archivedAt = new Date().toISOString()
+      else {
+        delete n.archivedAt
+        const until = noticeUntil(action.until)
+        if (until) n.until = until
+        else if (action.until === '') delete n.until
+        // aviso vencido que volta sem nova data: fica sem data de término
+        if (n.until && n.until < todayISO()) delete n.until
+      }
+      return {}
+    }
+    case 'removeNotice': {
+      const n = d.notices.find((x) => x.id === action.noticeId) ?? (() => { throw notFound() })()
+      if (n.ministryId === null ? !isAdmin : !canManage(me, n.ministryId, d)) throw deny()
+      d.notices = d.notices.filter((x) => x.id !== n.id)
       return {}
     }
     case 'addSong': {
@@ -700,4 +727,9 @@ function cleanSong(song: Omit<Song, 'id'>): Omit<Song, 'id'> {
     key: String(song.key ?? '').trim().slice(0, 8) || '—',
     ...(link ? { link: (/^https?:\/\//.test(link) ? link : `https://${link}`).slice(0, 500) } : {}),
   }
+}
+
+/** Data de término de um aviso: só datas válidas de hoje em diante (antes disso o aviso já nasceria vencido) */
+function noticeUntil(v?: string): string | undefined {
+  return v && /^\d{4}-\d{2}-\d{2}$/.test(v) && v >= todayISO() ? v : undefined
 }

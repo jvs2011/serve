@@ -1,4 +1,4 @@
-import type { AppData, Assignment, ChurchEvent, Member, Ministry } from '../data/types'
+import type { AppData, Assignment, ChurchEvent, Member, Ministry, Notice } from '../data/types'
 import { todayISO } from './dates'
 import { sortEvents } from './schedule'
 
@@ -70,4 +70,9 @@ export function firstName(name: string) {
 /** Ministérios em que a pessoa está marcada como líder (para a aba do líder) */
 export function ledMinistries(data: AppData, me: Member): Ministry[] {
   return data.ministries.filter((m) => m.leaderIds.includes(me.id))
+}
+
+/** Aviso que aparece para a equipe: não foi retirado e a data de término (se houver) ainda não passou */
+export function noticeActive(n: Notice, today: string): boolean {
+  return !n.archivedAt && (!n.until || n.until >= today)
 }
