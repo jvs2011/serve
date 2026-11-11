@@ -12,7 +12,7 @@ const demoMembers = createSeed().members
 type DemoProfile = { id: string; label: string; hint: string }
 
 /** Entrada com celular e PIN. O painel do computador usa outro título e só os perfis de líder na demonstração. */
-export function Login({ title, text, profiles = demoProfiles }: { title?: ReactNode; text?: string; profiles?: DemoProfile[] } = {}) {
+export function Login({ title, text, profiles = demoProfiles, bare }: { title?: ReactNode; text?: string; profiles?: DemoProfile[]; bare?: boolean } = {}) {
   const { actions } = useStore()
   const [available, setAvailable] = useState<boolean | null>(null)
   const [showDemo, setShowDemo] = useState<boolean | null>(null)
@@ -87,15 +87,9 @@ export function Login({ title, text, profiles = demoProfiles }: { title?: ReactN
     <button className="icon-btn" onClick={() => restart()} aria-label="Trocar número"><ArrowLeft size={20} /></button>
   )
 
-  return (
-    <div className="login">
-      <div className="login-hero">
-        <Logo size={44} light />
-        <h1>{title ?? <>Servir é um <em>privilégio.</em></>}</h1>
-        <p>{text ?? 'Escalas dos ministérios da Lagoinha Franca, na palma da mão.'}</p>
-      </div>
-
-      <div className="login-card">
+  // o conteúdo do cartão (celular, PIN e demonstração); no painel do computador vai sem o topo do app
+  const card = (
+    <>
         {closedFor !== null ? (
           <div className="closed-box">
             <span className="closed-icon"><PartyPopper size={26} /></span>
@@ -182,7 +176,19 @@ export function Login({ title, text, profiles = demoProfiles }: { title?: ReactN
           })}
         </div>
         </>}
+    </>
+  )
+  if (bare) return <div className="login-bare">{card}</div>
+
+  return (
+    <div className="login">
+      <div className="login-hero">
+        <Logo size={44} light />
+        <h1>{title ?? <>Servir é um <em>privilégio.</em></>}</h1>
+        <p>{text ?? 'Escalas dos ministérios da Lagoinha Franca, na palma da mão.'}</p>
       </div>
+
+      <div className="login-card">{card}</div>
     </div>
   )
 }

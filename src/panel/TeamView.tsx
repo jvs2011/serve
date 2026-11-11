@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, Download, MessageCircle, Search, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Check, Download, MessageCircle, Search, X } from 'lucide-react'
 import { useStore } from '../data/store'
 import { daysBetween, relativeDay, todayISO } from '../lib/dates'
 import { formatPhone } from '../lib/people'
@@ -51,7 +51,7 @@ export function TeamView({ ministry }: { ministry: Ministry }) {
       <header className="pn-head">
         <div>
           <h1>Equipe</h1>
-          <p>{ministry.name} · {all.length} {all.length === 1 ? 'pessoa' : 'pessoas'}{withoutNext ? ` · ${withoutNext} sem escala marcada` : ''}</p>
+          <p>{ministry.name} · {all.length} {all.length === 1 ? 'pessoa' : 'pessoas'}{withoutNext ? ` · ${withoutNext} sem escala marcada` : ''} · clique na pessoa para ver os detalhes e ajustar as funções</p>
         </div>
         <div className="pn-head-actions">
           <button className="btn btn-ghost btn-sm" onClick={() => downloadText(`equipe-${ministry.id}-${today}.csv`, teamCsv(rows, today))}><Download size={15} /> Baixar planilha</button>
@@ -150,7 +150,7 @@ function PersonDrawer({ row, ministry, onClose }: { row: TeamRow; ministry: Mini
         </div>
 
         <h3>Funções no {ministry.name}</h3>
-        <p className="tags">{row.roles.length ? row.roles.map((x) => <span key={x} className="tag">{x}</span>) : <span className="muted small">Nenhuma função marcada</span>}</p>
+        <RolesEditor key={m.id} member={m} ministry={ministry} roles={row.roles} />
         {others.length > 0 && <p className="muted small">Também serve em: {others.map((o) => `${minName(o.ministryId)}${o.roles.length ? ` (${o.roles.join(', ')})` : ''}`).join(' · ')}</p>}
 
         <h3>Próximas escalas</h3>
@@ -191,6 +191,45 @@ function PersonDrawer({ row, ministry, onClose }: { row: TeamRow; ministry: Mini
           </p>
         )}
       </aside>
+    </div>
+  )
+}
+
+/** O líder ajusta as funções da pessoa no ministério (as escalas já marcadas continuam) */
+function RolesEditor({ member, ministry, roles }: { member: TeamRow['member']; ministry: Ministry; roles: string[] }) {
+  const { actions, notify } = useStore()
+  const [sel, setSel] = useState<string[]>(roles)
+  const [saving, setSaving] = useState(false)
+  const changed = sel.slice().sort().join('|') !== roles.slice().sort().join('|')
+  const interest = member.interests?.find((i) => i.ministryId === ministry.id)?.roles.filter((r) => !roles.includes(r)) ?? []
+  const toggle = (r: string) => setSel((s) => (s.includes(r) ? s.filter((x) => x !== r) : [...s, r]))
+  const save = async () => {
+    setSaving(true)
+    const r = await actions.setMemberRoles(member.id, ministry.id, sel)
+    setSaving(false)
+    notify(r.ok ? `Funções de ${member.name.split(' ')[0]} atualizadas. A pessoa recebe o aviso.` : r.error)
+  }
+  return (
+    <div className="pn-roles">
+      <div className="chips">
+        {ministry.roles.map((r) => {
+          const on = sel.includes(r.name)
+          return (
+            <button key={r.name} className={`chip${on ? ' on' : ''}`} aria-pressed={on} onClick={() => toggle(r.name)}>
+              {on && <Check size={14} />}{r.name}{interest.includes(r.name) && !on && <em className="pn-roles-int">interesse</em>}
+            </button>
+          )
+        })}
+      </div>
+      {interest.length > 0 && <p className="muted small">Pelo formulário, tem interesse em: {interest.join(', ')}.</p>}
+      {sel.length === 0 && <p className="warn small">Sem nenhuma função, a pessoa não entra na escala do {ministry.name}.</p>}
+      {changed && (
+        <div className="pn-roles-actions">
+          <button className="btn btn-ghost btn-sm" onClick={() => setSel(roles)}>Desfazer</button>
+          <button className="btn btn-primary btn-sm" disabled={saving} onClick={save}>{saving ? 'Salvando…' : 'Salvar funções'}</button>
+          <span className="muted small">As escalas já marcadas continuam.</span>
+        </div>
+      )}
     </div>
   )
 }

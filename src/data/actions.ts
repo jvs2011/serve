@@ -92,6 +92,7 @@ export type Action =
   | { type: 'moveSong'; eventId: string; songId: string; dir: -1 | 1 }
   | { type: 'addEvent'; title: string; date: string; time: string; ministryIds: string[] }
   | { type: 'saveMember'; member: MemberInput }
+  | { type: 'setMemberRoles'; memberId: string; ministryId: string; roles: string[] }
   | { type: 'removeMember'; memberId: string }
   | { type: 'setOpen'; open: boolean }
   | { type: 'setDemo'; show: boolean }
@@ -324,6 +325,22 @@ export function applyAction(d: AppData, action: Action, actorId: string): Action
     case 'saveMember':
       if (!isAdmin) throw deny()
       return { memberId: saveMember(d, action.member, me.id) }
+    case 'setMemberRoles': {
+      // o líder ajusta as funções de quem já é do ministério dele (a coordenação, de qualquer ministério)
+      manage(action.ministryId)
+      const ministry = d.ministries.find((x) => x.id === action.ministryId) ?? (() => { throw notFound() })()
+      const member = d.members.find((x) => x.id === action.memberId) ?? (() => { throw notFound() })()
+      const mm = member.ministries.find((x) => x.ministryId === ministry.id)
+      if (!mm) throw new ActionError(`${member.name.split(' ')[0]} não é do ${ministry.name}.`)
+      const wanted = new Set(action.roles)
+      const roles = ministry.roles.map((r) => r.name).filter((r) => wanted.has(r))
+      // no Carisma o líder é o Secretário: a função de liderança não sai por aqui
+      const leaderRole = LEADER_ROLES[ministry.id]
+      if (leaderRole && ministry.leaderIds.includes(member.id) && !roles.includes(leaderRole)) roles.unshift(leaderRole)
+      mm.roles = roles
+      pruneGroups(d)
+      return {}
+    }
     case 'createTeamSession': {
       const cfg = TEAM_SESSIONS.find((s) => s.id === action.sessionId) ?? (() => { throw notFound() })()
       manage(cfg.ministryId)

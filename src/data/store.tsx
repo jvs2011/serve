@@ -155,6 +155,7 @@ function makeActions(
     removeTask: (taskId: string) => { dispatch({ type: 'removeTask', taskId }) },
     setTaskDone: (taskId: string, done: boolean, link?: string) => { dispatch({ type: 'setTaskDone', taskId, done, link }) },
     saveMember: (member: MemberInput) => dispatchAsync({ type: 'saveMember', member }),
+    setMemberRoles: (memberId: string, ministryId: string, roles: string[]) => dispatchAsync({ type: 'setMemberRoles', memberId, ministryId, roles }),
     removeMember: (memberId: string) => dispatchAsync({ type: 'removeMember', memberId }),
   }
 }

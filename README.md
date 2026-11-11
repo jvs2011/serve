@@ -101,6 +101,8 @@ ativar notificações e, para líderes, como publicar a escala). Dá para rever 
 **serve.lagoinhafranca.com/painel** é uma área só para **líderes e coordenação**, feita para computador e tablet
 (em tela menor que 760 px aparece o aviso para usar o app; voluntário que entra vê que o painel é da liderança).
 Usa o mesmo login (celular + PIN) e os mesmos dados do app, e só é baixado por quem abre o /painel.
+A entrada é própria para tela grande: à esquerda o que o painel faz, à direita o cartão de entrada (celular, PIN
+e, quando ligada, a demonstração com os perfis de líder e coordenação).
 
 - **Menu lateral**: troca de ministério (a coordenação vê todos), seções e números do que está pendente; no tablet
   o menu vira uma coluna de ícones
@@ -116,7 +118,8 @@ Usa o mesmo login (celular + PIN) e os mesmos dados do app, e só é baixado por
   **Copiar para o WhatsApp** (texto pronto da escala publicada) e **Imprimir** (paisagem)
 - **Equipe**: tabela com busca, filtro por função e "só quem está sem escala"; escalas no mês × limite,
   próxima escala, última vez que serviu, quanto confirma e indisponibilidade; clique abre os detalhes da
-  pessoa; **Baixar planilha** (CSV)
+  pessoa, onde o **líder ajusta as funções** de quem é da equipe dele (a pessoa recebe o aviso; as escalas já
+  marcadas continuam; quem perde a função de Voz sai do grupo); **Baixar planilha** (CSV)
 - **Pedidos** (Follow): tabela de arte, vídeo, fotos e News com prazo, destino e responsável; novo pedido,
   editar, marcar como entregue com o link, reabrir e excluir
 - **Avisos**: escrever o aviso e ver os enviados (a coordenação também manda para a igreja toda)

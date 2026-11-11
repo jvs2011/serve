@@ -105,3 +105,36 @@ describe('painel: eventos e coordenação', () => {
     expect(attentionFor(d, 'follow', today).some((x) => x.kind === 'setlist')).toBe(false)
   })
 })
+
+describe('líder ajusta as funções da equipe', () => {
+  it('a líder do Follow muda as funções de quem é do Follow e a pessoa é avisada', async () => {
+    const notify = await import('../server/notify')
+    const d = createSeed()
+    const before = structuredClone(d)
+    applyAction(d, { type: 'setMemberRoles', memberId: 'm-bianca', ministryId: 'follow', roles: ['Fotografia', 'Stories', 'Função que não existe'] }, 'm-rafaela')
+    const roles = d.members.find((m) => m.id === 'm-bianca')!.ministries.find((x) => x.ministryId === 'follow')!.roles
+    expect(roles).toEqual(['Fotografia', 'Stories']) // na ordem do ministério, sem função inválida
+    const out = notify.notificationsFor(before, d, 'm-rafaela', today).find((o) => o.payload.title === 'Suas funções no Follow')!
+    expect(out.to).toEqual(['m-bianca'])
+    expect(out.payload.body).toMatch(/Fotografia, Stories/)
+  })
+
+  it('não muda quem é de outro ministério nem quem não é líder', () => {
+    const d = createSeed()
+    const louvor = d.members.find((m) => m.ministries.some((x) => x.ministryId === 'louvor') && !m.ministries.some((x) => x.ministryId === 'follow'))!
+    expect(() => applyAction(d, { type: 'setMemberRoles', memberId: louvor.id, ministryId: 'louvor', roles: [] }, 'm-rafaela')).toThrow(/permissão/)
+    expect(() => applyAction(d, { type: 'setMemberRoles', memberId: louvor.id, ministryId: 'follow', roles: ['Stories'] }, 'm-rafaela')).toThrow(/não é do Follow/)
+    expect(() => applyAction(d, { type: 'setMemberRoles', memberId: 'm-bianca', ministryId: 'follow', roles: [] }, 'm-bruno')).toThrow(/permissão/)
+    // a coordenação muda em qualquer ministério
+    applyAction(d, { type: 'setMemberRoles', memberId: louvor.id, ministryId: 'louvor', roles: ['Teclado'] }, 'm-lucas')
+    expect(d.members.find((m) => m.id === louvor.id)!.ministries.find((x) => x.ministryId === 'louvor')!.roles).toEqual(['Teclado'])
+  })
+
+  it('quem perde a função de Voz sai do grupo de voz', () => {
+    const d = createSeed()
+    const g = d.ministries.find((m) => m.id === 'louvor')!.groups![0]
+    const id = g.memberIds.find((x) => x !== 'm-mariana')!
+    applyAction(d, { type: 'setMemberRoles', memberId: id, ministryId: 'louvor', roles: ['Teclado'] }, 'm-mariana')
+    expect(d.ministries.find((m) => m.id === 'louvor')!.groups![0].memberIds).not.toContain(id)
+  })
+})

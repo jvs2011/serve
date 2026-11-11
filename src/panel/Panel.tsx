@@ -103,8 +103,24 @@ function PanelShell() {
   } else if (!me) {
     body = (
       <div className="pn-login">
-        <div className="pn-login-box">
-          <Login title={<>Painel do <em>líder.</em></>} text="Escalas, equipe e pedidos do seu ministério numa tela grande." profiles={PANEL_DEMO} />
+        <div className="pn-login-wrap">
+          <section className="pn-login-brand">
+            <div className="pn-brand"><Logo size={34} light /><span className="pn-tag">Painel</span></div>
+            <h1>Painel do <em>líder.</em></h1>
+            <p className="pn-login-lead">Escalas, eventos, equipe e pedidos do seu ministério numa tela grande. Para líderes e coordenação da Lagoinha Franca.</p>
+            <ul className="pn-login-features">
+              <li><span><CalendarRange size={20} /></span><div><strong>Escalas em grade</strong><small>Cultos e funções numa tela só, com escala automática e rascunho</small></div></li>
+              <li><span><LayoutDashboard size={20} /></span><div><strong>O que precisa da sua atenção</strong><small>Vagas abertas, trocas, quem não confirmou e material atrasado</small></div></li>
+              <li><span><Users size={20} /></span><div><strong>Equipe e eventos</strong><small>Funções, grupos, repertório e gravações</small></div></li>
+              <li><span><Building2 size={20} /></span><div><strong>Coordenação</strong><small>Agenda da igreja, cultos da semana e cadastro de pessoas</small></div></li>
+            </ul>
+            <p className="pn-login-foot">Voluntário? Use o app no celular: <a href="/">serve.lagoinhafranca.com</a></p>
+          </section>
+          <section className="pn-login-card">
+            <h2>Entrar</h2>
+            <p className="pn-login-sub">Com o mesmo celular e PIN do app.</p>
+            <Login bare profiles={PANEL_DEMO} />
+          </section>
         </div>
       </div>
     )

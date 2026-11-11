@@ -170,6 +170,26 @@ export function notificationsFor(before: AppData, after: AppData, actorId: strin
     })
   }
 
+  // 10) o líder mudou as funções da pessoa no ministério → a pessoa (só quando a pessoa já existia e não é quem mudou)
+  for (const m of after.members) {
+    if (m.id === actorId) continue
+    const prev = before.members.find((x) => x.id === m.id)
+    if (!prev) continue
+    for (const mm of m.ministries) {
+      const old = prev.ministries.find((x) => x.ministryId === mm.ministryId)
+      if (!old || old.roles.join('|') === mm.roles.join('|')) continue
+      const name = min(mm.ministryId)?.name ?? 'ministério'
+      out.push({
+        to: [m.id],
+        payload: {
+          title: `Suas funções no ${name}`,
+          body: mm.roles.length ? `Agora você serve em: ${mm.roles.join(', ')}. Toque para ver suas escalas.` : `Você está sem função no ${name} por enquanto. Fale com a liderança se for um engano.`,
+          tag: `funcoes-${mm.ministryId}-${m.id}`,
+        },
+      })
+    }
+  }
+
   // 9) material enviado (fotos, vídeo, filmagens) → líderes e a edição daquele material
   //    (Fotografia → Edição de fotos, Filmmaker → Edição de vídeos, Filmmaker do News → Edição do News)
   for (const a of after.assignments) {
