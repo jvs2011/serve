@@ -3,7 +3,7 @@ import { CalendarClock, EyeOff, Megaphone, Trash2 } from 'lucide-react'
 import { useMe, useStore } from '../data/store'
 import { timeAgo, todayISO } from '../lib/dates'
 import { memberById, ministryMembers, noticeActive } from '../lib/selectors'
-import { UntilPicker, defaultNoticeUntil, noticeStatus } from '../components/NoticeBits'
+import { NOTICE_PUSH_HINT, UntilPicker, defaultNoticeUntil, noticeStatus, publishedMessage } from '../components/NoticeBits'
 import type { Ministry, Notice } from '../data/types'
 
 /** Avisos do ministério (e da igreja): escrever, escolher até quando fica ativo, retirar e excluir */
@@ -25,11 +25,15 @@ export function Notices({ ministry }: { ministry: Ministry }) {
   const ended = mine.filter((n) => !noticeActive(n, today))
   const list = view === 'active' ? active : ended
 
-  const send = () => {
+  const [sending, setSending] = useState(false)
+  const send = async () => {
     if (!title.trim()) return setError('Dê um título para o aviso.')
     if (!body.trim()) return setError('Escreva a mensagem.')
-    actions.addNotice(target === 'church' ? null : ministry.id, title.trim(), body.trim(), until || undefined)
-    notify(target === 'church' ? 'Aviso publicado para toda a igreja 📣' : `Aviso publicado para o ${ministry.name} 📣`)
+    setSending(true)
+    const r = await actions.addNotice(target === 'church' ? null : ministry.id, title.trim(), body.trim(), until || undefined)
+    setSending(false)
+    notify(publishedMessage(target === 'church' ? 'toda a igreja' : `o ${ministry.name}`, r))
+    if (!r.ok) return
     setTitle(''); setBody(''); setError(''); setUntil(defaultNoticeUntil()); setView('active')
   }
 
@@ -60,8 +64,9 @@ export function Notices({ ministry }: { ministry: Ministry }) {
           </label>
           <UntilPicker value={until} onChange={setUntil} />
           {error && <p className="error">{error}</p>}
-          <button className="btn btn-primary btn-block" onClick={send}>Publicar aviso</button>
-          <p className="muted small pn-under">{target === 'church' ? 'Vai para todos os voluntários da igreja.' : `Vai para as ${people} pessoas do ${ministry.name}.`} Depois da data, o aviso sai sozinho da tela da equipe.</p>
+          <button className="btn btn-primary btn-block" disabled={sending} onClick={send}>{sending ? 'Publicando…' : 'Publicar aviso'}</button>
+          <p className="muted small pn-under">{target === 'church' ? 'Vai para todos os voluntários da igreja.' : `Vai para as ${people} pessoas do ${ministry.name}.`} Recebe a notificação quem ativou no celular; depois da data, o aviso sai sozinho da tela da equipe.</p>
+          <p className="muted small">{NOTICE_PUSH_HINT}</p>
         </section>
 
         <section className="pn-card">

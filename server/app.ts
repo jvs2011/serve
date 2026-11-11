@@ -215,10 +215,12 @@ function viewFor(full: AppData, meId: string): AppData {
 }
 
 /** Envia as notificações sem deixar a resposta esperar mais que alguns segundos */
-async function deliver(store: Store, list: Outgoing[]) {
-  if (!list.length) return
+async function deliver(store: Store, list: Outgoing[]): Promise<number | undefined> {
+  if (!list.length) return 0
   const work = Promise.allSettled(list.map((o) => sendPush(store, o.to, o.payload)))
-  await Promise.race([work, new Promise((r) => setTimeout(r, 8000))])
+    .then((rs) => rs.reduce((n, r) => n + (r.status === 'fulfilled' ? r.value : 0), 0))
+  // devolve quantos celulares receberam (ou nada, se demorou mais que 8 s)
+  return Promise.race([work, new Promise<undefined>((r) => setTimeout(() => r(undefined), 8000))])
 }
 
 const sha = (s: string) => createHash('sha256').update(s).digest('hex')
@@ -389,10 +391,11 @@ export async function route(name: string, method: string, body: any, auth: strin
           before = structuredClone(d)
           return applyAction(d, action, meId)
         })
+        let pushed: number | undefined
         if (before) {
-          try { await deliver(store, notificationsFor(before, data, meId, brToday())) } catch (e) { console.error('notificações', e) }
+          try { pushed = await deliver(store, notificationsFor(before, data, meId, brToday())) } catch (e) { console.error('notificações', e) }
         }
-        return ok({ data: viewFor(data, meId), meId, version, result })
+        return ok({ data: viewFor(data, meId), meId, version, result: { ...result, ...(pushed !== undefined ? { pushed } : {}) } })
       }
 
       case 'signup-info': {

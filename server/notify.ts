@@ -100,13 +100,15 @@ export function notificationsFor(before: AppData, after: AppData, actorId: strin
     }
   }
 
-  // 5) novo aviso → membros do ministério (ou todos, se for geral)
+  // 5) novo aviso → membros do ministério (ou todos, se for geral) e também quem publicou
+  //    (serve de confirmação de que saiu, mesmo que a pessoa não seja do ministério)
   const prevNotices = new Set(before.notices.map((n) => n.id))
   for (const n of after.notices) {
     if (prevNotices.has(n.id)) continue
-    const to = after.members
-      .filter((m) => m.id !== n.authorId && (n.ministryId === null || m.ministries.some((mm) => mm.ministryId === n.ministryId)))
-      .map((m) => m.id)
+    const to = [...new Set([
+      ...after.members.filter((m) => n.ministryId === null || m.ministries.some((mm) => mm.ministryId === n.ministryId)).map((m) => m.id),
+      n.authorId,
+    ])]
     out.push({
       to,
       payload: { title: `${n.ministryId ? min(n.ministryId)?.name : 'Lagoinha Franca'}: ${n.title}`, body: n.body.length > 160 ? n.body.slice(0, 157) + '…' : n.body, tag: `aviso-${n.id}` },

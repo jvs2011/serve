@@ -47,6 +47,13 @@ describe('servidor', () => {
     expect((await call('status', null, undefined, 'GET')).body).toEqual({ configured: true, demo: false })
   })
 
+  it('publicar aviso devolve em quantos celulares a notificação chegou', async () => {
+    const d = (await call('data', null, token, 'GET')).body as { data: AppData }
+    const mid = d.data.ministries[0].id
+    const r = (await call('action', { action: { type: 'addNotice', ministryId: mid, title: 'Teste', body: 'Aviso de teste' } }, token)).body as { result: { pushed?: number } }
+    expect(r.result.pushed).toBe(0) // ninguém ativou as notificações neste banco de teste
+  })
+
   it('sem sessão não acessa os dados', async () => {
     expect((await call('data', null, 'invalido', 'GET')).status).toBe(401)
   })

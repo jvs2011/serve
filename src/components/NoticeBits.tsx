@@ -1,6 +1,7 @@
 import { addDays, toISO, todayISO, weekdayShort } from '../lib/dates'
 import { noticeActive } from '../lib/selectors'
 import type { Notice } from '../data/types'
+import type { ActionResult } from '../data/actions'
 
 const ddmm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
 const inDays = (n: number) => toISO(addDays(new Date(), n))
@@ -34,3 +35,15 @@ export function noticeStatus(n: Notice, today = todayISO()): { active: boolean; 
   if (n.until) return { active: noticeActive(n, today), text: n.until === today ? 'Ativo até hoje' : `Ativo até ${weekdayShort(n.until).toLowerCase()}, ${ddmm(n.until)}` }
   return { active: true, text: 'Ativo, sem data de término' }
 }
+
+/** Mensagem depois de publicar: em quantos celulares a notificação chegou (nos dados reais) */
+export function publishedMessage(where: string, r: { ok: true; result: ActionResult } | { ok: false; error: string }): string {
+  if (!r.ok) return r.error
+  const n = r.result.pushed
+  if (n === undefined) return `Aviso publicado para ${where} 📣`
+  if (n === 0) return `Aviso publicado para ${where}, mas nenhum celular recebeu a notificação: ninguém ativou as notificações ainda.`
+  return `Aviso publicado para ${where} 📣 A notificação chegou em ${n} ${n === 1 ? 'celular' : 'celulares'}.`
+}
+
+/** Explica quem recebe a notificação de um aviso */
+export const NOTICE_PUSH_HINT = 'A notificação chega para quem ativou no celular, e você também recebe uma cópia como confirmação.'

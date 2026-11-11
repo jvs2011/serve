@@ -133,7 +133,7 @@ function makeActions(
     autoSchedule: (eventIds: string[], ministryId: string): number => dispatch({ type: 'autoSchedule', eventIds, ministryId })?.created ?? 0,
     publishDrafts: (ministryId: string, eventId?: string): number => dispatch({ type: 'publishDrafts', ministryId, eventId })?.created ?? 0,
     discardDrafts: (ministryId: string, eventId?: string): number => dispatch({ type: 'discardDrafts', ministryId, eventId })?.created ?? 0,
-    addNotice: (ministryId: string | null, title: string, body: string, until?: string) => { dispatch({ type: 'addNotice', ministryId, title, body, until }) },
+    addNotice: (ministryId: string | null, title: string, body: string, until?: string) => dispatchAsync({ type: 'addNotice', ministryId, title, body, until }),
     archiveNotice: (noticeId: string, archived: boolean, until?: string) => dispatchAsync({ type: 'archiveNotice', noticeId, archived, until }),
     removeNotice: (noticeId: string) => dispatchAsync({ type: 'removeNotice', noticeId }),
     addSong: (eventId: string, song: Omit<Song, 'id'>) => { dispatch({ type: 'addSong', eventId, song }) },
@@ -181,7 +181,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const notify = useCallback((text: string) => {
     const id = Date.now()
     setToast({ id, text })
-    setTimeout(() => setToast((t) => (t?.id === id ? null : t)), 3200)
+    setTimeout(() => setToast((t) => (t?.id === id ? null : t)), Math.min(8000, Math.max(3200, text.length * 55)))
   }, [])
 
   const setSession = useCallback((s: Session | null) => {

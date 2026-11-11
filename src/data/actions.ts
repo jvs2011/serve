@@ -116,6 +116,8 @@ export interface ActionResult {
   updated?: number
   removed?: number
   memberId?: string
+  /** dados reais: em quantos celulares a notificação chegou (preenchido pelo servidor) */
+  pushed?: number
 }
 
 /** Erro com mensagem pronta para mostrar ao usuário */

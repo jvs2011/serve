@@ -4,7 +4,7 @@ import { useStore } from '../data/store'
 import { timeAgo, todayISO } from '../lib/dates'
 import { memberById, noticeActive } from '../lib/selectors'
 import { Empty, Sheet } from '../components/ui'
-import { UntilPicker, defaultNoticeUntil, noticeStatus } from '../components/NoticeBits'
+import { NOTICE_PUSH_HINT, UntilPicker, defaultNoticeUntil, noticeStatus, publishedMessage } from '../components/NoticeBits'
 import type { Ministry, Notice } from '../data/types'
 
 /** Aba Avisos do ministério: a equipe vê os ativos; quem lidera publica, retira e exclui */
@@ -18,11 +18,15 @@ export function MinistryNotices({ ministry, manage }: { ministry: Ministry; mana
   const active = all.filter((n) => noticeActive(n, today))
   const ended = all.filter((n) => !noticeActive(n, today))
 
-  const publish = () => {
-    actions.addNotice(ministry.id, form.title.trim(), form.body.trim(), form.until || undefined)
+  const [sending, setSending] = useState(false)
+  const publish = async () => {
+    setSending(true)
+    const r = await actions.addNotice(ministry.id, form.title.trim(), form.body.trim(), form.until || undefined)
+    setSending(false)
+    notify(publishedMessage('a equipe', r))
+    if (!r.ok) return
     setForm({ title: '', body: '', until: defaultNoticeUntil() })
     setOpen(false)
-    notify('Aviso publicado para a equipe 📣')
   }
 
   return (
@@ -46,7 +50,8 @@ export function MinistryNotices({ ministry, manage }: { ministry: Ministry; mana
         <label className="field"><span>Título</span><input value={form.title} maxLength={120} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>
         <label className="field"><span>Mensagem</span><textarea rows={4} maxLength={2000} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} /></label>
         <UntilPicker value={form.until} onChange={(until) => setForm({ ...form, until })} />
-        <button className="btn btn-primary btn-block" disabled={!form.title.trim()} onClick={publish}>Publicar</button>
+        <button className="btn btn-primary btn-block" disabled={!form.title.trim() || sending} onClick={publish}>{sending ? 'Publicando…' : 'Publicar'}</button>
+        <p className="muted small notice-hint">{NOTICE_PUSH_HINT}</p>
       </Sheet>
     </>
   )

@@ -58,3 +58,18 @@ describe('avisos: até quando fica ativo, retirar e excluir', () => {
     expect(d.notices[0].archivedAt).toBeTruthy()
   })
 })
+
+describe('notificação do aviso', () => {
+  it('vai para a equipe do ministério e também para quem publicou (mesmo sendo de fora)', async () => {
+    const notify = await import('../server/notify')
+    const d = createSeed()
+    const before = structuredClone(d)
+    applyAction(d, { type: 'addNotice', ministryId: 'follow', title: 'Teste', body: 'Aviso de teste' }, 'm-lucas')
+    const out = notify.notificationsFor(before, d, 'm-lucas', today).find((o) => o.payload.title === 'Follow: Teste')!
+    expect(out.to).toContain('m-lucas') // quem publicou recebe a cópia
+    expect(out.to).toContain('m-rafaela')
+    expect(out.to).toContain('m-bruno')
+    expect(out.to).not.toContain('m-mariana') // não é do Follow
+    expect(new Set(out.to).size).toBe(out.to.length)
+  })
+})
