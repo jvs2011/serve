@@ -4,7 +4,8 @@
  */
 import type { AppData, Assignment, ChurchEvent, Member, Ministry, SwapRequest as Swap, Task } from '../data/types.js'
 import { addDays, daysBetween, fromISO, toISO, weekdayShort } from './dates.js'
-import { draftsOf, openSlots, slotsFor, sortEvents } from './schedule.js'
+import { canManage, draftsOf, openSlots, slotsFor, sortEvents } from './schedule.js'
+import { TEAM_SESSIONS } from '../data/sessions.js'
 import { pendingDeliveries } from './delivery.js'
 
 const ddmm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
@@ -58,6 +59,7 @@ export type Attention =
   | { kind: 'drafts'; count: number }
   | { kind: 'material'; count: number }
   | { kind: 'late'; task: Task }
+  | { kind: 'setlist'; ev: ChurchEvent }
 
 /**
  * O que precisa da atenção do líder, do mais urgente ao menos:
@@ -95,7 +97,12 @@ export function attentionFor(data: AppData, ministryId: string, today: string): 
 
   for (const task of (data.tasks ?? []).filter((t) => t.ministryId === ministryId && t.status === 'open' && t.dueDate < today)) out.push({ kind: 'late', task })
 
-  const rank = { drafts: 0, swap: 1, open: 2, pending: 3, material: 4, late: 5 } as const
+  // Louvor: culto da semana sem o repertório enviado para a equipe
+  if (ministryId === 'louvor') {
+    for (const ev of soon.filter((e) => daysBetween(today, e.date) <= 6 && !e.setlistSentAt)) out.push({ kind: 'setlist', ev })
+  }
+
+  const rank = { drafts: 0, swap: 1, open: 2, setlist: 3, pending: 4, material: 5, late: 6 } as const
   const date = (x: Attention) => ('ev' in x ? x.ev.date + x.ev.time : '')
   return out.sort((a, b) => date(a).localeCompare(date(b)) || rank[a.kind] - rank[b.kind])
     .sort((a, b) => Number(b.kind === 'drafts') - Number(a.kind === 'drafts'))
@@ -174,4 +181,20 @@ export function scheduleText(data: AppData, ministry: Ministry, events: ChurchEv
     lines.push('', `*${weekdayShort(ev.date).toLowerCase()} ${ddmm(ev.date)}${ev.time ? ` · ${ev.time}` : ''} · ${ev.title}*`, ...rows)
   }
   return lines.join('\n')
+}
+
+export type EventKind = 'fixed' | 'ministry' | 'special' | 'session'
+export const EVENT_KIND_LABEL: Record<EventKind, string> = { fixed: 'Culto fixo', ministry: 'Evento do ministério', special: 'Evento especial', session: 'Gravação' }
+
+/** Que tipo de evento é: culto da agenda fixa, evento criado pelo líder, evento especial da coordenação ou encontro de equipe */
+export function eventKind(ev: ChurchEvent): EventKind {
+  if (TEAM_SESSIONS.some((s) => s.title === ev.title && ev.ministryIds.includes(s.ministryId)) && ev.slots) return 'session'
+  if (ev.slots) return 'ministry'
+  if (ev.special) return 'special'
+  return 'fixed'
+}
+
+/** Pode editar e cancelar o evento: a coordenação sempre; o líder, os eventos próprios dos ministérios que lidera */
+export function canEditEvent(data: AppData, me: Member, ev: ChurchEvent): boolean {
+  return me.access === 'admin' || (!!ev.slots && ev.ministryIds.every((id) => canManage(me, id, data)))
 }

@@ -62,7 +62,7 @@ export function Weekly() {
 
 type Freq = 'all' | 'weeks' | 'biweekly'
 
-function WeeklyForm({ slot, onDone }: { slot?: WeeklySlot; onDone: () => void }) {
+export function WeeklyForm({ slot, onDone }: { slot?: WeeklySlot; onDone: () => void }) {
   const { data, actions, notify } = useStore()
   const [title, setTitle] = useState(slot?.title ?? '')
   const [day, setDay] = useState(slot?.day ?? 0)

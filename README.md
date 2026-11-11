@@ -120,6 +120,25 @@ Usa o mesmo login (celular + PIN) e os mesmos dados do app, e só é baixado por
 - **Pedidos** (Follow): tabela de arte, vídeo, fotos e News com prazo, destino e responsável; novo pedido,
   editar, marcar como entregue com o link, reabrir e excluir
 - **Avisos**: escrever o aviso e ver os enviados (a coordenação também manda para a igreja toda)
+- **Eventos**: os cultos e encontros do ministério (próximos 30 dias, 3 meses ou os que passaram), com o tipo
+  (culto fixo, evento do ministério, evento especial, gravação) e o preenchimento; criar evento do ministério,
+  **agendar a gravação do News**, editar e cancelar (o líder, os eventos do ministério; a coordenação, qualquer um)
+- **Repertório** (Louvor): os próximos cultos lado a lado com as músicas e se já foi enviado; montar, reordenar
+  e avisar a equipe. Culto da semana sem repertório enviado aparece em "Precisa da sua atenção"
+- **Grupos** (ministérios com vaga de grupo, como as vozes do Louvor): os grupos com as pessoas, a próxima
+  escala e quantas vezes serviram; criar e editar
+- **Coordenação** (só administradores), em um bloco separado no menu:
+  - **Visão da igreja**: pessoas, cadastros novos, vagas abertas, rascunhos e trocas de todos os ministérios;
+    tabela dos ministérios (líderes, pessoas, preenchimento) e quem precisa de ajuste (sem ministério ou função)
+  - **Agenda da igreja**: o mês em calendário; clique no evento para abrir a escala de cada ministério, editar
+    ou cancelar aquele dia; novo evento especial
+  - **Cultos da semana**: a agenda fixa, um dia por coluna; criar e editar
+  - **Pessoas**: todos os cadastros com busca e filtros (líderes, sem PIN, pelo formulário, sem função);
+    cadastrar e editar lado a lado (dados, ministérios, funções, liderança, coordenação), redefinir PIN, remover
+    e baixar a planilha
+  - **Configurações**: liberar o app, demonstração na tela de entrada e os links dos formulários de cadastro
+
+Os formulários são os mesmos do app (mesmas regras); nada saiu do celular.
 
 O código fica em `src/panel/` e as regras (grade, atenção, números da equipe, texto do WhatsApp) em
 `src/lib/panel.ts`. No computador, a tela do app mostra o link para o painel.
@@ -137,7 +156,8 @@ src/
   lib/schedule.ts    regras de escala: disponibilidade, ranking de candidatos, escala automática, pontos
   lib/selectors.ts   consultas derivadas
   screens/           telas (Início, Escalas, Evento, Trocas, Ministérios, Perfil, Painel…)
-  panel/             painel do líder no computador (/painel): visão geral, grade de escalas, equipe, pedidos, avisos
+  panel/             painel do computador (/painel): ministério (visão geral, escalas, eventos, repertório, grupos,
+                     equipe, pedidos, avisos) e coordenação (igreja, agenda, cultos da semana, pessoas, configurações)
   lib/panel.ts       regras do painel do computador
   components/        UI compartilhada
 server/              servidor: armazenamento (Upstash/memória), login, sessões, regras

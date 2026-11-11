@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CalendarRange, ChevronDown, LayoutDashboard, LogOut, Megaphone, MonitorSmartphone, Palette, Smartphone, Users } from 'lucide-react'
+import { Building2, CalendarClock, CalendarDays, CalendarRange, CalendarSync, ChevronDown, LayoutDashboard, LogOut, Megaphone, MonitorSmartphone, Music2, Palette, Settings, Smartphone, UserCog, Users, UsersRound } from 'lucide-react'
 import { StoreProvider, useMe, useStore } from '../data/store'
 import { managedMinistries } from '../lib/selectors'
 import { todayISO } from '../lib/dates'
@@ -17,6 +17,11 @@ import { ScheduleGrid } from './ScheduleGrid'
 import { TeamView } from './TeamView'
 import { Requests } from './Requests'
 import { Notices } from './Notices'
+import { EventsView } from './EventsView'
+import { SetlistView } from './SetlistView'
+import { GroupsView } from './GroupsView'
+import { PeopleView } from './PeopleView'
+import { CalendarView, ChurchView, SettingsView, WeeklyView } from './Coordination'
 import type { Ministry } from '../data/types'
 import './panel.css'
 
@@ -30,8 +35,14 @@ const PANEL_DEMO = [
 /** Telas menores que isso usam o app do celular */
 const MIN_WIDTH = 760
 
-export type Section = 'overview' | 'schedule' | 'team' | 'requests' | 'notices'
-const HASH: Record<Section, string> = { overview: '', schedule: 'escalas', team: 'equipe', requests: 'pedidos', notices: 'avisos' }
+export type Section = 'overview' | 'schedule' | 'events' | 'setlist' | 'groups' | 'team' | 'requests' | 'notices'
+  | 'church' | 'calendar' | 'weekly' | 'people' | 'settings'
+const HASH: Record<Section, string> = {
+  overview: '', schedule: 'escalas', events: 'eventos', setlist: 'repertorio', groups: 'grupos', team: 'equipe', requests: 'pedidos', notices: 'avisos',
+  church: 'igreja', calendar: 'agenda', weekly: 'cultos-da-semana', people: 'pessoas', settings: 'configuracoes',
+}
+/** Seções só da coordenação */
+const COORD: Section[] = ['church', 'calendar', 'weekly', 'people', 'settings']
 const fromHash = (): Section => (Object.entries(HASH).find(([, h]) => h && `#${h}` === location.hash)?.[0] as Section) ?? 'overview'
 
 /** serve.lagoinhafranca.com/painel: painel para líderes e coordenação, no computador ou tablet */
@@ -151,34 +162,55 @@ function PanelApp() {
     document.querySelector('.pn-main')?.scrollTo({ top: 0 })
   }
   const arts = ARTS_MINISTRIES.includes(ministry.id)
-  const current = section === 'requests' && !arts ? 'overview' : section
+  const admin = me.access === 'admin'
+  const hasGroups = ministry.roles.some((r) => r.group)
+  const louvor = ministry.id === 'louvor'
+  // seção que não existe para este ministério (ou para quem não é da coordenação) volta para a visão geral
+  const current: Section = (section === 'requests' && !arts) || (section === 'groups' && !hasGroups) || (section === 'setlist' && !louvor) || (COORD.includes(section) && !admin) ? 'overview' : section
 
   const today = todayISO()
   const attention = useMemo(() => attentionFor(data, ministry.id, today), [data, ministry.id, today])
   const drafts = draftsOf(data, ministry.id).length
   const late = (data.tasks ?? []).filter((t) => t.ministryId === ministry.id && t.status === 'open' && t.dueDate < today).length
 
-  const items: { id: Section; label: string; icon: JSX.Element; badge?: number }[] = [
+  const setlistsDue = louvor ? attention.filter((x) => x.kind === 'setlist').length : 0
+  type Item = { id: Section; label: string; icon: JSX.Element; badge?: number }
+  const items: Item[] = [
     { id: 'overview', label: 'Visão geral', icon: <LayoutDashboard size={20} />, badge: attention.length },
     { id: 'schedule', label: 'Escalas', icon: <CalendarRange size={20} />, badge: drafts },
+    { id: 'events', label: 'Eventos', icon: <CalendarDays size={20} /> },
+    ...(louvor ? [{ id: 'setlist' as Section, label: 'Repertório', icon: <Music2 size={20} />, badge: setlistsDue }] : []),
+    ...(hasGroups ? [{ id: 'groups' as Section, label: 'Grupos', icon: <UsersRound size={20} /> }] : []),
     { id: 'team', label: 'Equipe', icon: <Users size={20} /> },
     ...(arts ? [{ id: 'requests' as Section, label: 'Pedidos', icon: <Palette size={20} />, badge: late }] : []),
     { id: 'notices', label: 'Avisos', icon: <Megaphone size={20} /> },
   ]
+  const coord: Item[] = admin ? [
+    { id: 'church', label: 'Visão da igreja', icon: <Building2 size={20} /> },
+    { id: 'calendar', label: 'Agenda da igreja', icon: <CalendarClock size={20} /> },
+    { id: 'weekly', label: 'Cultos da semana', icon: <CalendarSync size={20} /> },
+    { id: 'people', label: 'Pessoas', icon: <UserCog size={20} /> },
+    { id: 'settings', label: 'Configurações', icon: <Settings size={20} /> },
+  ] : []
+  const navButton = (it: Item) => (
+    <button key={it.id} className={current === it.id ? 'on' : ''} onClick={() => go(it.id)} title={it.label}>
+      {it.icon}
+      <span className="pn-nav-label">{it.label}</span>
+      {!!it.badge && <i className="pn-badge">{it.badge}</i>}
+    </button>
+  )
 
   return (
     <div className="pn">
       <aside className="pn-side">
         <div className="pn-brand"><Logo size={26} /><span className="pn-tag">Painel</span></div>
-        <MinistryPicker ministries={managed} current={ministry} onPick={pick} />
         <nav className="pn-nav">
-          {items.map((it) => (
-            <button key={it.id} className={current === it.id ? 'on' : ''} onClick={() => go(it.id)} title={it.label}>
-              {it.icon}
-              <span className="pn-nav-label">{it.label}</span>
-              {!!it.badge && <i className="pn-badge">{it.badge}</i>}
-            </button>
-          ))}
+          <span className="pn-nav-group pn-nav-label">Ministério</span>
+          <MinistryPicker ministries={managed} current={ministry} onPick={pick} />
+          {items.map(navButton)}
+          {coord.length > 0 && <span className="pn-nav-group pn-nav-label">Coordenação</span>}
+          {coord.length > 0 && <span className="pn-nav-sep" aria-hidden="true" />}
+          {coord.map(navButton)}
         </nav>
         <div className="pn-side-foot">
           <div className="pn-me">
@@ -198,10 +230,18 @@ function PanelApp() {
       <main className="pn-main">
         {mode === 'demo' && <div className="pn-demo">Demonstração: os dados são de exemplo e as alterações são desfeitas 10 minutos depois.</div>}
         {current === 'overview' && <Overview ministry={ministry} managed={managed} attention={attention} go={go} pick={pick} />}
-        {current === 'schedule' && <ScheduleGrid key={ministry.id} ministry={ministry} focusEvent={focusEvent} />}
+        {current === 'schedule' && <ScheduleGrid key={`${ministry.id}-${focusEvent}`} ministry={ministry} focusEvent={focusEvent} />}
+        {current === 'events' && <EventsView key={ministry.id} ministry={ministry} go={go} />}
+        {current === 'setlist' && <SetlistView ministry={ministry} />}
+        {current === 'groups' && <GroupsView ministry={ministry} />}
         {current === 'team' && <TeamView key={ministry.id} ministry={ministry} />}
         {current === 'requests' && <Requests ministry={ministry} />}
         {current === 'notices' && <Notices ministry={ministry} />}
+        {current === 'church' && <ChurchView go={go} pick={pick} />}
+        {current === 'calendar' && <CalendarView go={go} pick={pick} />}
+        {current === 'weekly' && <WeeklyView />}
+        {current === 'people' && <PeopleView />}
+        {current === 'settings' && <SettingsView />}
       </main>
     </div>
   )

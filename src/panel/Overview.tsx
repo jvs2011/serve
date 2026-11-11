@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { AlertCircle, ArrowRight, CalendarClock, CheckCircle2, Clock, ExternalLink, FileWarning, HeartHandshake, MessageCircle, Repeat, Send, UploadCloud, UserPlus } from 'lucide-react'
+import { AlertCircle, ArrowRight, CalendarClock, CheckCircle2, Clock, ExternalLink, FileWarning, HeartHandshake, MessageCircle, Music2, Repeat, Send, UploadCloud, UserPlus } from 'lucide-react'
 import { useStore } from '../data/store'
 import { addDays, daysBetween, relativeDay, toISO, todayISO } from '../lib/dates'
 import { openSlots } from '../lib/schedule'
@@ -10,8 +10,9 @@ import { fillOf } from '../screens/Agenda'
 import { Avatar, MinistryBadge } from '../components/ui'
 import { Fill, ddmm, whatsapp } from './common'
 import { AssignModal, type PickFor } from './AssignModal'
+import { SetlistModal } from './EventsView'
 import type { Section } from './Panel'
-import type { Ministry } from '../data/types'
+import type { ChurchEvent, Ministry } from '../data/types'
 
 export function Overview({ ministry, managed, attention, go, pick }: {
   ministry: Ministry; managed: Ministry[]; attention: Attention[]; go: (s: Section, eventId?: string) => void; pick: (id: string) => void
@@ -19,6 +20,7 @@ export function Overview({ ministry, managed, attention, go, pick }: {
   const { data, actions, notify } = useStore()
   const today = todayISO()
   const [picking, setPicking] = useState<PickFor | null>(null)
+  const [setlist, setSetlist] = useState<ChurchEvent | null>(null)
   const [showAll, setShowAll] = useState(false)
 
   const next30 = useMemo(() => panelEvents(data, ministry.id, today, plusDays(today, 30)), [data, ministry.id, today])
@@ -79,7 +81,7 @@ export function Overview({ ministry, managed, attention, go, pick }: {
               <p className="pn-empty"><CheckCircle2 size={18} className="ok" /> Tudo em dia: nenhuma vaga aberta, troca ou rascunho pendente. 🙌</p>
             ) : (
               <ul className="pn-attn">
-                {shown.map((x, i) => <AttentionRow key={i} x={x} today={today} go={go} publish={publish} setPicking={setPicking} />)}
+                {shown.map((x, i) => <AttentionRow key={i} x={x} today={today} go={go} publish={publish} setPicking={setPicking} openSetlist={setSetlist} />)}
               </ul>
             )}
             {attention.length > 8 && <button className="link pn-more" onClick={() => setShowAll((v) => !v)}>{showAll ? 'Mostrar menos' : `Ver todos (${attention.length})`}</button>}
@@ -142,6 +144,7 @@ export function Overview({ ministry, managed, attention, go, pick }: {
       </div>
 
       {picking && <AssignModal ministry={ministry} picking={picking} onClose={() => setPicking(null)} />}
+      {setlist && <SetlistModal ev={setlist} onClose={() => setSetlist(null)} />}
     </div>
   )
 }
@@ -157,8 +160,8 @@ function Kpi({ label, value, sub, tone, onClick }: { label: string; value: strin
   )
 }
 
-function AttentionRow({ x, today, go, publish, setPicking }: {
-  x: Attention; today: string; go: (s: Section, eventId?: string) => void; publish: () => void; setPicking: (p: PickFor) => void
+function AttentionRow({ x, today, go, publish, setPicking, openSetlist }: {
+  x: Attention; today: string; go: (s: Section, eventId?: string) => void; publish: () => void; setPicking: (p: PickFor) => void; openSetlist: (ev: ChurchEvent) => void
 }) {
   const when = 'ev' in x ? `${relativeDay(x.ev.date)}${x.ev.time ? ` · ${x.ev.time}` : ''} · ${x.ev.title}` : ''
   switch (x.kind) {
@@ -201,6 +204,14 @@ function AttentionRow({ x, today, go, publish, setPicking }: {
           <UploadCloud size={18} />
           <div className="grow"><strong>{x.count} {x.count === 1 ? 'material ainda não enviado' : 'materiais ainda não enviados'}</strong><span>Fotos, vídeos ou filmagens de cultos que já passaram.</span></div>
           <button className="btn btn-ghost btn-sm" onClick={() => document.getElementById('pn-material')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>Ver</button>
+        </li>
+      )
+    case 'setlist':
+      return (
+        <li className={daysBetween(today, x.ev.date) <= 2 ? 'bad' : 'warn'}>
+          <Music2 size={18} />
+          <div className="grow"><strong>Repertório ainda não enviado</strong><span>{when}{x.ev.setlist.length ? ` · ${x.ev.setlist.length} ${x.ev.setlist.length === 1 ? 'música' : 'músicas'}` : ' · nenhuma música ainda'}</span></div>
+          <button className="btn btn-ghost btn-sm" onClick={() => openSetlist(x.ev)}>{x.ev.setlist.length ? 'Conferir e enviar' : 'Montar'}</button>
         </li>
       )
     case 'late':

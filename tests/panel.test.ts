@@ -77,3 +77,31 @@ describe('painel do líder (computador)', () => {
     expect(after.length).toBeGreaterThan(txt.length)
   })
 })
+
+describe('painel: eventos e coordenação', () => {
+  it('tipo de evento e quem pode editar', async () => {
+    const { canEditEvent, eventKind } = await import('../src/lib/panel')
+    const d = createSeed()
+    const rec = d.events.find((e) => e.id === 'e-demo-news')!
+    const care = d.events.find((e) => e.id === 'e-demo-wecare')!
+    const fixed = d.events.find((e) => e.slotId && e.date >= today)!
+    expect(eventKind(rec)).toBe('session')
+    expect(eventKind(care)).toBe('ministry')
+    expect(eventKind(fixed)).toBe('fixed')
+    const me = (id: string) => d.members.find((m) => m.id === id)!
+    expect(canEditEvent(d, me('m-rafaela'), rec)).toBe(true) // gravação do Follow
+    expect(canEditEvent(d, me('m-rafaela'), fixed)).toBe(false) // culto fixo é da coordenação
+    expect(canEditEvent(d, me('m-rafaela'), care)).toBe(false) // evento de outro ministério
+    expect(canEditEvent(d, me('m-lucas'), fixed)).toBe(true)
+  })
+
+  it('Louvor: culto da semana sem repertório enviado aparece na atenção', () => {
+    const d = createSeed()
+    const list = attentionFor(d, 'louvor', today).filter((x) => x.kind === 'setlist')
+    expect(list.length).toBeGreaterThan(0)
+    const ev = (list[0] as Extract<typeof list[number], { kind: 'setlist' }>).ev
+    ev.setlistSentAt = new Date().toISOString()
+    expect(attentionFor(d, 'louvor', today).some((x) => x.kind === 'setlist' && x.ev.id === ev.id)).toBe(false)
+    expect(attentionFor(d, 'follow', today).some((x) => x.kind === 'setlist')).toBe(false)
+  })
+})

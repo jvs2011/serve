@@ -145,7 +145,7 @@ export function Agenda() {
   )
 }
 
-function NewEventSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function NewEventSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data, actions, notify } = useStore()
   const [title, setTitle] = useState('')
   const [date, setDate] = useState(todayISO())

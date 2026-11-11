@@ -25,7 +25,7 @@ export function MinistryEventCard({ ministry }: { ministry: Ministry }) {
   )
 }
 
-function MinistryEventForm({ ministry, onDone }: { ministry: Ministry; onDone: () => void }) {
+export function MinistryEventForm({ ministry, onDone }: { ministry: Ministry; onDone: () => void }) {
   const { actions, notify } = useStore()
   const [title, setTitle] = useState('')
   const [date, setDate] = useState('')
@@ -129,7 +129,7 @@ export function EventEditForm({ ev, onDone }: { ev: ChurchEvent; onDone: () => v
 
   return (
     <div className="group-form">
-      {ev.slotId && <p className="muted small">Muda só este dia. Para mudar toda semana, use <b>Perfil → Cultos da semana</b>.</p>}
+      {ev.slotId && <p className="muted small">Muda só este dia. Para mudar toda semana, use <b>Cultos da semana</b> (no app, em Perfil; no painel do computador, em Coordenação).</p>}
       <label className="field"><span>Nome</span><input id="ev-title" value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} /></label>
       <label className="field"><span>Dia</span><input id="ev-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></label>
       <div className="field-row">

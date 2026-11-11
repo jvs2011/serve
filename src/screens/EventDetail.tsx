@@ -298,7 +298,7 @@ function CandidatePicker({ ev, ministry, role, onPick }: { ev: ChurchEvent; mini
   )
 }
 
-function Setlist({ ev }: { ev: ChurchEvent }) {
+export function Setlist({ ev }: { ev: ChurchEvent }) {
   const { data, actions, notify } = useStore()
   const me = useMe()
   const canEdit = canEditSetlist(data, me, ev) && !isPast(ev)

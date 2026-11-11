@@ -17,7 +17,8 @@ export function Modal({ title, subtitle, onClose, children, width = 560, footer 
   title: string; subtitle?: string; onClose: () => void; children: ReactNode; width?: number; footer?: ReactNode
 }) {
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    // Esc fecha só o que está na frente (uma folha do app aberta por cima desta janela fecha primeiro)
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !document.querySelector('.sheet-backdrop') && onClose()
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])

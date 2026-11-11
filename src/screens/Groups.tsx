@@ -58,7 +58,7 @@ export function GroupsTab({ ministry }: { ministry: Ministry }) {
   )
 }
 
-function GroupForm({ ministry, group, onDone }: { ministry: Ministry; group?: MemberGroup; onDone: () => void }) {
+export function GroupForm({ ministry, group, onDone }: { ministry: Ministry; group?: MemberGroup; onDone: () => void }) {
   const { data, actions, notify } = useStore()
   const [name, setName] = useState(group?.name ?? '')
   const [ids, setIds] = useState<string[]>(group?.memberIds ?? [])

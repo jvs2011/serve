@@ -34,7 +34,7 @@ export function SessionCards({ ministry }: { ministry: Ministry }) {
   )
 }
 
-function SessionForm({ session, onDone }: { session: TeamSession; onDone: () => void }) {
+export function SessionForm({ session, onDone }: { session: TeamSession; onDone: () => void }) {
   const { data, actions, notify } = useStore()
   const today = todayISO()
   const next7 = useMemo(() => Array.from({ length: 7 }, (_, i) => toISO(addDays(fromISO(today), i + 1))), [today])
