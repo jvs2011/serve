@@ -142,7 +142,10 @@ e, quando ligada, a demonstração com os perfis de líder e coordenação).
   - **Pessoas**: todos os cadastros com busca e filtros (líderes, sem PIN, pelo formulário, sem função);
     cadastrar e editar lado a lado (dados, ministérios, funções, liderança, coordenação), redefinir PIN, remover
     e baixar a planilha
-  - **Configurações**: liberar o app, demonstração na tela de entrada e os links dos formulários de cadastro
+  - **Configurações**: liberar o app, demonstração na tela de entrada e os links dos formulários de cadastro.
+    Desde a versão 26 dos dados o app está **liberado**: quem se inscreveu pelo formulário (e quem se inscrever
+    depois) entra com o celular e cria o PIN no primeiro acesso. Com o app liberado, a tela de "obrigado" do
+    formulário mostra os passos e o botão **Entrar no Serve** (que já leva o celular preenchido)
 
 Os formulários são os mesmos do app (mesmas regras); nada saiu do celular.
 

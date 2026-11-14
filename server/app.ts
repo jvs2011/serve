@@ -140,6 +140,9 @@ function prepare(d: AppData): boolean {
   // mudanças de estrutura do código (funções renomeadas, ministérios fora dos cultos): roda uma vez por versão
   if (d.codeVersion !== DATA_VERSION) {
     syncStructure(d, brToday())
+    // versão 26: o Serve foi liberado para quem se inscreveu (e para quem se inscrever depois);
+    // roda uma vez só, então a coordenação pode voltar a restringir em Configurações
+    if ((d.codeVersion ?? 0) < 26) d.settings = { ...d.settings, open: true }
     d.codeVersion = DATA_VERSION
     changed = true
   }
@@ -403,7 +406,7 @@ export async function route(name: string, method: string, body: any, auth: strin
         const { data } = await withData(store)
         const m = data.ministries.find((x) => x.id === String(query.m ?? body?.m ?? ''))
         if (!m) return fail(404, 'Formulário não encontrado.')
-        return ok({ id: m.id, name: m.name, description: m.description, color: m.color, teams: m.roles.map((r) => r.name) })
+        return ok({ id: m.id, name: m.name, description: m.description, color: m.color, teams: m.roles.map((r) => r.name), open: data.settings?.open === true })
       }
 
       case 'signup': {

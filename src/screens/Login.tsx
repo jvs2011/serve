@@ -16,7 +16,11 @@ export function Login({ title, text, profiles = demoProfiles, bare }: { title?: 
   const { actions } = useStore()
   const [available, setAvailable] = useState<boolean | null>(null)
   const [showDemo, setShowDemo] = useState<boolean | null>(null)
-  const [phone, setPhone] = useState('')
+  // vindo do formulário de cadastro (?celular=16999991234), o número já vem preenchido
+  const [phone, setPhone] = useState(() => {
+    const p = new URLSearchParams(location.search).get('celular') ?? ''
+    return p ? nextPhoneValue('', p.replace(/\D/g, '').slice(0, 11)) : ''
+  })
   // celular → (já tem PIN) digita o PIN | (primeiro acesso) cria o PIN → repete o PIN
   const [step, setStep] = useState<'phone' | 'pin' | 'create' | 'confirm'>('phone')
   const [setupId, setSetupId] = useState<string | null>(null)

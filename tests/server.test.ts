@@ -133,3 +133,42 @@ describe('notificações', () => {
     expect(notify.confirmRemindersFor(d, toISO(addDays(fromISO(today), 400)))).toHaveLength(0)
   })
 })
+
+describe('liberação do app para quem se inscreveu', () => {
+  it('dados com o app fechado (versão 25): quem veio do formulário passa a entrar e cria o PIN', async () => {
+    const store = getStore()!
+    const { ministryList } = await import('../src/data/seed')
+    const doc: AppData = {
+      version: 1, ministries: ministryList(), codeVersion: 25, unavailability: {}, swaps: [], notices: [], events: [], assignments: [],
+      settings: { open: false },
+      members: [
+        { id: 'adm', name: 'Admin Teste', phone: '16991234567', access: 'admin', maxPerMonth: 4, ministries: [] },
+        { id: 'f1', name: 'Maria Souza', phone: '16988887777', access: 'volunteer', maxPerMonth: 4, source: 'form', ministries: [{ ministryId: 'follow', roles: ['Stories'] }] },
+      ],
+    }
+    await store.casDoc(await store.getVersion(), JSON.stringify(doc))
+    // a primeira chamada atualiza os dados (versão 26) e libera o app
+    const r = await call('login', { phone: '(16) 98888-7777' })
+    expect(r.status).toBe(200)
+    expect(r.body).toMatchObject({ mode: 'create' })
+    const ok = await call('pin-create', { setupId: (r.body as { setupId: string }).setupId, pin: '5831' })
+    const t = (ok.body as { token: string }).token
+    expect(t).toBeTruthy()
+    const data = (await call('data', null, t, 'GET')).body as { data: AppData }
+    expect(data.data.settings?.open).toBe(true)
+    // o formulário sabe que o app está liberado (mostra o botão Entrar no Serve)
+    expect((await call('signup-info', null, undefined, 'GET', { m: 'follow' })).body).toMatchObject({ open: true })
+  })
+
+  it('a liberação roda uma vez só: se a coordenação fechar de novo, continua fechado', async () => {
+    const store = getStore()!
+    const cur = JSON.parse((await store.getDoc()).doc!) as AppData
+    cur.settings = { ...cur.settings, open: false }
+    await store.casDoc(await store.getVersion(), JSON.stringify(cur))
+    const r = await call('login', { phone: '(16) 97777-0000' })
+    expect(r.status).toBe(404) // número que não existe (não importa aqui)
+    const after = JSON.parse((await store.getDoc()).doc!) as AppData
+    expect(after.settings?.open).toBe(false)
+    expect((await call('signup-info', null, undefined, 'GET', { m: 'follow' })).body).toMatchObject({ open: false })
+  })
+})

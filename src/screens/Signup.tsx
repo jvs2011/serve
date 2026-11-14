@@ -5,7 +5,7 @@ import { scrollToTop } from '../lib/scroll'
 import { isValidPhone, nextPhoneValue, tidyName } from '../lib/people'
 import { signupSections, type SignupSection } from '../lib/signupTeams'
 
-interface Info { id: string; name: string; description: string; color: string; teams: string[] }
+interface Info { id: string; name: string; description: string; color: string; teams: string[]; open?: boolean }
 
 /**
  * Formulário público de cadastro de um ministério (ex.: /cadastro/follow).
@@ -109,7 +109,22 @@ export function Signup({ ministryId }: { ministryId: string }) {
             <p>{done === 'exists'
               ? 'Esse número já está na nossa lista, então não precisa fazer mais nada.'
               : `Seu cadastro no ${info.name} foi recebido.`}</p>
-            <p className="signup-news">Em breve teremos novidades: uma nova forma de gerenciarmos as escalas. Fique de olho no grupo! 😉</p>
+            {info.open ? (
+              <>
+                <div className="signup-news signup-steps">
+                  <strong>Seu acesso ao Serve já está liberado 🎉</strong>
+                  <ol>
+                    <li>Toque em <b>Entrar no Serve</b></li>
+                    <li>Confira o seu celular{phone ? `: ${phone}` : ''}</li>
+                    <li>No primeiro acesso, crie um PIN de 4 números</li>
+                    <li>Ative as notificações para receber suas escalas</li>
+                  </ol>
+                </div>
+                <a className="btn btn-primary btn-block" href={phone ? `/?celular=${phone.replace(/\D/g, '')}` : '/'} style={{ background: color }}>Entrar no Serve</a>
+              </>
+            ) : (
+              <p className="signup-news">Em breve teremos novidades: uma nova forma de gerenciarmos as escalas. Fique de olho no grupo! 😉</p>
+            )}
             <button className="link" onClick={reset}>Enviar outro cadastro</button>
           </div>
         ) : (
