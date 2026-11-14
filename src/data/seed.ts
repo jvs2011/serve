@@ -5,7 +5,7 @@ import { DEFAULT_WEEKLY, eventId, weeklyEvents } from './agenda.js'
 import { NEWS_SESSION_ROLES } from './sessions.js'
 
 /** Versão do formato dos dados. Mude para forçar recriação dos dados de exemplo. */
-export const DATA_VERSION = 26
+export const DATA_VERSION = 27
 
 /*
  * Ministérios da Lagoinha Franca.

@@ -194,6 +194,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => { try { localStorage.setItem(DEMO_KEY, JSON.stringify(demoData)) } catch { /* ignore */ } }, [demoData])
   const replaceDemo = useCallback((d: AppData) => { demoRef.current = d; setDemoData(d) }, [])
 
+  // demonstração escondida pela coordenação: quem estava num perfil de exemplo volta para a entrada
+  // (sem servidor, como na prévia em arquivo único, a demonstração continua)
+  const inDemo = session?.mode === 'demo'
+  useEffect(() => {
+    if (!inDemo) return
+    let alive = true
+    fetch('/api/status')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((r: { configured?: boolean; demo?: boolean } | null) => { if (alive && r?.configured && r.demo === false) setSession(null) })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [inDemo, setSession])
+
   const expiresAt = session?.mode === 'demo' ? demoExpiresAt(demoData) : null
   useEffect(() => {
     if (expiresAt === null) return

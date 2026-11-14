@@ -172,3 +172,20 @@ describe('liberação do app para quem se inscreveu', () => {
     expect((await call('signup-info', null, undefined, 'GET', { m: 'follow' })).body).toMatchObject({ open: false })
   })
 })
+
+describe('demonstração fora da tela de entrada', () => {
+  it('dados da versão 26: a demonstração some (uma vez só) e a coordenação pode mostrar de novo', async () => {
+    const store = getStore()!
+    const cur = JSON.parse((await store.getDoc()).doc!) as AppData
+    cur.codeVersion = 26
+    cur.settings = { open: true }
+    await store.casDoc(await store.getVersion(), JSON.stringify(cur))
+    expect((await call('status', null, undefined, 'GET')).body).toEqual({ configured: true, demo: false })
+    const after = JSON.parse((await store.getDoc()).doc!) as AppData
+    expect(after.settings).toMatchObject({ open: true, demo: false })
+    // mostrar de novo continua valendo (a atualização não roda outra vez)
+    after.settings = { ...after.settings, demo: true }
+    await store.casDoc(await store.getVersion(), JSON.stringify(after))
+    expect((await call('status', null, undefined, 'GET')).body).toEqual({ configured: true, demo: true })
+  })
+})

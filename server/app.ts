@@ -143,6 +143,8 @@ function prepare(d: AppData): boolean {
     // versão 26: o Serve foi liberado para quem se inscreveu (e para quem se inscrever depois);
     // roda uma vez só, então a coordenação pode voltar a restringir em Configurações
     if ((d.codeVersion ?? 0) < 26) d.settings = { ...d.settings, open: true }
+    // versão 27: com a equipe usando de verdade, a demonstração sai da tela de entrada (volta em Configurações)
+    if ((d.codeVersion ?? 0) < 27) d.settings = { ...d.settings, demo: false }
     d.codeVersion = DATA_VERSION
     changed = true
   }
@@ -274,8 +276,10 @@ export async function route(name: string, method: string, body: any, auth: strin
     if (!store) return ok({ configured: false, demo: true })
     // a tela de entrada mostra a demonstração até o administrador esconder
     const { doc } = await store.getDoc()
-    const settings = doc ? (JSON.parse(doc) as AppData).settings : undefined
-    return ok({ configured: true, demo: settings?.demo !== false })
+    let d = doc ? (JSON.parse(doc) as AppData) : undefined
+    // dados de uma versão anterior: aplica as atualizações antes (ex.: esconder a demonstração)
+    if (!d || d.codeVersion !== DATA_VERSION) d = (await withData(store)).data
+    return ok({ configured: true, demo: d?.settings?.demo !== false })
   }
   if (!store) return fail(503, 'O servidor do Serve ainda não foi configurado.')
 

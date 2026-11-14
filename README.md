@@ -145,7 +145,9 @@ e, quando ligada, a demonstração com os perfis de líder e coordenação).
   - **Configurações**: liberar o app, demonstração na tela de entrada e os links dos formulários de cadastro.
     Desde a versão 26 dos dados o app está **liberado**: quem se inscreveu pelo formulário (e quem se inscrever
     depois) entra com o celular e cria o PIN no primeiro acesso. Com o app liberado, a tela de "obrigado" do
-    formulário mostra os passos e o botão **Entrar no Serve** (que já leva o celular preenchido)
+    formulário mostra os passos e o botão **Entrar no Serve** (que já leva o celular preenchido).
+    Desde a versão 27 a **demonstração sai da tela de entrada** (app e painel); quem estava num perfil de exemplo
+    volta para a entrada. Para mostrar de novo (ex.: num treinamento), use Configurações › Mostrar a demonstração
 
 Os formulários são os mesmos do app (mesmas regras); nada saiu do celular.
 
