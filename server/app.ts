@@ -145,6 +145,8 @@ function prepare(d: AppData): boolean {
     if ((d.codeVersion ?? 0) < 26) d.settings = { ...d.settings, open: true }
     // versão 27: com a equipe usando de verdade, a demonstração sai da tela de entrada (volta em Configurações)
     if ((d.codeVersion ?? 0) < 27) d.settings = { ...d.settings, demo: false }
+    // versão 28: a demonstração volta para a tela de entrada (a coordenação pediu); esconder continua em Configurações
+    if ((d.codeVersion ?? 0) < 28) d.settings = { ...d.settings, demo: true }
     d.codeVersion = DATA_VERSION
     changed = true
   }

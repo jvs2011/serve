@@ -12,6 +12,8 @@ const { route } = await import('../server/app')
 const { getStore } = await import('../server/storage')
 
 const today = todayISO()
+// material que a pessoa deve de cultos que já passaram (o culto de hoje também aparece, mas ainda não aconteceu)
+const owedPast = (d: ReturnType<typeof createSeed>, id: string) => pendingDeliveries(d, id, today).filter((a) => d.events.find((e) => e.id === a.eventId)!.date < today)
 
 describe('material depois de servir', () => {
   it('Fotografia, Filmmaker e Filmmaker do News enviam material; Projeção não', () => {
@@ -24,7 +26,7 @@ describe('material depois de servir', () => {
 
   it('o Vitor deve o vídeo do último culto; enviar avisa os líderes e a Edição de vídeos', () => {
     const d = createSeed()
-    const [owed] = pendingDeliveries(d, 'm-vitor', today)
+    const [owed] = owedPast(d, 'm-vitor')
     expect(owed?.role).toBe('Filmmaker')
     expect(pendingDeliveries(d, 'm-carol', today)[0]?.role).toBe('Fotografia')
     expect(pendingDeliveries(d, 'm-davi', today)[0]?.role).toBe('Filmmaker (News)')
@@ -43,7 +45,7 @@ describe('material depois de servir', () => {
 
   it('as fotos vão para a Edição de fotos', () => {
     const d = createSeed()
-    const [owed] = pendingDeliveries(d, 'm-carol', today)
+    const [owed] = owedPast(d, 'm-carol')
     const b = structuredClone(d)
     applyAction(d, { type: 'deliverMaterial', assignmentId: owed.id, link: 'drive.google.com/fotos' }, 'm-carol')
     const out = notify.notificationsFor(b, d, 'm-carol', today).find((o) => o.payload.title.startsWith('Material enviado'))!
@@ -63,7 +65,7 @@ describe('material depois de servir', () => {
 
   it('lembrete no dia seguinte para quem não enviou', () => {
     const d = createSeed()
-    const [owed] = pendingDeliveries(d, 'm-vitor', today)
+    const [owed] = owedPast(d, 'm-vitor')
     const date = d.events.find((e) => e.id === owed.eventId)!.date
     const rem = notify.deliveryRemindersFor(d, date)
     expect(rem.some((o) => o.to[0] === 'm-vitor' && /Envie o vídeo/.test(o.payload.title))).toBe(true)

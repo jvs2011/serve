@@ -95,7 +95,7 @@ describe('permissões', () => {
 
   it('coordenação muda os ministérios de um culto e as escalas do ministério retirado saem', () => {
     const d = createSeed()
-    const culto = d.events.find((e) => e.date > todayISO() && e.ministryIds.includes('kids') && d.assignments.some((a) => a.eventId === e.id && a.ministryId === 'kids'))!
+    const culto = d.events.find((e) => e.slotId && e.date > todayISO() && e.ministryIds.includes('kids') && d.assignments.some((a) => a.eventId === e.id && a.ministryId === 'kids'))!
     applyAction(d, { type: 'editEvent', eventId: culto.id, patch: { title: culto.title, date: culto.date, time: culto.time, ministryIds: culto.ministryIds.filter((m) => m !== 'kids') } }, 'm-lucas')
     expect(d.assignments.some((a) => a.eventId === culto.id && a.ministryId === 'kids')).toBe(false)
     expect(culto.edited).toBe(true)

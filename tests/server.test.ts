@@ -173,19 +173,19 @@ describe('liberação do app para quem se inscreveu', () => {
   })
 })
 
-describe('demonstração fora da tela de entrada', () => {
-  it('dados da versão 26: a demonstração some (uma vez só) e a coordenação pode mostrar de novo', async () => {
+describe('demonstração na tela de entrada', () => {
+  it('dados da versão 27 (demonstração escondida): ela volta, uma vez só, e a coordenação pode esconder de novo', async () => {
     const store = getStore()!
     const cur = JSON.parse((await store.getDoc()).doc!) as AppData
-    cur.codeVersion = 26
-    cur.settings = { open: true }
+    cur.codeVersion = 27
+    cur.settings = { open: true, demo: false }
     await store.casDoc(await store.getVersion(), JSON.stringify(cur))
-    expect((await call('status', null, undefined, 'GET')).body).toEqual({ configured: true, demo: false })
-    const after = JSON.parse((await store.getDoc()).doc!) as AppData
-    expect(after.settings).toMatchObject({ open: true, demo: false })
-    // mostrar de novo continua valendo (a atualização não roda outra vez)
-    after.settings = { ...after.settings, demo: true }
-    await store.casDoc(await store.getVersion(), JSON.stringify(after))
     expect((await call('status', null, undefined, 'GET')).body).toEqual({ configured: true, demo: true })
+    const after = JSON.parse((await store.getDoc()).doc!) as AppData
+    expect(after.settings).toMatchObject({ open: true, demo: true })
+    // esconder de novo continua valendo (a atualização não roda outra vez)
+    after.settings = { ...after.settings, demo: false }
+    await store.casDoc(await store.getVersion(), JSON.stringify(after))
+    expect((await call('status', null, undefined, 'GET')).body).toEqual({ configured: true, demo: false })
   })
 })
