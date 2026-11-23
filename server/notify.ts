@@ -34,9 +34,10 @@ export function notificationsFor(before: AppData, after: AppData, actorId: strin
   // 1) novas escalas (à mão ou automática), agrupadas por pessoa
   const fresh = new Map<string, Assignment[]>()
   for (const a of after.assignments) {
-    // escala nova publicada, ou rascunho que acabou de ser publicado
+    // escala nova publicada, ou rascunho que acabou de ser publicado. Quem se escala também recebe
+    // (a notificação é o convite para confirmar; troca assumida não entra aqui, porque a escala já existia)
     const p = prevA.get(a.id)
-    if (a.draft || (p && !p.draft) || a.memberId === actorId || !future(a)) continue
+    if (a.draft || (p && !p.draft) || !future(a)) continue
     // troca assumida também muda o dono, mas é tratada abaixo
     fresh.set(a.memberId, [...(fresh.get(a.memberId) ?? []), a])
   }

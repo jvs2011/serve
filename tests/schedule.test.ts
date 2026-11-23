@@ -130,3 +130,32 @@ describe('recusa', () => {
     expect(made.every((a) => a.memberId === tec[0].id)).toBe(true)
   })
 })
+
+describe('notificação de escala', () => {
+  it('quem publica a escala e se escalou também recebe o convite para confirmar', async () => {
+    const notify = await import('../server/notify')
+    const d = createSeed()
+    const ev = d.events.find((e) => e.date > todayISO() && e.ministryIds.includes('follow') && e.slotId)!
+    applyAction(d, { type: 'assign', eventId: ev.id, ministryId: 'follow', role: 'Stories', memberId: 'm-rafaela' }, 'm-rafaela')
+    applyAction(d, { type: 'assign', eventId: ev.id, ministryId: 'follow', role: 'Projeção', memberId: 'm-bruno' }, 'm-rafaela')
+    const before = structuredClone(d)
+    applyAction(d, { type: 'publishDrafts', ministryId: 'follow', eventId: ev.id }, 'm-rafaela')
+    const out = notify.notificationsFor(before, d, 'm-rafaela', todayISO())
+    const to = (id: string) => out.find((o) => o.to.includes(id) && /escala/i.test(o.payload.title))
+    expect(to('m-rafaela')).toBeTruthy()
+    expect(to('m-bruno')).toBeTruthy()
+  })
+
+  it('assumir uma troca não manda "você foi escalado" de novo', async () => {
+    const notify = await import('../server/notify')
+    const d = createSeed()
+    const swap = d.swaps.find((s) => s.status === 'open')!
+    const a = d.assignments.find((x) => x.id === swap.assignmentId)!
+    const who = d.members.find((m) => m.id !== a.memberId && m.ministries.some((mm) => mm.ministryId === a.ministryId && mm.roles.includes(a.role))
+      && !d.assignments.some((x) => x.eventId === a.eventId && x.memberId === m.id))!
+    const before = structuredClone(d)
+    applyAction(d, { type: 'acceptSwap', swapId: swap.id }, who.id)
+    const out = notify.notificationsFor(before, d, who.id, todayISO())
+    expect(out.some((o) => o.to.includes(who.id) && o.payload.title.startsWith('Você foi escalado'))).toBe(false)
+  })
+})
