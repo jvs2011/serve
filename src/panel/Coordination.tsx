@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight, CalendarPlus, ChevronLeft, ChevronRight, Copy, ExternalLink, Pencil, Plus, Trash2, UserPlus } from 'lucide-react'
+import { ArrowRight, Bell, CalendarPlus, ChevronLeft, ChevronRight, Copy, ExternalLink, Pencil, Plus, Trash2, UserPlus } from 'lucide-react'
 import { useStore } from '../data/store'
 import { addDays, monthLong, timeRange, toISO, todayISO, weekdayShort } from '../lib/dates'
 import { draftsOf, openSlots, slotsFor, sortEvents } from '../lib/schedule'
 import { EVENT_KIND_LABEL, eventKind, plusDays } from '../lib/panel'
 import { copyText } from '../lib/clipboard'
+import { testPushAll } from '../lib/push'
 import { DEFAULT_WEEKLY, EVERY_WEEKDAY, frequencyLabel } from '../data/agenda'
 import { fillOf, NewEventSheet } from '../screens/Agenda'
 import { EventEditForm } from '../screens/MinistryEvents'
@@ -282,9 +283,27 @@ export function WeeklyView() {
 
 /** Coordenação: liberar o app, demonstração na tela de entrada e os links dos formulários de cadastro */
 export function SettingsView() {
-  const { data, actions, notify, mode } = useStore()
+  const { data, actions, notify, mode, token, reload } = useStore()
   const [busy, setBusy] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [testing, setTesting] = useState(false)
+  const entered = data.members.filter((m) => m.hasPin).length
+  const pushOn = data.members.filter((m) => m.pushOn).length
+  const testAll = async () => {
+    if (!token) return
+    setTesting(true)
+    try {
+      const r = await testPushAll(token)
+      notify(r.people
+        ? `Teste enviado: chegou em ${r.sent} ${r.sent === 1 ? 'celular' : 'celulares'} de ${r.people} ${r.people === 1 ? 'pessoa' : 'pessoas'} com notificação ativa (${r.entered} de ${r.total} já entraram no app).`
+        : `Ninguém está com notificação ativa ainda (${r.entered} de ${r.total} já entraram no app).`)
+      reload()
+    } catch (e) {
+      notify(e instanceof Error ? e.message : 'Não foi possível enviar o teste.')
+    } finally {
+      setTesting(false)
+    }
+  }
   const open = data.settings?.open === true
   const people = data.members.filter((m) => m.access !== 'admin').length
   const site = mode === 'live' ? location.origin : 'https://serve.lagoinhafranca.com'
@@ -296,9 +315,9 @@ export function SettingsView() {
   }
   return (
     <div className="pn-page">
-      <header className="pn-head"><div><h1>Configurações</h1><p>Quem entra no app e os formulários de cadastro.</p></div></header>
+      <header className="pn-head"><div><h1>Configurações</h1><p>Quem entra no app, as notificações e os formulários de cadastro.</p></div></header>
       {mode === 'demo' && <p className="pn-note">Na demonstração, estas chaves mudam só os dados de exemplo.</p>}
-      <div className="pn-settings-row">
+      <div className="pn-cols pn-cols-even">
         <section className="pn-card">
           <div className="pn-card-head"><h2>Acesso ao app</h2><span className={`pill ${open ? 'pill-confirmed' : 'pill-pending'}`}>{open ? 'Liberado para todos' : 'Só a coordenação'}</span></div>
           <p className="muted small pn-card-sub">{open
@@ -313,6 +332,16 @@ export function SettingsView() {
           ) : open
             ? <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => setOpen(false)}>Voltar a restringir</button>
             : <button className="btn btn-primary btn-sm" disabled={busy} onClick={() => setConfirmOpen(true)}>Liberar o app para todos</button>}
+        </section>
+        <section className="pn-card">
+          <div className="pn-card-head"><h2>Notificações</h2><span className="pill pill-confirmed"><Bell size={12} /> {pushOn} {pushOn === 1 ? 'ativada' : 'ativadas'}</span></div>
+          <p className="muted small pn-card-sub">
+            {entered} de {data.members.length} pessoas já entraram no app e {pushOn} ativaram as notificações. Quem não ativou só vê as escalas
+            e os avisos quando abre o app. Em Equipe, marque “Só quem está sem notificação” para ver quem falta.
+          </p>
+          <button className="btn btn-primary btn-sm" disabled={testing || mode !== 'live'} onClick={testAll}>
+            <Bell size={14} /> {testing ? 'Enviando…' : 'Enviar notificação de teste para todos'}
+          </button>
         </section>
       </div>
       <section className="pn-card pn-card-flush">

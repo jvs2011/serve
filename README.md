@@ -144,7 +144,10 @@ a demonstração com os perfis de líder e coordenação só aparece no desenvol
   - **Pessoas**: todos os cadastros com busca e filtros (líderes, sem PIN, pelo formulário, sem função);
     cadastrar e editar lado a lado (dados, ministérios, funções, liderança, coordenação), redefinir PIN, remover
     e baixar a planilha
-  - **Configurações**: liberar o app e os links dos formulários de cadastro.
+  - **Configurações**: liberar o app, **notificações** (quantas pessoas já entraram e ativaram; botão **Enviar
+    notificação de teste para todos**, que também atualiza quem está com notificação ativa) e os links dos
+    formulários de cadastro. Em Equipe, cada pessoa mostra se ativou as notificações (filtro "Só quem está sem
+    notificação"), e ao publicar a escala a mensagem diz em quantos celulares chegou e quem está sem notificação.
     Desde a versão 26 dos dados o app está **liberado**: quem se inscreveu pelo formulário (e quem se inscrever
     depois) entra com o celular e cria o PIN no primeiro acesso. Com o app liberado, a tela de "obrigado" do
     formulário mostra os passos e o botão **Entrar no Serve** (que já leva o celular preenchido).

@@ -11,7 +11,7 @@ import { addDays, fromISO, toISO } from '../src/lib/dates.js'
 import { isValidPhone, normalizePhone } from '../src/lib/people.js'
 import { canManage, visibleTo } from '../src/lib/schedule.js'
 import { getStore, type Store } from './storage.js'
-import { addSub, isValidSub, removeSub, sendPush, vapidKeys } from './push.js'
+import { addSub, hasSubs, isValidSub, removeSub, sendPush, vapidKeys } from './push.js'
 import { confirmRemindersFor, deliveryRemindersFor, draftRemindersFor, notificationsFor, openSlotsAlertsFor, remindersFor, taskRemindersFor, type Outgoing } from './notify.js'
 
 const LIVE_VERSION = 1
@@ -216,9 +216,22 @@ function viewFor(full: AppData, meId: string): AppData {
     tasks: (d.tasks ?? []).filter((t) => me.access === 'admin' || t.assigneeId === me.id || led.has(t.ministryId) || inMinistry.has(t.ministryId)),
     members: d.members.map(({ pinHash, ...m }) => {
       const view = { ...m, hasPin: !!pinHash }
-      return me.access === 'admin' || m.id === me.id || m.ministries.some((mm) => led.has(mm.ministryId)) ? view : { ...view, phone: '' }
+      return me.access === 'admin' || m.id === me.id || m.ministries.some((mm) => led.has(mm.ministryId)) ? view : { ...view, phone: '', pushOn: undefined }
     }),
   }
+}
+
+/** Marca no cadastro se a pessoa tem notificações ativas (só grava quando muda, para o app não baixar tudo de novo) */
+async function setPushOn(store: Store, memberId: string, on: boolean) {
+  const { data } = await withData(store)
+  const m = data.members.find((x) => x.id === memberId)
+  if (!m || !!m.pushOn === on) return
+  await withData(store, (d) => {
+    const x = d.members.find((y) => y.id === memberId)
+    if (!x) return
+    if (on) x.pushOn = true
+    else delete x.pushOn
+  })
 }
 
 /** Envia as notificações sem deixar a resposta esperar mais que alguns segundos */
@@ -439,15 +452,37 @@ export async function route(name: string, method: string, body: any, auth: strin
         if (!meId) return fail(401, 'Sua sessão expirou. Entre novamente.')
         if (name === 'push-test') {
           const sent = await sendPush(store, [meId], { title: 'Notificações ativadas 🔔', body: 'Tudo certo! Você vai receber aqui os avisos das suas escalas.', tag: 'teste' })
+          await setPushOn(store, meId, sent > 0 || (await hasSubs(store, meId)))
           return sent ? ok({ sent }) : fail(404, 'Nenhum aparelho com notificações ativas foi encontrado. Ative de novo e tente outra vez.')
         }
         if (name === 'push-unsubscribe') {
           if (typeof body?.endpoint === 'string') await removeSub(store, meId, body.endpoint)
+          await setPushOn(store, meId, await hasSubs(store, meId))
           return ok({ ok: true })
         }
         if (!isValidSub(body?.subscription)) return fail(400, 'Inscrição de notificação inválida.')
         await addSub(store, meId, body.subscription)
+        await setPushOn(store, meId, true)
         return ok({ ok: true })
+      }
+
+      case 'push-test-all': {
+        // coordenação: confere quem tem notificação ativa (atualiza o cadastro) e manda um teste para todos
+        if (method !== 'POST') return fail(405, 'Método não permitido')
+        const meId = await sessionMember(store, auth)
+        if (!meId) return fail(401, 'Sua sessão expirou. Entre novamente.')
+        const { data } = await withData(store)
+        if (data.members.find((m) => m.id === meId)?.access !== 'admin') return fail(403, 'Só a coordenação pode mandar o teste para todos.')
+        const on = new Set((await Promise.all(data.members.map(async (m) => ((await hasSubs(store, m.id)) ? m.id : null)))).filter((x): x is string => !!x))
+        const sent = on.size
+          ? await sendPush(store, [...on], { title: 'Teste de notificação do Serve 🔔', body: 'Se esta mensagem chegou, as notificações estão funcionando no seu celular. Não precisa fazer nada.', tag: 'teste-geral' })
+          : 0
+        // aparelhos que deixaram de existir saem na hora do envio: confere de novo quem continua ativo
+        const still = new Set((await Promise.all([...on].map(async (id) => ((await hasSubs(store, id)) ? id : null)))).filter((x): x is string => !!x))
+        if (data.members.some((m) => !!m.pushOn !== still.has(m.id))) {
+          await withData(store, (d) => { for (const m of d.members) { if (still.has(m.id)) m.pushOn = true; else delete m.pushOn } })
+        }
+        return ok({ sent, people: still.size, entered: data.members.filter((m) => m.pinHash).length, total: data.members.length })
       }
 
       case 'cron-reminders': {

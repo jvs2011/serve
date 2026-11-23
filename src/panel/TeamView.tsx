@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, Check, Download, MessageCircle, Search, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Bell, BellOff, Check, Download, MessageCircle, Search, X } from 'lucide-react'
 import { useStore } from '../data/store'
 import { daysBetween, relativeDay, todayISO } from '../lib/dates'
 import { formatPhone } from '../lib/people'
@@ -14,12 +14,14 @@ const WEEKDAYS_PL = ['Domingos', 'Segundas', 'Terças', 'Quartas', 'Quintas', 'S
 
 /** Equipe do ministério: quem serve em quê, quanto está servindo e quem está parado */
 export function TeamView({ ministry }: { ministry: Ministry }) {
-  const { data } = useStore()
+  const { data, mode } = useStore()
+  const live = mode === 'live'
   const today = todayISO()
   const all = useMemo(() => teamRows(data, ministry.id, today), [data, ministry.id, today])
   const [q, setQ] = useState('')
   const [role, setRole] = useState('')
   const [idle, setIdle] = useState(false)
+  const [noPush, setNoPush] = useState(false)
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: 'name', dir: 1 })
   const [open, setOpen] = useState<TeamRow | null>(null)
 
@@ -28,6 +30,7 @@ export function TeamView({ ministry }: { ministry: Ministry }) {
     .filter((r) => !q.trim() || norm(r.member.name).includes(norm(q.trim())))
     .filter((r) => !role || r.roles.includes(role))
     .filter((r) => !idle || !r.next)
+    .filter((r) => !noPush || !r.member.pushOn)
     .sort((a, b) => {
       const v = (r: TeamRow): string | number => sort.key === 'name' ? r.member.name
         : sort.key === 'month' ? r.month
@@ -51,7 +54,7 @@ export function TeamView({ ministry }: { ministry: Ministry }) {
       <header className="pn-head">
         <div>
           <h1>Equipe</h1>
-          <p>{ministry.name} · {all.length} {all.length === 1 ? 'pessoa' : 'pessoas'}{withoutNext ? ` · ${withoutNext} sem escala marcada` : ''} · clique na pessoa para ver os detalhes e ajustar as funções</p>
+          <p>{ministry.name} · {all.length} {all.length === 1 ? 'pessoa' : 'pessoas'}{withoutNext ? ` · ${withoutNext} sem escala marcada` : ''}{live ? ` · ${all.filter((r) => r.member.pushOn).length} com notificação ativa` : ''} · clique na pessoa para ver os detalhes e ajustar as funções</p>
         </div>
         <div className="pn-head-actions">
           <button className="btn btn-ghost btn-sm" onClick={() => downloadText(`equipe-${ministry.id}-${today}.csv`, teamCsv(rows, today))}><Download size={15} /> Baixar planilha</button>
@@ -68,6 +71,7 @@ export function TeamView({ ministry }: { ministry: Ministry }) {
           {ministry.roles.map((r) => <option key={r.name} value={r.name}>{r.name}</option>)}
         </select>
         <label className="pn-check"><input type="checkbox" checked={idle} onChange={(e) => setIdle(e.target.checked)} /> Só quem está sem escala</label>
+        {live && <label className="pn-check"><input type="checkbox" checked={noPush} onChange={(e) => setNoPush(e.target.checked)} /> Só quem está sem notificação</label>}
       </div>
 
       <div className="pn-card pn-card-flush">
@@ -80,6 +84,7 @@ export function TeamView({ ministry }: { ministry: Ministry }) {
               {head('next', 'Próxima escala')}
               {head('last', 'Última vez')}
               {head('confirm', 'Confirma')}
+              {live && <th>Notificações</th>}
               <th>Indisponível</th>
               <th />
             </tr>
@@ -100,13 +105,14 @@ export function TeamView({ ministry }: { ministry: Ministry }) {
                 <td>{r.next ? <><strong className="small">{relativeDay(r.next.ev.date)}</strong><span className="muted small block">{r.next.ev.title} · {r.next.a.role}{r.next.a.status === 'pending' ? ' · aguardando' : ''}</span></> : <span className="muted small">Sem escala</span>}</td>
                 <td>{r.last ? <span className={`small${daysBetween(r.last, today) > 21 ? ' warn' : ''}`}>há {daysBetween(r.last, today)} dias</span> : <span className="muted small">Ainda não serviu</span>}</td>
                 <td>{r.confirmRate === null ? <span className="muted small">—</span> : <span className={`small ${r.confirmRate < 70 ? 'bad' : ''}`}>{r.confirmRate}%</span>}</td>
+                {live && <td className="nowrap"><PushStatus m={r.member} /></td>}
                 <td>{r.off || r.recurringOff ? <span className="small">{[r.off && `${r.off} ${r.off === 1 ? 'dia' : 'dias'}`, r.recurringOff && `${r.recurringOff} fixo${r.recurringOff > 1 ? 's' : ''}`].filter(Boolean).join(' · ')}</span> : <span className="muted small">—</span>}</td>
                 <td className="right" onClick={(e) => e.stopPropagation()}>
                   {whatsapp(r.member) && <a className="icon-btn sm" href={whatsapp(r.member)} target="_blank" rel="noreferrer" title="Chamar no WhatsApp"><MessageCircle size={17} /></a>}
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={8} className="pn-empty">Ninguém encontrado com esses filtros.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={live ? 9 : 8} className="pn-empty">Ninguém encontrado com esses filtros.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -232,4 +238,11 @@ function RolesEditor({ member, ministry, roles }: { member: TeamRow['member']; m
       )}
     </div>
   )
+}
+
+/** Situação das notificações da pessoa: ainda não entrou no app, não ativou ou ativou */
+export function PushStatus({ m }: { m: TeamRow['member'] }) {
+  if (!m.hasPin) return <span className="small muted" title="Ainda não entrou no app (não criou o PIN)">Ainda não entrou</span>
+  if (m.pushOn) return <span className="small ok" title="Recebe as escalas e os avisos no celular"><Bell size={13} /> Ativadas</span>
+  return <span className="small warn" title="Entrou no app, mas não ativou as notificações: só vê a escala quando abrir o app"><BellOff size={13} /> Não ativou</span>
 }

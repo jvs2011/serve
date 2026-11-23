@@ -153,7 +153,7 @@ function makeActions(
     unassignGroup: (eventId: string, groupId: string) => { dispatch({ type: 'unassignGroup', eventId, groupId }) },
     /** Gera a escala automática; retorna quantas vagas preencheu */
     autoSchedule: (eventIds: string[], ministryId: string): number => dispatch({ type: 'autoSchedule', eventIds, ministryId })?.created ?? 0,
-    publishDrafts: (ministryId: string, eventId?: string): number => dispatch({ type: 'publishDrafts', ministryId, eventId })?.created ?? 0,
+    publishDrafts: (ministryId: string, eventId?: string) => dispatchAsync({ type: 'publishDrafts', ministryId, eventId }),
     discardDrafts: (ministryId: string, eventId?: string): number => dispatch({ type: 'discardDrafts', ministryId, eventId })?.created ?? 0,
     addNotice: (ministryId: string | null, title: string, body: string, until?: string) => dispatchAsync({ type: 'addNotice', ministryId, title, body, until }),
     archiveNotice: (noticeId: string, archived: boolean, until?: string) => dispatchAsync({ type: 'archiveNotice', noticeId, archived, until }),

@@ -189,3 +189,36 @@ describe('demonstração na tela de entrada', () => {
     expect((await call('status', null, undefined, 'GET')).body).toEqual({ configured: true, demo: false })
   })
 })
+
+describe('notificações: quem ativou e teste para todos', () => {
+  let admin = ''
+  beforeAll(async () => {
+    // os testes anteriores trocaram os dados: o admin pode precisar criar o PIN de novo
+    const r = await call('login', { phone: '16991234567' })
+    const b = r.body as { mode: string; setupId?: string }
+    const ok = b.mode === 'create' ? await call('pin-create', { setupId: b.setupId, pin: '4826' }) : await call('pin', { phone: '16991234567', pin: '4826' })
+    admin = (ok.body as { token: string }).token
+    expect(admin).toBeTruthy()
+  })
+
+  it('teste para todos: só a coordenação; sem ninguém ativo, não envia nada', async () => {
+    const r = await call('push-test-all', {}, admin)
+    expect(r.status).toBe(200)
+    expect(r.body).toMatchObject({ sent: 0, people: 0 })
+  })
+
+  it('ativar marca no cadastro (os líderes veem); desativar desmarca', async () => {
+    const sub = { endpoint: 'https://push.example.com/abc', keys: { p256dh: 'x', auth: 'y' } }
+    expect((await call('push-subscribe', { subscription: sub }, admin)).status).toBe(200)
+    const me = async () => ((await call('data', null, admin, 'GET')).body as { data: AppData; meId: string })
+    let d = await me()
+    expect(d.data.members.find((m) => m.id === d.meId)?.pushOn).toBe(true)
+    // ativar de novo (o app faz isso ao abrir) não muda nada nos dados
+    const v = (d as unknown as { version: number }).version
+    await call('push-subscribe', { subscription: sub }, admin)
+    expect(((await call('data', null, admin, 'GET', { since: String(v) })).body as { unchanged?: boolean }).unchanged).toBe(true)
+    await call('push-unsubscribe', { endpoint: sub.endpoint }, admin)
+    d = await me()
+    expect(d.data.members.find((m) => m.id === d.meId)?.pushOn).toBeUndefined()
+  })
+})

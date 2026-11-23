@@ -454,3 +454,5 @@ body.panel-mode .sheet-grip { display: none; }
   .pn-chip { background: none !important; border: 1px solid #bbb !important; height: auto; padding: 1px 6px !important; }
   .pn-chip i { display: none; }
 }
+
+.pn-card-head .pill { gap: 4px; }

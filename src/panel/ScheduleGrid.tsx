@@ -7,6 +7,7 @@ import { cellOf, gridRoles, panelEvents, plusDays, scheduleText } from '../lib/p
 import { firstName, memberById, ministryMembers } from '../lib/selectors'
 import { shortNames } from '../lib/people'
 import { copyText } from '../lib/clipboard'
+import { draftPeople, publishMessage } from '../lib/publish'
 import { initials } from '../components/ui'
 import { Popover, ddmm, whatsapp } from './common'
 import { AssignModal, type PickFor } from './AssignModal'
@@ -67,9 +68,13 @@ export function ScheduleGrid({ ministry, focusEvent }: { ministry: Ministry; foc
     const n = actions.autoSchedule([ev.id], ministry.id)
     notify(n === 0 ? 'Ninguém disponível para as vagas deste culto.' : n < before ? `${n} de ${before} vagas preenchidas em rascunho.` : `${n} ${n === 1 ? 'vaga preenchida' : 'vagas preenchidas'} em rascunho ✨`)
   }
-  const publish = () => {
-    const n = actions.publishDrafts(ministry.id)
-    notify(n ? `${n} ${n === 1 ? 'escala publicada' : 'escalas publicadas'}: a equipe foi avisada ✅` : 'Nada para publicar.')
+  const [publishing, setPublishing] = useState(false)
+  const publish = async () => {
+    const who = draftPeople(data, ministry.id)
+    setPublishing(true)
+    const r = await actions.publishDrafts(ministry.id)
+    setPublishing(false)
+    notify(publishMessage(who, r))
   }
   const discard = () => {
     const n = actions.discardDrafts(ministry.id)
@@ -132,7 +137,7 @@ export function ScheduleGrid({ ministry, focusEvent }: { ministry: Ministry; foc
           ) : (
             <>
               <button className="btn btn-ghost btn-sm" onClick={() => setConfirmDiscard(true)}>Descartar</button>
-              <button className="btn btn-primary btn-sm" onClick={publish}>Publicar e avisar a equipe</button>
+              <button className="btn btn-primary btn-sm" disabled={publishing} onClick={publish}>{publishing ? 'Publicando…' : 'Publicar e avisar a equipe'}</button>
             </>
           )}
         </div>

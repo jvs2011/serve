@@ -79,3 +79,6 @@ export async function resyncPush(token: string): Promise<void> {
 }
 
 export const testPush = (token: string) => post('push-test', token, {})
+
+/** Coordenação: manda uma notificação de teste para todos que ativaram (e atualiza quem está com notificação ativa) */
+export const testPushAll = (token: string) => post('push-test-all', token, {}) as Promise<{ sent: number; people: number; entered: number; total: number }>

@@ -48,6 +48,8 @@ export interface Member {
   pinHash?: string
   /** Visão do app: a pessoa já criou o PIN? */
   hasPin?: boolean
+  /** ativou as notificações em algum aparelho (o servidor marca ao ativar e desmarca ao desativar) */
+  pushOn?: boolean
   /** 'form' = a própria pessoa se cadastrou pelo formulário público */
   source?: 'form'
   /** Cultos fixos da semana em que a pessoa não pode servir (chave "diaDaSemana-HH:MM", ex.: "0-09:30") */

@@ -10,6 +10,7 @@ import { fillOf } from '../screens/Agenda'
 import { Avatar, MinistryBadge } from '../components/ui'
 import { Fill, ddmm, whatsapp } from './common'
 import { AssignModal, type PickFor } from './AssignModal'
+import { draftPeople, publishMessage } from '../lib/publish'
 import { SetlistModal } from './EventsView'
 import type { Section } from './Panel'
 import type { ChurchEvent, Ministry } from '../data/types'
@@ -45,9 +46,9 @@ export function Overview({ ministry, managed, attention, go, pick }: {
   const care = useMemo(() => careList(teamRows(data, ministry.id, today), today), [data, ministry.id, today])
   const pct = stats.total ? Math.round(((stats.confirmed + stats.pending) / stats.total) * 100) : 100
 
-  const publish = () => {
-    const n = actions.publishDrafts(ministry.id)
-    notify(n ? `${n} ${n === 1 ? 'escala publicada' : 'escalas publicadas'}: a equipe foi avisada ✅` : 'Nada para publicar.')
+  const publish = async () => {
+    const who = draftPeople(data, ministry.id)
+    notify(publishMessage(who, await actions.publishDrafts(ministry.id)))
   }
 
   const shown = showAll ? attention : attention.slice(0, 8)

@@ -138,3 +138,15 @@ describe('líder ajusta as funções da equipe', () => {
     expect(d.ministries.find((m) => m.id === 'louvor')!.groups![0].memberIds).not.toContain(id)
   })
 })
+
+describe('mensagem ao publicar a escala', () => {
+  it('diz em quantos celulares chegou e quem está sem notificação ativa', async () => {
+    const { publishMessage } = await import('../src/lib/publish')
+    const people = [
+      { id: 'a', name: 'Ana Souza', pushOn: true }, { id: 'b', name: 'Bruno Lima' }, { id: 'c', name: 'Caio Reis' },
+    ] as unknown as Parameters<typeof publishMessage>[0]
+    expect(publishMessage(people, { ok: true, result: { created: 3, pushed: 1 } })).toBe('3 escalas publicadas ✨ A notificação chegou em 1 celular. Sem notificação ativa: Bruno, Caio (veem a escala quando abrirem o app).')
+    expect(publishMessage(people, { ok: true, result: { created: 3 } })).toMatch(/3 pessoas recebem o aviso/)
+    expect(publishMessage(people, { ok: false, error: 'Sem permissão' })).toBe('Sem permissão')
+  })
+})
