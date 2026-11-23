@@ -15,6 +15,7 @@ export function fillOf(data: AppData, ev: ChurchEvent, ministryIds?: string[]) {
   for (const mid of ev.ministryIds) {
     if (ministryIds && !ministryIds.includes(mid)) continue
     for (const r of slotsFor(data, ev, mid)) {
+      if (r.optional) continue // vaga opcional não entra no preenchimento
       const list = data.assignments.filter((a) => a.eventId === ev.id && a.ministryId === mid && a.role === r.name && a.status !== 'declined')
       // vaga de grupo: o grupo conta como uma vaga, confirmada quando todos dele confirmaram
       const units = new Map<string, boolean>()

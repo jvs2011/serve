@@ -45,21 +45,22 @@ export function availabilityFor(data: AppData, member: Member, event: ChurchEven
  * Vagas de um ministério num evento: as vagas próprias do evento, se houver;
  * senão as vagas padrão do ministério (funções com 0 não entram nos cultos).
  */
-export function slotsFor(data: AppData, ev: ChurchEvent | undefined, ministryId: string): { name: string; count: number; group?: boolean; hint?: string }[] {
+export function slotsFor(data: AppData, ev: ChurchEvent | undefined, ministryId: string): { name: string; count: number; group?: boolean; hint?: string; optional?: boolean }[] {
   const ministry = data.ministries.find((m) => m.id === ministryId)
   if (ev?.slots) {
     return ev.slots.filter((s) => s.ministryId === ministryId).map((s) => {
       const r = ministry?.roles.find((x) => x.name === s.role)
-      return { name: s.role, count: s.count, ...(r?.group ? { group: true } : {}), ...(r?.hint ? { hint: r.hint } : {}) }
+      return { name: s.role, count: s.count, ...(r?.group ? { group: true } : {}), ...(r?.hint ? { hint: r.hint } : {}), ...(r?.optional ? { optional: true } : {}) }
     })
   }
   return (ministry?.roles ?? []).filter((r) => r.count > 0)
 }
 
-/** Vagas abertas (função ainda sem gente suficiente) de um ministério num evento */
+/** Vagas abertas (função ainda sem gente suficiente) de um ministério num evento; vaga opcional vazia não conta */
 export function openSlots(data: AppData, eventId: string, ministryId: string): { role: string; missing: number; group: boolean }[] {
   const ev = data.events.find((e) => e.id === eventId)
   return slotsFor(data, ev, ministryId)
+    .filter((r) => !r.optional)
     .map((r) => {
       const list = data.assignments.filter(
         (a) => a.eventId === eventId && a.ministryId === ministryId && a.role === r.name && a.status !== 'declined',

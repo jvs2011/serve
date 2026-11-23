@@ -174,6 +174,8 @@ a.material-chip:hover { filter: brightness(.95); }
 .pn-chip:hover { filter: brightness(.96); }
 .pn-add { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border-radius: 99px; border: 1.5px dashed color-mix(in srgb, var(--bad) 60%, transparent); color: var(--bad); font-size: 12px; font-weight: 600; white-space: nowrap; }
 .pn-add:hover { background: var(--bad-soft); }
+.pn-add.opt { border-color: var(--line); color: var(--muted); }
+.pn-add.opt:hover { background: var(--surface-2); color: var(--ink-2); }
 .pn-missing { font-size: 12px; color: var(--bad); }
 .pn-declined { font-size: 12px; color: var(--muted); text-decoration: line-through; }
 .pn-grid td.pn-na { color: var(--muted); }

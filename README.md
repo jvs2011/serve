@@ -94,6 +94,10 @@ ativar notificações e, para líderes, como publicar a escala). Dá para rever 
   (aparece na escala da Projeção dos cultos da manhã e da noite)
 
 **Projeção**
+- **Auxiliar de projeção** (Follow) é uma vaga **opcional** em cada culto, para quem está aprendendo a projeção:
+  aparece na escala e na grade (coluna "opcional"), mas vazia não conta como vaga aberta, não gera alerta e não
+  entra na escala automática (`RoleSlot.optional`). Quem é escalado como auxiliar vê o quadro Para a projeção e
+  recebe os mesmos avisos da Projeção
 - Dentro da escala do culto, a Projeção (e os líderes do Follow) vê o quadro **Para a projeção**: vídeo do News,
   artes com o botão Copiar link e as músicas do Louvor; na tela Início aparece o resumo ("4 músicas · 1 arte · vídeo do News")
 - Avisos: entregue com link → a Projeção escalada naquele culto; repertório enviado pelo Louvor → Louvor e Projeção do culto

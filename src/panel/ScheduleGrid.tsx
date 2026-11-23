@@ -206,9 +206,12 @@ export function ScheduleGrid({ ministry, focusEvent }: { ministry: Ministry; foc
                                 </button>
                               )
                             })}
-                            {c.missing > 0 && (past
-                              ? <span className="pn-missing">{c.missing} sem ninguém</span>
-                              : <button className="pn-add no-print" onClick={() => setPicking({ ev, role: r.name })}><Plus size={14} /> Escalar{c.missing > 1 ? ` · ${c.missing}` : ''}</button>)}
+                            {c.missing > 0 && (c.optional
+                              // vaga opcional: dá para escalar, mas vazia não é vaga aberta
+                              ? !past && <button className="pn-add opt no-print" onClick={() => setPicking({ ev, role: r.name })} title="Opcional: escale quem está aprendendo"><Plus size={14} /> Escalar</button>
+                              : past
+                                ? <span className="pn-missing">{c.missing} sem ninguém</span>
+                                : <button className="pn-add no-print" onClick={() => setPicking({ ev, role: r.name })}><Plus size={14} /> Escalar{c.missing > 1 ? ` · ${c.missing}` : ''}</button>)}
                             {c.declined.map((a) => <span key={a.id} className="pn-declined" title="Recusou">{shortName(a.memberId)}</span>)}
                           </div>
                         </td>

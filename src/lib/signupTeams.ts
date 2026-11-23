@@ -16,6 +16,7 @@ const LAYOUTS: Record<string, Layout> = {
       ['Filmmaker', 'Filmmaker', 'filma o culto e envia o vídeo'],
       ['Stories', 'Stories', 'posta os stories do culto'],
       ['Projeção', 'Projeção', 'letras, artes e vídeos na projeção'],
+      ['Auxiliar de projeção', 'Auxiliar de projeção', 'aprende a projeção junto com quem já opera'],
       ['Transmissão', 'Transmissão', 'transmite o culto ao vivo'],
     ] },
     { title: 'Lagoinha News', teams: [

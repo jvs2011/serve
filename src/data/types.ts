@@ -9,6 +9,9 @@ export interface RoleSlot {
   hint?: string
   /** quem serve nessa função envia um material depois (ex.: "as fotos"): o link fica na escala */
   delivery?: string
+  /** vaga opcional (ex.: Auxiliar de projeção): aparece na escala para quem quiser escalar, mas vazia não conta
+   *  como vaga aberta, não gera alerta e não entra na escala automática */
+  optional?: boolean
   /** função que recebe esse material para editar (ex.: Fotografia → Edição de fotos) */
   deliverTo?: string
 }

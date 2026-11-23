@@ -147,7 +147,7 @@ function MinistryTeam({ ev, ministry }: { ev: ChurchEvent; ministry: Ministry })
       {[
         ...slotsFor(data, ev, ministry.id),
         // funções sem vaga neste evento, mas com alguém escalado (ex.: escala antiga)
-        ...[...new Set(list.map((a) => a.role))].filter((role) => !slotsFor(data, ev, ministry.id).some((s) => s.name === role)).map((name) => ({ name, count: 0, group: false, hint: undefined })),
+        ...[...new Set(list.map((a) => a.role))].filter((role) => !slotsFor(data, ev, ministry.id).some((s) => s.name === role)).map((name) => ({ name, count: 0, group: false, hint: undefined, optional: false })),
       ].map((r) => {
         const roleList = list.filter((a) => a.role === r.name)
         const people = roleList.filter((a) => a.status !== 'declined' && !(r.group && a.groupId))
@@ -200,10 +200,11 @@ function MinistryTeam({ ev, ministry }: { ev: ChurchEvent; ministry: Ministry })
               {declined.map(row)}
               {Array.from({ length: missing }).map((_, i) =>
                 manage ? (
-                  <button key={i} className="slot-empty" onClick={() => r.group ? setGroupPicker(r.name) : setPicker(r.name)}>
-                    {r.group ? <><Users size={16} /> Escolher grupo</> : <><UserPlus size={16} /> Escalar alguém</>}
+                  <button key={i} className={`slot-empty${r.optional ? ' optional' : ''}`} onClick={() => r.group ? setGroupPicker(r.name) : setPicker(r.name)}>
+                    {r.group ? <><Users size={16} /> Escolher grupo</> : <><UserPlus size={16} /> {r.optional ? 'Escalar (opcional)' : 'Escalar alguém'}</>}
                   </button>
-                ) : (
+                ) : r.optional ? null : (
+                  // vaga opcional vazia não aparece como vaga aberta para a equipe
                   <div key={i} className="slot-empty static">Vaga aberta</div>
                 ),
               )}

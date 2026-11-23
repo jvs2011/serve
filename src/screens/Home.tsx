@@ -16,7 +16,7 @@ import { DemoTips } from '../components/DemoTips'
 import { HomeDeliveriesCard } from '../components/DeliveryBox'
 import { HomeMaterialToEdit } from '../components/RecentMaterial'
 import { materialToEdit } from '../lib/delivery'
-import { PROJECTION_ROLE, projectionMaterials, projectionSummary } from '../lib/projection'
+import { isProjectionRole, projectionMaterials, projectionSummary } from '../lib/projection'
 
 export function Home() {
   const { data, actions, notify, mode } = useStore()
@@ -26,7 +26,7 @@ export function Home() {
   const exp = mode === 'demo' ? demoExpiresAt(data) : null
   const demoUntil = exp ? new Date(exp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : null
   const next = upcoming[0]
-  const projSummary = next && next.a.role === PROJECTION_ROLE ? projectionSummary(projectionMaterials(data, next.ev)) : ''
+  const projSummary = next && isProjectionRole(next.a.role) ? projectionSummary(projectionMaterials(data, next.ev)) : ''
   const otherPending = upcoming.slice(1).filter((x) => x.a.status === 'pending')
   const rest = upcoming.slice(1).filter((x) => x.a.status !== 'pending').slice(0, 4)
   const swaps = swapsICanCover(data, me)
@@ -96,7 +96,7 @@ export function Home() {
             <div>
               <h2>{next.ev.title}</h2>
               <p><Clock size={14} /> {timeRange(next.ev)}{next.ev.place && ` · ${next.ev.place}`} · {next.ministry.name} · <b>{next.a.role}</b></p>
-              {next.a.role === PROJECTION_ROLE && projSummary && <span className="hero-proj"><MonitorPlay size={14} /> Para a projeção: {projSummary}</span>}
+              {isProjectionRole(next.a.role) && projSummary && <span className="hero-proj"><MonitorPlay size={14} /> Para a projeção: {projSummary}</span>}
             </div>
           </div>
           <div onClick={(e) => e.stopPropagation()}>

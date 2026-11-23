@@ -19,10 +19,10 @@ export function panelEvents(data: AppData, ministryId: string, from: string, unt
 }
 
 /** Colunas da grade: as funções com vaga nos eventos do período, na ordem do ministério (vagas próprias no fim) */
-export function gridRoles(data: AppData, ministry: Ministry, events: ChurchEvent[]): { name: string; group: boolean; hint?: string }[] {
+export function gridRoles(data: AppData, ministry: Ministry, events: ChurchEvent[]): { name: string; group: boolean; hint?: string; optional?: boolean }[] {
   const used = new Set(events.flatMap((e) => slotsFor(data, e, ministry.id).map((s) => s.name)))
-  const ordered = ministry.roles.filter((r) => used.has(r.name)).map((r) => ({ name: r.name, group: !!r.group, hint: r.hint }))
-  for (const name of used) if (!ordered.some((r) => r.name === name)) ordered.push({ name, group: false, hint: undefined })
+  const ordered = ministry.roles.filter((r) => used.has(r.name)).map((r) => ({ name: r.name, group: !!r.group, hint: r.hint, optional: !!r.optional }))
+  for (const name of used) if (!ordered.some((r) => r.name === name)) ordered.push({ name, group: false, hint: undefined, optional: false })
   return ordered
 }
 
@@ -30,6 +30,8 @@ export interface Cell {
   /** vagas dessa função no evento (0 = a função não entra nesse evento) */
   count: number
   group: boolean
+  /** vaga opcional (ex.: Auxiliar de projeção): vazia não é vaga aberta */
+  optional: boolean
   /** quem está na vaga (sem quem recusou), com o grupo quando é vaga de grupo */
   units: { groupId?: string; list: Assignment[] }[]
   declined: Assignment[]
@@ -49,7 +51,7 @@ export function cellOf(data: AppData, ev: ChurchEvent, ministryId: string, role:
     else units.push({ groupId: group ? a.groupId : undefined, list: [a] })
   }
   const count = slot?.count ?? 0
-  return { count, group, units, declined: all.filter((a) => a.status === 'declined'), missing: Math.max(0, count - units.length) }
+  return { count, group, optional: !!slot?.optional, units, declined: all.filter((a) => a.status === 'declined'), missing: Math.max(0, count - units.length) }
 }
 
 export type Attention =
@@ -176,8 +178,9 @@ export function scheduleText(data: AppData, ministry: Ministry, events: ChurchEv
         .map((u) => ({ ...u, list: u.list.filter((a) => !a.draft) }))
         .filter((u) => u.list.length)
         .map((u) => (u.groupId && groupName(u.groupId) ? groupName(u.groupId)! : u.list.map((a) => name(a.memberId)).join(', ')))
-      return `${r.name}: ${who.length ? who.join(', ') : '—'}`
-    })
+      // função opcional sem ninguém não entra no texto
+      return r.optional && !who.length ? null : `${r.name}: ${who.length ? who.join(', ') : '—'}`
+    }).filter((x): x is string => x !== null)
     lines.push('', `*${weekdayShort(ev.date).toLowerCase()} ${ddmm(ev.date)}${ev.time ? ` · ${ev.time}` : ''} · ${ev.title}*`, ...rows)
   }
   return lines.join('\n')

@@ -12,7 +12,7 @@ export const DATA_VERSION = 28
  * As funções (roles) e vagas por evento são uma sugestão inicial — ajuste com cada líder.
  * `people` é só para gerar voluntários de exemplo suficientes para o rodízio.
  */
-type MinistrySeed = Omit<Ministry, 'roles' | 'leaderIds'> & { roles: { name: string; count: number; people: number; group?: boolean; hint?: string; delivery?: string; deliverTo?: string }[] }
+type MinistrySeed = Omit<Ministry, 'roles' | 'leaderIds'> & { roles: { name: string; count: number; people: number; group?: boolean; hint?: string; delivery?: string; deliverTo?: string; optional?: boolean }[] }
 
 const ministrySeeds: MinistrySeed[] = [
   {
@@ -32,7 +32,10 @@ const ministrySeeds: MinistrySeed[] = [
       // Fotografia e Filmmaker enviam o material depois do culto (o link fica na escala) e a edição recebe
       { name: 'Fotografia', count: 1, people: 3, delivery: 'as fotos', deliverTo: 'Edição de fotos' },
       { name: 'Filmmaker', count: 1, people: 3, delivery: 'o vídeo', deliverTo: 'Edição de vídeos' },
-      { name: 'Stories', count: 1, people: 3 }, { name: 'Projeção', count: 1, people: 3 }, { name: 'Transmissão', count: 1, people: 3 },
+      { name: 'Stories', count: 1, people: 3 }, { name: 'Projeção', count: 1, people: 3 },
+      // quem ainda está aprendendo a projeção: escala opcional, junto com quem opera
+      { name: 'Auxiliar de projeção', count: 1, people: 2, optional: true, hint: 'opcional' },
+      { name: 'Transmissão', count: 1, people: 3 },
       // sem vaga nos cultos (count 0): o Lagoinha News tem gravação agendada pelo líder (Filmmaker + Apresentação);
       // as edições vão por pedido (aba Artes); site sem escala
       { name: 'Filmmaker (News)', count: 0, people: 3, delivery: 'as filmagens', deliverTo: 'Edição do News' },

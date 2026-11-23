@@ -8,6 +8,9 @@ import { canManage, slotsFor } from './schedule.js'
 
 export const PROJECTION_MINISTRY = 'follow'
 export const PROJECTION_ROLE = 'Projeção'
+/** Quem está aprendendo a projeção: vaga opcional, vê o mesmo quadro e recebe os mesmos avisos */
+export const PROJECTION_HELPER = 'Auxiliar de projeção'
+export const isProjectionRole = (role: string) => role === PROJECTION_ROLE || role === PROJECTION_HELPER
 
 export interface ProjectionMaterials {
   /** vídeos do News e artes para a projeção deste culto (o News primeiro) */
@@ -38,7 +41,7 @@ export function hasProjection(data: AppData, ev: ChurchEvent): boolean {
 export function seesProjection(data: AppData, me: Member, ev: ChurchEvent): boolean {
   if (!hasProjection(data, ev)) return false
   return canManage(me, PROJECTION_MINISTRY, data) ||
-    me.ministries.some((mm) => mm.ministryId === PROJECTION_MINISTRY && mm.roles.includes(PROJECTION_ROLE))
+    me.ministries.some((mm) => mm.ministryId === PROJECTION_MINISTRY && mm.roles.some(isProjectionRole))
 }
 
 /** Cultos em que o pedido vai passar na projeção */
@@ -59,7 +62,7 @@ const dayOfWeek = (iso: string) => { const [y, m, d] = iso.split('-').map(Number
 /** Quem está escalado (publicado, sem recusa) na Projeção deste culto */
 export function projectionTeam(data: AppData, eventId: string): string[] {
   return [...new Set(data.assignments
-    .filter((a) => a.eventId === eventId && a.ministryId === PROJECTION_MINISTRY && a.role === PROJECTION_ROLE && !a.draft && a.status !== 'declined')
+    .filter((a) => a.eventId === eventId && a.ministryId === PROJECTION_MINISTRY && isProjectionRole(a.role) && !a.draft && a.status !== 'declined')
     .map((a) => a.memberId))]
 }
 

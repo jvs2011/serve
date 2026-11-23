@@ -14,7 +14,7 @@ describe('painel do líder (computador)', () => {
     expect(evs.length).toBeGreaterThan(4)
     expect(evs.every((e) => e.ministryIds.includes('follow') && e.date >= today)).toBe(true)
     const roles = gridRoles(d, follow, evs).map((r) => r.name)
-    expect(roles.slice(0, 5)).toEqual(['Fotografia', 'Filmmaker', 'Stories', 'Projeção', 'Transmissão'])
+    expect(roles.slice(0, 6)).toEqual(['Fotografia', 'Filmmaker', 'Stories', 'Projeção', 'Auxiliar de projeção', 'Transmissão'])
     // a gravação do News entra com as funções dela
     expect(roles).toContain('Filmmaker (News)')
     expect(roles).not.toContain('Edição de fotos') // sem vaga nos cultos
@@ -148,5 +148,34 @@ describe('mensagem ao publicar a escala', () => {
     expect(publishMessage(people, { ok: true, result: { created: 3, pushed: 1 } })).toBe('3 escalas publicadas ✨ A notificação chegou em 1 celular. Sem notificação ativa: Bruno, Caio (veem a escala quando abrirem o app).')
     expect(publishMessage(people, { ok: true, result: { created: 3 } })).toMatch(/3 pessoas recebem o aviso/)
     expect(publishMessage(people, { ok: false, error: 'Sem permissão' })).toBe('Sem permissão')
+  })
+})
+
+describe('Auxiliar de projeção (vaga opcional)', () => {
+  it('aparece na escala, mas vazia não é vaga aberta, não entra no preenchimento nem na escala automática', async () => {
+    const { openSlots, autoFill, slotsFor } = await import('../src/lib/schedule')
+    const { fillOf } = await import('../src/screens/Agenda')
+    const d = createSeed()
+    const ev = panelEvents(d, 'follow', today, plusDays(today, 27)).find((e) => e.slotId)!
+    expect(slotsFor(d, ev, 'follow').find((s) => s.name === 'Auxiliar de projeção')?.optional).toBe(true)
+    expect(openSlots(d, ev.id, 'follow').some((s) => s.role === 'Auxiliar de projeção')).toBe(false)
+    expect(cellOf(d, ev, 'follow', 'Auxiliar de projeção')).toMatchObject({ optional: true, count: 1 })
+    const total = slotsFor(d, ev, 'follow').filter((s) => !s.optional).reduce((n, s) => n + s.count, 0)
+    expect(fillOf(d, ev, ['follow']).total).toBe(total)
+    expect(autoFill(d, ev.id, 'follow').some((a) => a.role === 'Auxiliar de projeção')).toBe(false)
+    // texto do WhatsApp: sem ninguém, a linha nem aparece
+    const follow = d.ministries.find((m) => m.id === 'follow')!
+    expect(scheduleText(d, follow, [ev], ev.date, ev.date)).not.toMatch(/Auxiliar de projeção/)
+  })
+
+  it('quem é escalado como auxiliar vê o quadro da projeção e recebe os avisos da projeção', async () => {
+    const { projectionTeam, seesProjection } = await import('../src/lib/projection')
+    const d = createSeed()
+    const ev = panelEvents(d, 'follow', today, plusDays(today, 27)).find((e) => e.slotId)!
+    const helper = d.members.find((m) => m.ministries.some((mm) => mm.ministryId === 'follow' && mm.roles.includes('Auxiliar de projeção')))!
+    applyAction(d, { type: 'assign', eventId: ev.id, ministryId: 'follow', role: 'Auxiliar de projeção', memberId: helper.id }, 'm-rafaela')
+    applyAction(d, { type: 'publishDrafts', ministryId: 'follow', eventId: ev.id }, 'm-rafaela')
+    expect(projectionTeam(d, ev.id)).toContain(helper.id)
+    expect(seesProjection(d, helper, ev)).toBe(true)
   })
 })
