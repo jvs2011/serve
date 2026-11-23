@@ -35,20 +35,33 @@ function loadDemo(): AppData {
   return createSeed()
 }
 
+/*
+ * A sessão real (celular + PIN) fica guardada no aparelho. A da demonstração só vale até fechar o navegador
+ * (sessionStorage): assim, quem abre o app ou o painel num computador em que alguém explorou a
+ * demonstração cai na tela de entrada, e não num perfil de exemplo.
+ */
 function loadSession(): Session | null {
   try {
     const raw = localStorage.getItem(SESSION_KEY)
-    if (raw) return JSON.parse(raw) as Session
-    const legacy = localStorage.getItem(LEGACY_USER_KEY)
-    if (legacy) return { mode: 'demo', userId: legacy }
+    if (raw) {
+      const s = JSON.parse(raw) as Session
+      if (s.mode === 'live') return s
+      // demonstração guardada pelas versões antigas: não continua sozinha
+      localStorage.removeItem(SESSION_KEY)
+    }
+    localStorage.removeItem(LEGACY_USER_KEY)
+    const demo = sessionStorage.getItem(SESSION_KEY)
+    if (demo) return JSON.parse(demo) as Session
   } catch { /* ignore */ }
   return null
 }
 
 function saveSession(s: Session | null) {
   try {
-    if (s) localStorage.setItem(SESSION_KEY, JSON.stringify(s))
+    if (s?.mode === 'live') localStorage.setItem(SESSION_KEY, JSON.stringify(s))
     else localStorage.removeItem(SESSION_KEY)
+    if (s?.mode === 'demo') sessionStorage.setItem(SESSION_KEY, JSON.stringify(s))
+    else sessionStorage.removeItem(SESSION_KEY)
     localStorage.removeItem(LEGACY_USER_KEY)
   } catch { /* ignore */ }
 }

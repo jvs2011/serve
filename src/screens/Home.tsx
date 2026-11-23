@@ -73,10 +73,11 @@ export function Home() {
         <p>{upcoming.length ? `Você tem ${upcoming.length} ${upcoming.length === 1 ? 'escala' : 'escalas'} pela frente.` : 'Nenhuma escala por enquanto.'}</p>
       </div>
 
-      {demoUntil && (
+      {mode === 'demo' && (
         <div className="demo-note">
           <RotateCcw size={14} />
-          <span>Demonstração: suas alterações serão desfeitas às <b>{demoUntil}</b></span>
+          <span className="grow">{demoUntil ? <>Demonstração: suas alterações serão desfeitas às <b>{demoUntil}</b></> : <>Você está na <b>demonstração</b>: os dados são de exemplo.</>}</span>
+          <button className="link demo-exit" onClick={actions.logout}>Sair</button>
         </div>
       )}
 

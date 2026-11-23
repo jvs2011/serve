@@ -34,7 +34,9 @@ body.panel-mode a.btn, body.panel-mode a.icon-btn, .pn-pop a { text-decoration: 
 
 /* ---- conteúdo ---- */
 .pn-main { overflow: auto; height: 100vh; min-width: 0; }
-.pn-demo { background: var(--warn-soft); color: var(--warn); font-size: 13px; font-weight: 600; padding: 8px 32px; text-align: center; }
+.pn-demo { background: var(--warn-soft); color: var(--warn); font-size: 13px; font-weight: 500; padding: 8px 32px; display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; text-align: center; }
+.pn-demo b { font-weight: 700; }
+.pn-demo-exit { background: var(--warn); color: #fff; height: 30px; }
 .pn-page { padding: 28px 32px 48px; max-width: 1480px; margin: 0 auto; animation: fade .18s ease; }
 .pn-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
 .pn-head h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }

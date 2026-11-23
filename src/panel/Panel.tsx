@@ -244,7 +244,12 @@ function PanelApp() {
         </div>
       </aside>
       <main className="pn-main">
-        {mode === 'demo' && <div className="pn-demo">Demonstração: os dados são de exemplo e as alterações são desfeitas 10 minutos depois.</div>}
+        {mode === 'demo' && (
+          <div className="pn-demo">
+            <span><b>Você está na demonstração:</b> os dados são de exemplo e as alterações são desfeitas 10 minutos depois.</span>
+            <button className="btn btn-sm pn-demo-exit" onClick={actions.logout}>Sair e entrar com meu celular</button>
+          </div>
+        )}
         {current === 'overview' && <Overview ministry={ministry} managed={managed} attention={attention} go={go} pick={pick} />}
         {current === 'schedule' && <ScheduleGrid key={`${ministry.id}-${focusEvent}`} ministry={ministry} focusEvent={focusEvent} />}
         {current === 'events' && <EventsView key={ministry.id} ministry={ministry} go={go} />}
