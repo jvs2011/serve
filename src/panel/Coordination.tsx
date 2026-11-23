@@ -286,7 +286,6 @@ export function SettingsView() {
   const [busy, setBusy] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const open = data.settings?.open === true
-  const demo = data.settings?.demo !== false
   const people = data.members.filter((m) => m.access !== 'admin').length
   const site = mode === 'live' ? location.origin : 'https://serve.lagoinhafranca.com'
   const setOpen = async (v: boolean) => {
@@ -295,18 +294,11 @@ export function SettingsView() {
     setBusy(false); setConfirmOpen(false)
     notify(r.ok ? (v ? 'App liberado para todos 🎉' : 'Acesso restrito à coordenação') : r.error)
   }
-  const setDemo = async (v: boolean) => {
-    setBusy(true)
-    const r = await actions.setDemo(v)
-    setBusy(false)
-    notify(r.ok ? (v ? 'A demonstração voltou para a tela de entrada' : 'Demonstração escondida da tela de entrada') : r.error)
-  }
-
   return (
     <div className="pn-page">
-      <header className="pn-head"><div><h1>Configurações</h1><p>Quem entra no app, a demonstração e os formulários de cadastro.</p></div></header>
+      <header className="pn-head"><div><h1>Configurações</h1><p>Quem entra no app e os formulários de cadastro.</p></div></header>
       {mode === 'demo' && <p className="pn-note">Na demonstração, estas chaves mudam só os dados de exemplo.</p>}
-      <div className="pn-cols pn-cols-even">
+      <div className="pn-settings-row">
         <section className="pn-card">
           <div className="pn-card-head"><h2>Acesso ao app</h2><span className={`pill ${open ? 'pill-confirmed' : 'pill-pending'}`}>{open ? 'Liberado para todos' : 'Só a coordenação'}</span></div>
           <p className="muted small pn-card-sub">{open
@@ -321,13 +313,6 @@ export function SettingsView() {
           ) : open
             ? <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => setOpen(false)}>Voltar a restringir</button>
             : <button className="btn btn-primary btn-sm" disabled={busy} onClick={() => setConfirmOpen(true)}>Liberar o app para todos</button>}
-        </section>
-        <section className="pn-card">
-          <div className="pn-card-head"><h2>Demonstração na tela de entrada</h2><span className={`pill ${demo ? 'pill-confirmed' : 'pill-draft'}`}>{demo ? 'Aparecendo' : 'Escondida'}</span></div>
-          <p className="muted small pn-card-sub">{demo
-            ? 'Quem abre o Serve vê os perfis de exemplo para conhecer o app sem entrar.'
-            : 'A tela de entrada mostra só o celular e o PIN. Os dados de exemplo continuam guardados.'}</p>
-          <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => setDemo(!demo)}>{demo ? 'Esconder a demonstração' : 'Mostrar a demonstração'}</button>
         </section>
       </div>
       <section className="pn-card pn-card-flush">

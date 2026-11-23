@@ -6,8 +6,10 @@ import { Avatar } from '../components/ui'
 import { Logo } from '../components/Logo'
 import { PinInput } from '../components/PinInput'
 import { isValidPhone, nextPhoneValue } from '../lib/people'
+import { DEMO_ENABLED } from '../lib/demo'
 
-const demoMembers = createSeed().members
+// só no desenvolvimento: no app publicado não existe demonstração
+const demoMembers = DEMO_ENABLED ? createSeed().members : []
 
 type DemoProfile = { id: string; label: string; hint: string }
 
@@ -30,12 +32,14 @@ export function Login({ title, text, profiles = demoProfiles, bare }: { title?: 
   const [error, setError] = useState('')
   const [closedFor, setClosedFor] = useState<string | null>(null) // cadastrado, mas o app ainda não foi liberado
 
+  const [attempt, setAttempt] = useState(0)
   useEffect(() => {
+    setAvailable(null)
     fetch('/api/status')
       .then((r) => (r.ok ? r.json() : { configured: false }))
-      .then((r: { configured?: boolean; demo?: boolean }) => { setAvailable(!!r.configured); setShowDemo(!r.configured || r.demo !== false) })
-      .catch(() => { setAvailable(false); setShowDemo(true) })
-  }, [])
+      .then((r: { configured?: boolean; demo?: boolean }) => { setAvailable(!!r.configured); setShowDemo(DEMO_ENABLED && (!r.configured || r.demo !== false)) })
+      .catch(() => { setAvailable(false); setShowDemo(DEMO_ENABLED) })
+  }, [attempt])
 
   const restart = (msg = '') => { setStep('phone'); setSetupId(null); setPin(''); setNewPin(''); setError(msg) }
   const handle = (e: unknown) => {
@@ -103,7 +107,14 @@ export function Login({ title, text, profiles = demoProfiles, bare }: { title?: 
             <button className="btn btn-ghost btn-block" onClick={() => { setClosedFor(null); setPhone('') }}>Entendi</button>
           </div>
         ) : available === false ? (
-          <p className="notice-box">O acesso com celular ainda está sendo configurado. Enquanto isso, explore a demonstração abaixo.</p>
+          DEMO_ENABLED
+            ? <p className="notice-box">O acesso com celular ainda está sendo configurado. Enquanto isso, explore a demonstração abaixo.</p>
+            : (
+              <div className="stack">
+                <p className="notice-box">Não foi possível conectar ao Serve agora. Confira a sua internet e tente de novo.</p>
+                <button className="btn btn-primary btn-block" onClick={() => setAttempt((n) => n + 1)}>Tentar de novo</button>
+              </div>
+            )
         ) : step === 'phone' ? (
           <>
             <label className="field">

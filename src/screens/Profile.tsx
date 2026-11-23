@@ -89,7 +89,6 @@ export function Profile() {
       </div>
 
       {me.access === 'admin' && mode === 'live' && <AccessToggle />}
-      {me.access === 'admin' && mode === 'live' && <DemoToggle />}
 
       <h3 className="form-title">Notificações</h3>
       <div className="card push-card">
@@ -129,32 +128,6 @@ export function Profile() {
         <p><b>Android (Chrome):</b> toque no menu <span className="kbd">⋮</span> e depois em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</p>
         <p className="muted small">O Serve abre em tela cheia, como um aplicativo.</p>
       </Sheet>
-    </div>
-  )
-}
-
-/** Mostrar ou esconder a demonstração na tela de entrada */
-function DemoToggle() {
-  const { data, actions, notify } = useStore()
-  const [busy, setBusy] = useState(false)
-  const show = data.settings?.demo !== false
-  const apply = async (value: boolean) => {
-    setBusy(true)
-    const r = await actions.setDemo(value)
-    setBusy(false)
-    notify(r.ok ? (value ? 'A demonstração voltou para a tela de entrada' : 'Demonstração escondida da tela de entrada') : r.error)
-  }
-  return (
-    <div className="card push-card access-card mt">
-      <label className="switch-row">
-        <span>Demonstração na tela de entrada</span>
-        <input type="checkbox" checked={show} disabled={busy} onChange={(e) => apply(e.target.checked)} />
-      </label>
-      <p className="muted small">
-        {show
-          ? 'Quem abre o Serve vê os perfis de exemplo (voluntária, líder e coordenação) para conhecer o app sem entrar.'
-          : 'A tela de entrada mostra só o celular e o PIN. Os dados de exemplo continuam guardados para quando quiser mostrar de novo.'}
-      </p>
     </div>
   )
 }

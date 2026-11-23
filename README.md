@@ -12,7 +12,10 @@ npm run build      # roda os testes e gera /dist (se algum teste falhar, a publi
 npm run build:single  # gera /dist-single/index.html, um arquivo único para prévia
 ```
 
-Na tela de entrada há um perfil de demonstração para cada função do Follow (a primeira equipe a usar o app):
+No **desenvolvimento local** (`npm run dev`) e na prévia em arquivo único, a tela de entrada tem um perfil de
+demonstração para cada função do Follow. **No app publicado a demonstração não existe** (nem na entrada, nem no
+painel, nem nas configurações), para ninguém entrar num perfil de exemplo sem querer; perfis de exemplo guardados
+em algum aparelho são descartados. Os perfis de desenvolvimento (a primeira equipe a usar o app):
 **Líder do Follow** (Rafaela: rascunho da escala, pedidos e gravações), **Projeção** (Bruno: escala pendente, troca para
 assumir e o quadro Para a projeção), **Transmissão** (Gustavo: escala pendente e troca), **Fotografia** (Carolina) e
 **Filmmaker** (Vitor: material do último culto para enviar), **Stories** (Bianca: fotos de um culto pelo histórico),
@@ -20,7 +23,6 @@ assumir e o quadro Para a projeção), **Transmissão** (Gustavo: escala pendent
 chegou para editar) e as três funções do **Lagoinha News**: **Filmmaker** (Davi: convite e filmagens para enviar),
 **Apresentação** (Léo: convite da gravação) e **Edição** (Nina: filmagens recebidas e o vídeo do News para entregar).
 Cada perfil mostra sugestões do que experimentar.
-O administrador esconde ou mostra a demonstração em **Perfil → Demonstração na tela de entrada**.
 
 ## Funcionalidades
 
@@ -146,8 +148,7 @@ e, quando ligada, a demonstração com os perfis de líder e coordenação).
     Desde a versão 26 dos dados o app está **liberado**: quem se inscreveu pelo formulário (e quem se inscrever
     depois) entra com o celular e cria o PIN no primeiro acesso. Com o app liberado, a tela de "obrigado" do
     formulário mostra os passos e o botão **Entrar no Serve** (que já leva o celular preenchido).
-    A demonstração na tela de entrada (app e painel) liga e desliga em Configurações; quando está escondida, quem
-    estava num perfil de exemplo volta para a entrada (na versão 27 ela foi escondida e na 28 voltou)
+    A demonstração não existe no app publicado (só em `npm run dev`); por isso não há chave para ela em Configurações
 
 Os formulários são os mesmos do app (mesmas regras); nada saiu do celular.
 

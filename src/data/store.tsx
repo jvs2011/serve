@@ -4,6 +4,7 @@ import { createSeed, DATA_VERSION } from './seed'
 import { visibleTo } from '../lib/schedule'
 import { ActionError, applyAction, type Action, type ActionResult, type EventPatch, type MemberInput, type MinistryEventInput, type TaskInput } from './actions'
 import { disablePush, resyncPush } from '../lib/push'
+import { DEMO_ENABLED } from '../lib/demo'
 
 /*
  * Dois modos:
@@ -24,7 +25,14 @@ export function demoExpiresAt(data: AppData): number | null {
 }
 const isExpired = (d: AppData) => { const e = demoExpiresAt(d); return e !== null && Date.now() >= e }
 
+const emptyData = (): AppData => ({ version: 0, ministries: [], members: [], events: [], assignments: [], unavailability: {}, swaps: [], notices: [] })
+
 function loadDemo(): AppData {
+  // app publicado: sem demonstração (e apaga os dados de exemplo que tenham ficado no aparelho)
+  if (!DEMO_ENABLED) {
+    try { localStorage.removeItem(DEMO_KEY) } catch { /* ignore */ }
+    return emptyData()
+  }
   try {
     const raw = localStorage.getItem(DEMO_KEY)
     if (raw) {
@@ -51,7 +59,8 @@ function loadSession(): Session | null {
     }
     localStorage.removeItem(LEGACY_USER_KEY)
     const demo = sessionStorage.getItem(SESSION_KEY)
-    if (demo) return JSON.parse(demo) as Session
+    if (demo && DEMO_ENABLED) return JSON.parse(demo) as Session
+    sessionStorage.removeItem(SESSION_KEY)
   } catch { /* ignore */ }
   return null
 }
@@ -204,7 +213,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // ---------- demonstração ----------
-  useEffect(() => { try { localStorage.setItem(DEMO_KEY, JSON.stringify(demoData)) } catch { /* ignore */ } }, [demoData])
+  useEffect(() => { if (DEMO_ENABLED) try { localStorage.setItem(DEMO_KEY, JSON.stringify(demoData)) } catch { /* ignore */ } }, [demoData])
   const replaceDemo = useCallback((d: AppData) => { demoRef.current = d; setDemoData(d) }, [])
 
   // demonstração escondida pela coordenação: quem estava num perfil de exemplo volta para a entrada
@@ -329,7 +338,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [replaceDemo, sendLive])
 
   const actions = useMemo(() => makeActions(dispatch, dispatchAsync, {
-    enterDemo: (id) => setSession({ mode: 'demo', userId: id }),
+    enterDemo: (id) => { if (DEMO_ENABLED) setSession({ mode: 'demo', userId: id }) },
     logout: () => {
       const s = sessionRef.current
       if (s?.mode === 'live') {
