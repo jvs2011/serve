@@ -104,7 +104,7 @@ ativar notificações e, para líderes, como publicar a escala). Dá para rever 
 (em tela menor que 760 px aparece o aviso para usar o app; voluntário que entra vê que o painel é da liderança).
 Usa o mesmo login (celular + PIN) e os mesmos dados do app, e só é baixado por quem abre o /painel.
 A entrada é própria para tela grande: à esquerda o que o painel faz, à direita o cartão de entrada (celular, PIN
-e, quando ligada, a demonstração com os perfis de líder e coordenação).
+; a demonstração com os perfis de líder e coordenação só aparece no desenvolvimento local).
 
 - **Menu lateral**: troca de ministério (a coordenação vê todos), seções e números do que está pendente; no tablet
   o menu vira uma coluna de ícones
@@ -144,7 +144,7 @@ e, quando ligada, a demonstração com os perfis de líder e coordenação).
   - **Pessoas**: todos os cadastros com busca e filtros (líderes, sem PIN, pelo formulário, sem função);
     cadastrar e editar lado a lado (dados, ministérios, funções, liderança, coordenação), redefinir PIN, remover
     e baixar a planilha
-  - **Configurações**: liberar o app, demonstração na tela de entrada e os links dos formulários de cadastro.
+  - **Configurações**: liberar o app e os links dos formulários de cadastro.
     Desde a versão 26 dos dados o app está **liberado**: quem se inscreveu pelo formulário (e quem se inscrever
     depois) entra com o celular e cria o PIN no primeiro acesso. Com o app liberado, a tela de "obrigado" do
     formulário mostra os passos e o botão **Entrar no Serve** (que já leva o celular preenchido).
